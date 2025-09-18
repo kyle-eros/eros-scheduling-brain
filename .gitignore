@@ -31,3 +31,7 @@ logs/
 # Temporary files
 tmp/
 temp/
+# Temporary build files
+*.sql
+.df-credentials.json
+*_query.sql

@@ -2,7 +2,7 @@
   "defaultSchema": "eros_messaging_stg",
   "assertionSchema": "eros_assertions",
   "warehouse": "bigquery",
-  "defaultDatabase": "gcp-project-id",
+  "defaultDatabase": "of-scheduler-proj",
   "defaultLocation": "US",
   "vars": {
     "raw_schema": "eros_source"
