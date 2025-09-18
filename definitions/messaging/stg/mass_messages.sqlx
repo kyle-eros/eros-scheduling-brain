@@ -12,7 +12,6 @@ config {
 
 WITH 
 historical_source AS (
-  -- Standardize the historical (facts) data to consistent types first
   SELECT
     CAST(message_id AS STRING) as message_id,
     CAST(sender AS STRING) as sender,
@@ -25,10 +24,10 @@ historical_source AS (
     message as message_text,
     'historical' as source_file
   FROM ${ref("facts_messages_all")}
+  WHERE sending_time IS NOT NULL AND TRIM(sending_time) != ''
 ),
 
 daily_source AS (
-  -- Standardize the daily data to the same consistent types
   SELECT
     CAST(message_id AS STRING) as message_id,
     CAST(sender AS STRING) as sender,
@@ -41,17 +40,16 @@ daily_source AS (
     message_text,
     'daily' as source_file
   FROM ${ref("mass_message_daily_final")}
+  WHERE sending_time IS NOT NULL AND TRIM(sending_time) != ''
 ),
 
 messages_unioned AS (
-  -- Now that schemas are identical, the UNION will work reliably
   SELECT * FROM historical_source
   UNION ALL
   SELECT * FROM daily_source
 ),
 
 messages_cleaned AS (
-  -- Perform final parsing on the clean, unified data
   SELECT
     FARM_FINGERPRINT(CONCAT(message_id, '_', source_file)) as message_sk,
     LOWER(TRIM(sender)) as username_std,

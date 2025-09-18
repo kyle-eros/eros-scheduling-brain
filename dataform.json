@@ -6,5 +6,6 @@
   "defaultLocation": "US",
   "vars": {
     "raw_schema": "eros_source"
-  }
+  },
+  "schemaSuffix": ""
 }
