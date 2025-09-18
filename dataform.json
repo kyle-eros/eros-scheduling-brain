@@ -1,7 +1,10 @@
 {
-  "defaultSchema": "dataform",
-  "assertionSchema": "dataform_assertions",
+  "defaultSchema": "eros_messaging_stg",
+  "assertionSchema": "eros_assertions",
   "warehouse": "bigquery",
   "defaultDatabase": "gcp-project-id",
-  "defaultLocation": "US"
+  "defaultLocation": "US",
+  "vars": {
+    "raw_schema": "eros_source"
+  }
 }

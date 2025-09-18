@@ -1,0 +1,12 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions", 
+  description: "Price tier values must be from accepted list",
+  tags: ["data_quality", "accepted_values"]
+}
+
+SELECT recommended_price_tier, COUNT(*) as invalid_count
+FROM ${ref("pricing_bands")}
+WHERE recommended_price_tier NOT IN ('LOW', 'MEDIUM', 'HIGH', 'PREMIUM')
+GROUP BY recommended_price_tier
+HAVING COUNT(*) > 0

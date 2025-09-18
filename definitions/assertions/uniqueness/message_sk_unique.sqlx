@@ -1,0 +1,11 @@
+config {
+  type: "assertion", 
+  schema: "eros_assertions",
+  description: "Message surrogate keys must be unique",
+  tags: ["data_quality", "uniqueness"]
+}
+
+SELECT message_sk, COUNT(*) as duplicate_count
+FROM ${ref("mass_messages")}
+GROUP BY message_sk
+HAVING COUNT(*) > 1

@@ -1,0 +1,135 @@
+config {
+  type: "table",
+  schema: "eros_messaging_mart",
+  partitionBy: "recommendation_date", 
+  clusterBy: ["username_std"],
+  requirePartitionFilter: true,
+  description: "Daily ranked recommendations solving all 6 core problems",
+  labels: {app: "eros", domain: "messaging", layer: "mart"},
+  tags: ["messaging_mart"],
+  dependencies: ["messages_enriched", "creator_heatmap", "pricing_bands", "fatigue_scores"]
+}
+
+WITH 
+active_creators AS (
+  SELECT DISTINCT username_std
+  FROM ${ref("messages_enriched")}
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+),
+
+candidate_slots AS (
+  SELECT 
+    c.username_std,
+    CURRENT_DATE() as recommendation_date,
+    slot_ts,
+    EXTRACT(HOUR FROM slot_ts) as slot_hour,
+    FORMAT_DATE('%A', DATE(slot_ts)) as slot_day_of_week
+  FROM active_creators c
+  CROSS JOIN UNNEST(
+    GENERATE_TIMESTAMP_ARRAY(
+      TIMESTAMP(CURRENT_DATE()),
+      TIMESTAMP(DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY)), 
+      INTERVAL 30 MINUTE
+    )
+  ) as slot_ts
+),
+
+last_message_check AS (
+  SELECT 
+    cs.*,
+    COALESCE(lm.last_message_ts, TIMESTAMP('2024-01-01')) as last_message_ts,
+    TIMESTAMP_DIFF(cs.slot_ts, COALESCE(lm.last_message_ts, TIMESTAMP('2024-01-01')), HOUR) as hours_since_last
+  FROM candidate_slots cs
+  LEFT JOIN (
+    SELECT 
+      username_std,
+      MAX(sending_ts) as last_message_ts
+    FROM ${ref("messages_enriched")} 
+    WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY)
+    GROUP BY username_std
+  ) lm ON cs.username_std = lm.username_std
+),
+
+valid_slots AS (
+  SELECT *
+  FROM last_message_check
+  WHERE hours_since_last >= 3  -- Minimum 3 hour gap
+    AND slot_hour BETWEEN 8 AND 22  -- Reasonable hours
+),
+
+scored_slots AS (
+  SELECT 
+    vs.*,
+    
+    -- PROBLEM 1: Timing intelligence
+    COALESCE(hm.avg_rpm, 0.5) as timing_score,
+    COALESCE(hm.confidence_level, 'LOW') as timing_confidence,
+    
+    -- PROBLEM 2: Pricing opportunity  
+    COALESCE(pb.recommended_price_tier, 'MEDIUM') as price_tier,
+    COALESCE(pb.price_medium, 15.0) as suggested_price,
+    
+    -- PROBLEM 3: Fatigue safety
+    COALESCE(100 - fs.fatigue_risk_score, 50) as fatigue_safety_score,
+    COALESCE(fs.recommended_max_daily, 3) as daily_limit,
+    
+    -- Composite recommendation score
+    (
+      COALESCE(hm.avg_rpm, 0.5) * 0.4 +  -- Timing performance
+      COALESCE((100 - fs.fatigue_risk_score)/100, 0.5) * 0.3 +  -- Fatigue safety
+      CASE COALESCE(pb.recommended_price_tier, 'MEDIUM')  -- Pricing opportunity
+        WHEN 'PREMIUM' THEN 1.0
+        WHEN 'HIGH' THEN 0.8  
+        WHEN 'MEDIUM' THEN 0.6
+        ELSE 0.4
+      END * 0.3
+    ) as recommendation_score
+    
+  FROM valid_slots vs
+  LEFT JOIN ${ref("creator_heatmap")} hm 
+    ON vs.username_std = hm.username_std
+    AND vs.slot_day_of_week = hm.local_day_of_week
+    AND vs.slot_hour = hm.local_hour
+  LEFT JOIN ${ref("pricing_bands")} pb
+    ON vs.username_std = pb.username_std  
+    AND vs.slot_day_of_week = pb.local_day_of_week
+    AND vs.slot_hour = pb.local_hour
+  LEFT JOIN ${ref("fatigue_scores")} fs
+    ON vs.username_std = fs.username_std
+    AND DATE(vs.slot_ts) = fs.score_date
+),
+
+ranked_recommendations AS (
+  SELECT 
+    *,
+    ROW_NUMBER() OVER (
+      PARTITION BY username_std 
+      ORDER BY recommendation_score DESC
+    ) as recommendation_rank,
+    
+    -- Human-readable reasoning
+    CONCAT(
+      'Optimal slot: ', timing_confidence, ' confidence timing (avg $', 
+      ROUND(timing_score, 2), ' RPM), ',
+      price_tier, ' pricing tier ($', suggested_price, '), ',
+      'fatigue safety: ', ROUND(fatigue_safety_score), '/100'
+    ) as recommendation_reason
+    
+  FROM scored_slots
+)
+
+SELECT 
+  username_std,
+  recommendation_date,
+  slot_ts as recommended_send_ts,
+  recommendation_rank,
+  recommendation_score,
+  timing_score,
+  price_tier,
+  suggested_price, 
+  fatigue_safety_score,
+  recommendation_reason
+  
+FROM ranked_recommendations  
+WHERE recommendation_rank <= 5  -- Top 5 per creator
+  AND recommendation_score > 0.3  -- Minimum quality threshold

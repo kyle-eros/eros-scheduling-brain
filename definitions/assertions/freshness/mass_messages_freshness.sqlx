@@ -1,0 +1,12 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "Mass messages must be fresh within 24 hours",
+  tags: ["data_quality", "freshness"]
+}
+
+SELECT 
+  MAX(sending_ts) as latest_message_ts,
+  TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(sending_ts), HOUR) as hours_lag
+FROM ${ref("mass_messages")}
+HAVING hours_lag > 24

@@ -1,0 +1,39 @@
+config {
+  type: "view",
+  schema: "eros_messaging_srv",
+  description: "Clean scheduler dashboard with assignments and warnings",
+  labels: {app: "eros", domain: "messaging", layer: "srv"},
+  tags: ["messaging_srv"],
+  dependencies: ["daily_recommendations"]
+}
+
+SELECT 
+  sa.scheduler_email,
+  r.username_std,
+  r.recommended_send_ts,
+  r.recommendation_rank,
+  r.suggested_price,
+  r.price_tier,
+  r.recommendation_reason,
+  
+  -- Fatigue warnings
+  CASE 
+    WHEN r.fatigue_safety_score < 30 THEN '🔴 HIGH FATIGUE RISK'
+    WHEN r.fatigue_safety_score < 60 THEN '🟡 MODERATE FATIGUE' 
+    ELSE '🟢 SAFE TO SEND'
+  END as fatigue_status,
+  
+  -- Quality indicators  
+  CASE 
+    WHEN r.recommendation_score >= 0.8 THEN '⭐⭐⭐ EXCELLENT'
+    WHEN r.recommendation_score >= 0.6 THEN '⭐⭐ GOOD'
+    WHEN r.recommendation_score >= 0.4 THEN '⭐ FAIR'
+    ELSE '⚠️ LOW CONFIDENCE'
+  END as opportunity_quality
+
+FROM ${ref("daily_recommendations")} r
+JOIN ${ref("scheduler_assignments_final")} sa
+  ON r.username_std = LOWER(TRIM(sa.username))
+WHERE r.recommendation_date = CURRENT_DATE()
+  AND r.recommendation_rank <= 3
+ORDER BY sa.scheduler_email, r.recommendation_score DESC

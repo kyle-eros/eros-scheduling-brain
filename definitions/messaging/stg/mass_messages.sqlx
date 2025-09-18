@@ -1,0 +1,67 @@
+config {
+  type: "incremental",
+  schema: "eros_messaging_stg", 
+  uniqueKey: ["message_sk"],
+  partitionBy: "sending_date",
+  clusterBy: ["username_std"],
+  requirePartitionFilter: true,
+  description: "Incremental mass messages with 14-day watermark",
+  labels: {app: "eros", domain: "messaging", layer: "stg"},
+  tags: ["messaging_stg"]
+}
+
+WITH 
+historical_messages AS (
+  SELECT 
+    FARM_FINGERPRINT(CONCAT(message_id, '_historical')) as message_sk,
+    LOWER(TRIM(sender)) as username_std,
+    PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sending_time) as sending_ts,
+    DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sending_time)) as sending_date,
+    CAST(REGEXP_REPLACE(price, r'[$,]', '') AS FLOAT64) as price,
+    CAST(sent AS FLOAT64) as sent_count,
+    CAST(viewed AS FLOAT64) as viewed_count, 
+    CAST(purchased AS FLOAT64) as purchased_count,
+    CAST(REGEXP_REPLACE(earnings, r'[$,]', '') AS FLOAT64) as earnings_total,
+    message_text,
+    'historical' as source_file,
+    CURRENT_TIMESTAMP() as loaded_at
+  FROM ${ref("mass_message_inactive_final")}
+  WHERE sending_time IS NOT NULL
+),
+
+daily_messages AS (
+  SELECT
+    FARM_FINGERPRINT(CONCAT(message_id, '_daily')) as message_sk,
+    LOWER(TRIM(sender)) as username_std,
+    PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sending_time) as sending_ts,
+    DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sending_time)) as sending_date,
+    CAST(REGEXP_REPLACE(price, r'[$,]', '') AS FLOAT64) as price,
+    CAST(sent AS FLOAT64) as sent_count,
+    CAST(viewed AS FLOAT64) as viewed_count,
+    CAST(purchased AS FLOAT64) as purchased_count, 
+    CAST(REGEXP_REPLACE(earnings, r'[$,]', '') AS FLOAT64) as earnings_total,
+    message_text,
+    'daily' as source_file,
+    CURRENT_TIMESTAMP() as loaded_at
+  FROM ${ref("mass_message_daily_final")}
+  WHERE sending_time IS NOT NULL
+),
+
+unified_messages AS (
+  SELECT * FROM historical_messages
+  UNION ALL 
+  SELECT * FROM daily_messages
+)
+
+SELECT * FROM unified_messages
+WHERE sending_date >= '2024-01-01'
+  
+${ when(incremental(), `
+  AND sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+  AND sending_ts > (SELECT MAX(sending_ts) FROM ${self()})
+`) }
+
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY message_sk 
+  ORDER BY loaded_at DESC
+) = 1
