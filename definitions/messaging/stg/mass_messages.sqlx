@@ -11,50 +11,59 @@ config {
 }
 
 WITH 
-messages_unioned AS (
-  SELECT 
-    message_id,
-    sender,
-    sending_time,
-    price,
-    sent,
-    viewed,
-    purchased,
-    earnings,
+historical_source AS (
+  -- Standardize the historical (facts) data to consistent types first
+  SELECT
+    CAST(message_id AS STRING) as message_id,
+    CAST(sender AS STRING) as sender,
+    CAST(sending_time AS STRING) as sending_time,
+    CAST(price AS STRING) as price,
+    SAFE_CAST(sent AS INT64) as sent,
+    SAFE_CAST(viewed AS INT64) as viewed,
+    SAFE_CAST(purchased AS INT64) as purchased,
+    CAST(earnings AS STRING) as earnings,
     message as message_text,
     'historical' as source_file
   FROM ${ref("facts_messages_all")}
+),
 
-  UNION ALL
-
+daily_source AS (
+  -- Standardize the daily data to the same consistent types
   SELECT
-    message_id,
-    sender,
-    sending_time,
-    price,
-    sent,
-    viewed,
-    purchased,
-    earnings,
+    CAST(message_id AS STRING) as message_id,
+    CAST(sender AS STRING) as sender,
+    CAST(sending_time AS STRING) as sending_time,
+    CAST(price AS STRING) as price,
+    SAFE_CAST(sent AS INT64) as sent,
+    SAFE_CAST(viewed AS INT64) as viewed,
+    SAFE_CAST(purchased AS INT64) as purchased,
+    CAST(earnings AS STRING) as earnings,
     message_text,
     'daily' as source_file
   FROM ${ref("mass_message_daily_final")}
 ),
 
+messages_unioned AS (
+  -- Now that schemas are identical, the UNION will work reliably
+  SELECT * FROM historical_source
+  UNION ALL
+  SELECT * FROM daily_source
+),
+
 messages_cleaned AS (
+  -- Perform final parsing on the clean, unified data
   SELECT
     FARM_FINGERPRINT(CONCAT(message_id, '_', source_file)) as message_sk,
     LOWER(TRIM(sender)) as username_std,
-    -- Robustly parse multiple timestamp formats
     COALESCE(
       SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', sending_time),
       SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sending_time)
     ) as sending_ts,
-    SAFE_CAST(REGEXP_REPLACE(CAST(price AS STRING), r'[$,]', '') AS FLOAT64) as price,
-    SAFE_CAST(sent AS FLOAT64) as sent_count,
-    SAFE_CAST(viewed AS FLOAT64) as viewed_count,
-    SAFE_CAST(purchased AS FLOAT64) as purchased_count, 
-    SAFE_CAST(REGEXP_REPLACE(CAST(earnings AS STRING), r'[$,]', '') AS FLOAT64) as earnings_total,
+    SAFE_CAST(REGEXP_REPLACE(price, r'[$,]', '') AS FLOAT64) as price,
+    sent as sent_count,
+    viewed as viewed_count,
+    purchased as purchased_count, 
+    SAFE_CAST(REGEXP_REPLACE(earnings, r'[$,]', '') AS FLOAT64) as earnings_total,
     message_text,
     source_file,
     CURRENT_TIMESTAMP() as loaded_at
