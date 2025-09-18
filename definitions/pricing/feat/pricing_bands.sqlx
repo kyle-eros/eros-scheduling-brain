@@ -28,7 +28,7 @@ creator_price_performance AS (
   FROM ${ref("messages_enriched")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
     AND price > 0
-  GROUP BY username_std, local_hour, local_day_of_week, price
+  GROUP BY username_std, local_hour, local_day_of_week
 )
 
 SELECT 
