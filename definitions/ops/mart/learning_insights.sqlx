@@ -70,9 +70,17 @@ fatigue_insights AS (
     END as insight_confidence
   FROM ${ref("fatigue_scores")}
   WHERE score_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+),
+
+all_insights AS (
+  SELECT * FROM timing_insights
+  UNION ALL
+  SELECT * FROM pricing_insights
+  UNION ALL
+  SELECT * FROM fatigue_insights
 )
 
-SELECT 
+SELECT
   insight_category,
   username_std,
   insight_date,
@@ -80,18 +88,13 @@ SELECT
   insight_value,
   insight_confidence,
   -- Quality scoring for insight prioritization
-  CASE 
+  CASE
     WHEN insight_confidence = 'HIGH' AND insight_value > 1.0 THEN 'ACTIONABLE'
     WHEN insight_confidence = 'MEDIUM' AND insight_value > 0.5 THEN 'REVIEW'
     ELSE 'MONITOR'
   END as insight_priority,
-  
+
   CURRENT_TIMESTAMP() as generated_at
 
-FROM timing_insights
-UNION ALL
-SELECT * FROM pricing_insights
-UNION ALL 
-SELECT * FROM fatigue_insights
-
+FROM all_insights
 WHERE insight_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)

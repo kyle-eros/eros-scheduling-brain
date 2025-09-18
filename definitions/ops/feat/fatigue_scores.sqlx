@@ -24,57 +24,68 @@ daily_volumes AS (
 ),
 
 rolling_patterns AS (
-  SELECT 
+  SELECT
     username_std,
     sending_date as score_date,
-    
+
     -- 7-day rolling metrics (PROBLEM 3: FATIGUE)
     AVG(messages_sent) OVER (
-      PARTITION BY username_std 
-      ORDER BY sending_date 
+      PARTITION BY username_std
+      ORDER BY sending_date
       ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
     ) as avg_daily_volume_7d,
-    
+
     AVG(daily_avg_rpm) OVER (
       PARTITION BY username_std
       ORDER BY sending_date
-      ROWS BETWEEN 6 PRECEDING AND CURRENT ROW  
+      ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
     ) as avg_rpm_7d,
-    
+
     -- Performance trend detection
     daily_avg_rpm - LAG(daily_avg_rpm, 7) OVER (
       PARTITION BY username_std ORDER BY sending_date
     ) as rpm_change_7d
-    
+
   FROM daily_volumes
+),
+
+scored_patterns AS (
+  SELECT
+    username_std,
+    score_date,
+    avg_daily_volume_7d,
+    avg_rpm_7d,
+    rpm_change_7d,
+
+    -- Fatigue risk scoring (0-100, higher = more risk)
+    LEAST(100, GREATEST(0,
+      50 + (avg_daily_volume_7d - 3) * 10 - COALESCE(rpm_change_7d * 20, 0)
+    )) as fatigue_risk_score
+  FROM rolling_patterns
 )
 
-SELECT 
+SELECT
   username_std,
   score_date,
   avg_daily_volume_7d,
   avg_rpm_7d,
   rpm_change_7d,
-  
-  -- Fatigue risk scoring (0-100, higher = more risk)
-  LEAST(100, GREATEST(0, 
-    50 + (avg_daily_volume_7d - 3) * 10 - (rpm_change_7d * 20)
-  )) as fatigue_risk_score,
-  
+  fatigue_risk_score,
+
   -- Recommendations
-  CASE 
+  CASE
     WHEN avg_daily_volume_7d >= 5 AND rpm_change_7d < -0.1 THEN 'REDUCE_VOLUME'
     WHEN avg_daily_volume_7d <= 1 AND rpm_change_7d > 0.1 THEN 'INCREASE_VOLUME'
     ELSE 'MAINTAIN'
   END as volume_recommendation,
-  
+
   -- Safe daily limits
-  CASE 
+  CASE
     WHEN fatigue_risk_score >= 80 THEN 1
     WHEN fatigue_risk_score >= 60 THEN 2
     WHEN fatigue_risk_score >= 40 THEN 3
     ELSE 4
   END as recommended_max_daily
 
-FROM rolling_patterns
+FROM scored_patterns
 WHERE score_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
