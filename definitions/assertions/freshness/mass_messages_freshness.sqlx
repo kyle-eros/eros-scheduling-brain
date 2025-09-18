@@ -5,8 +5,9 @@ config {
   tags: ["data_quality", "freshness"]
 }
 
-SELECT 
+SELECT
   MAX(sending_ts) as latest_message_ts,
   TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(sending_ts), HOUR) as hours_lag
 FROM ${ref("mass_messages")}
+WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
 HAVING hours_lag > 24
