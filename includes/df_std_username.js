@@ -1,7 +1,5 @@
-// Function to standardize username formatting
-function df_std_username(username_col) {
-  return `LOWER(TRIM(${username_col}))`;
-}
+// Import the function from includes/index.js
+const { df_std_username } = require('./index');
 
 // Make function available globally
 global.df_std_username = df_std_username;
