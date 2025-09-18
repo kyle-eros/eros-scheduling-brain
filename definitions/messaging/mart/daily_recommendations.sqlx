@@ -94,7 +94,9 @@ scored_slots AS (
     ON vs.username_std = pb.username_std  
     AND vs.slot_day_of_week = pb.local_day_of_week
     AND vs.slot_hour = pb.local_hour
-  LEFT JOIN ${ref("fatigue_scores")} fs
+  LEFT JOIN (
+    SELECT * FROM ${ref("fatigue_scores")} WHERE score_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  ) fs
     ON vs.username_std = fs.username_std
     AND DATE(vs.slot_ts) = fs.score_date
 ),
