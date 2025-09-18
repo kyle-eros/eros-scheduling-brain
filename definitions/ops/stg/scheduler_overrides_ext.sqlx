@@ -7,16 +7,14 @@ config {
   tags: ["ops_stg"]
 }
 
-/*
+-- This model is disabled because the source data is not available.
+-- It creates an empty table with the correct schema.
 SELECT 
-  FARM_FINGERPRINT(CONCAT(LOWER(TRIM(username)), '_', override_date)) as override_sk,
-  LOWER(TRIM(username)) as username_std,
-  DATE(override_date) as override_date,
-  override_type,
-  override_reason,
-  scheduler_email,
-  CURRENT_TIMESTAMP() as loaded_at
-FROM ${ref("scheduler_overrides_external")}
-WHERE username IS NOT NULL
-  AND override_date IS NOT NULL
-*/
+  CAST(NULL AS STRING) as override_sk,
+  CAST(NULL AS STRING) as username_std,
+  CAST(NULL AS DATE) as override_date,
+  CAST(NULL AS STRING) as override_type,
+  CAST(NULL AS STRING) as override_reason,
+  CAST(NULL AS STRING) as scheduler_email,
+  CAST(NULL AS TIMESTAMP) as loaded_at
+WHERE false
