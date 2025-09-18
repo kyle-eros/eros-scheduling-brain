@@ -10,19 +10,21 @@ config {
 
 WITH
 creator_price_bands AS (
-  SELECT
+  -- CTE 1: Calculate overall price percentiles for each creator.
+  -- Using DISTINCT gets us one row per creator with their price bands.
+  SELECT DISTINCT
     username_std,
-    MAX(PERCENTILE_CONT(price, 0.25) OVER (PARTITION BY username_std)) as price_p25,
-    MAX(PERCENTILE_CONT(price, 0.50) OVER (PARTITION BY username_std)) as price_p50,
-    MAX(PERCENTILE_CONT(price, 0.75) OVER (PARTITION BY username_std)) as price_p75,
-    MAX(PERCENTILE_CONT(price, 0.90) OVER (PARTITION BY username_std)) as price_p90
+    PERCENTILE_CONT(price, 0.25) OVER (PARTITION BY username_std) as price_p25,
+    PERCENTILE_CONT(price, 0.50) OVER (PARTITION BY username_std) as price_p50,
+    PERCENTILE_CONT(price, 0.75) OVER (PARTITION BY username_std) as price_p75,
+    PERCENTILE_CONT(price, 0.90) OVER (PARTITION BY username_std) as price_p90
   FROM ${ref("messages_enriched")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
     AND price > 0
-  GROUP BY username_std
 ),
 
 creator_hourly_performance AS (
+  -- CTE 2: Calculate performance metrics for each creator at each specific time slot.
   SELECT
     username_std,
     local_hour,
@@ -38,6 +40,7 @@ creator_hourly_performance AS (
     local_day_of_week
 )
 
+-- Final Step: Join the price bands and hourly performance data.
 SELECT
   hp.username_std,
   hp.local_hour,
