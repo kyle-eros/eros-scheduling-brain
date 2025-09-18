@@ -1,0 +1,16 @@
+config {
+  type: "table",
+  schema: "eros_core_dim",
+  description: "Authoritative creator timezone mapping (IANA)",
+  labels: {app: "eros", domain: "core", layer: "dim"},
+  tags: ["core_dim"]
+}
+
+SELECT 
+  FARM_FINGERPRINT(CONCAT(LOWER(TRIM(username)))) as creator_sk,
+  ${df_std_username('username')} as username_std,
+  COALESCE(timezone_iana, 'America/New_York') as timezone_iana,
+  CURRENT_TIMESTAMP() as loaded_at
+FROM ${ref("creator_statistics_final")}
+WHERE username IS NOT NULL
+QUALIFY ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(username)) ORDER BY snapshot_ts_utc DESC) = 1

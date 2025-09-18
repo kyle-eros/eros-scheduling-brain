@@ -1,8 +1,0 @@
-config {
-    type: "view",
-    schema: "dataform",
-    name: "example_view",
-    description: "An example view in Dataform"
-}
-
-select 1 as one

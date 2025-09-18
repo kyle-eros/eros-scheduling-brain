@@ -1,0 +1,41 @@
+config {
+  type: "table", 
+  schema: "eros_messaging_feat",
+  clusterBy: ["username_std"],
+  description: "Creator performance heatmap by hour/day for timing optimization",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  tags: ["messaging_feat"],
+  dependencies: ["messages_enriched"]
+}
+
+SELECT 
+  username_std,
+  local_day_of_week,
+  local_hour,
+  
+  -- Performance signals
+  AVG(rpm) as avg_rpm,
+  AVG(purchase_rate) as avg_purchase_rate,
+  AVG(view_rate) as avg_view_rate,
+  COUNT(*) as message_count,
+  SUM(sent_count) as total_sent,
+  SUM(earnings_total) as total_earnings,
+  
+  -- Confidence scoring
+  CASE 
+    WHEN COUNT(*) >= 10 THEN 'HIGH'
+    WHEN COUNT(*) >= 5 THEN 'MEDIUM' 
+    ELSE 'LOW'
+  END as confidence_level,
+  
+  -- Timing intelligence ranking
+  ROW_NUMBER() OVER (
+    PARTITION BY username_std 
+    ORDER BY AVG(rpm) DESC
+  ) as rpm_rank_for_creator
+
+FROM ${ref("messages_enriched")}
+WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+  AND rpm IS NOT NULL
+GROUP BY username_std, local_day_of_week, local_hour
+HAVING COUNT(*) >= 3  -- Minimum statistical significance
