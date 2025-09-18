@@ -1,0 +1,67 @@
+config {
+  type: "table",
+  schema: "eros_messaging_stg",
+  partitionBy: "loaded_date",
+  clusterBy: ["caption_type", "username_std"],
+  requirePartitionFilter: true,
+  description: "Caption bank data for content analysis and optimization",
+  labels: {app: "eros", domain: "messaging", layer: "stg"},
+  tags: ["messaging_stg"]
+}
+
+WITH 
+ppv_captions AS (
+  SELECT 
+    FARM_FINGERPRINT(CONCAT(caption_id, '_ppv')) as caption_sk,
+    LOWER(TRIM(username)) as username_std,
+    'PPV' as caption_type,
+    caption_text,
+    CURRENT_DATE() as loaded_date,
+    CURRENT_TIMESTAMP() as loaded_at
+  FROM ${ref("caption_bank_ppv_final")}
+  WHERE caption_text IS NOT NULL
+),
+
+tip_captions AS (
+  SELECT 
+    FARM_FINGERPRINT(CONCAT(caption_id, '_tip')) as caption_sk,
+    LOWER(TRIM(username)) as username_std,
+    'TIP' as caption_type,
+    caption_text,
+    CURRENT_DATE() as loaded_date,
+    CURRENT_TIMESTAMP() as loaded_at
+  FROM ${ref("caption_bank_tip_final")}
+  WHERE caption_text IS NOT NULL
+),
+
+renew_captions AS (
+  SELECT 
+    FARM_FINGERPRINT(CONCAT(caption_id, '_renew')) as caption_sk,
+    LOWER(TRIM(username)) as username_std,
+    'RENEW' as caption_type,
+    caption_text,
+    CURRENT_DATE() as loaded_date,
+    CURRENT_TIMESTAMP() as loaded_at
+  FROM ${ref("caption_bank_renew_final")}
+  WHERE caption_text IS NOT NULL
+),
+
+bump_captions AS (
+  SELECT 
+    FARM_FINGERPRINT(CONCAT(caption_id, '_bump')) as caption_sk,
+    LOWER(TRIM(username)) as username_std,
+    'BUMP' as caption_type,
+    caption_text,
+    CURRENT_DATE() as loaded_date,
+    CURRENT_TIMESTAMP() as loaded_at
+  FROM ${ref("caption_bank_bump_final")}
+  WHERE caption_text IS NOT NULL
+)
+
+SELECT * FROM ppv_captions
+UNION ALL
+SELECT * FROM tip_captions  
+UNION ALL
+SELECT * FROM renew_captions
+UNION ALL
+SELECT * FROM bump_captions
