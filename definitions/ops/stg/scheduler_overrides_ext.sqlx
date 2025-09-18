@@ -7,6 +7,7 @@ config {
   tags: ["ops_stg"]
 }
 
+/*
 SELECT 
   FARM_FINGERPRINT(CONCAT(LOWER(TRIM(username)), '_', override_date)) as override_sk,
   LOWER(TRIM(username)) as username_std,
@@ -18,3 +19,4 @@ SELECT
 FROM ${ref("scheduler_overrides_external")}
 WHERE username IS NOT NULL
   AND override_date IS NOT NULL
+*/
