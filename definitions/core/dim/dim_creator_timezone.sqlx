@@ -7,8 +7,8 @@ config {
 }
 
 SELECT 
-  FARM_FINGERPRINT(CONCAT(LOWER(TRIM(username)))) as creator_sk,
-  LOWER(TRIM(username)) as username_std,
+  FARM_FINGERPRINT(CONCAT(LOWER(TRIM(username_std)))) as creator_sk,
+  LOWER(TRIM(username_std)) as username_std,
   COALESCE(timezone_iana, 'America/New_York') as timezone_iana,
   CURRENT_TIMESTAMP() as loaded_at
 FROM ${ref("creator_statistics_final")}
