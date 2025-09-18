@@ -1,6 +1,6 @@
 config {
   type: "table",
-  schema: "eros_pricing_feat", 
+  schema: "eros_pricing_feat",
   clusterBy: ["username_std"],
   description: "Dynamic pricing bands based on performance data",
   labels: {app: "eros", domain: "pricing", layer: "feat"},
@@ -8,54 +8,59 @@ config {
   dependencies: ["messages_enriched"]
 }
 
-WITH 
-creator_price_performance AS (
-  SELECT 
+WITH
+creator_price_bands AS (
+  SELECT
     username_std,
-    local_hour,
-    local_day_of_week,
-    
-    -- Price band calculation
-    PERCENTILE_CONT(price, 0.25) OVER (PARTITION BY username_std) as price_p25,
-    PERCENTILE_CONT(price, 0.50) OVER (PARTITION BY username_std) as price_p50, 
-    PERCENTILE_CONT(price, 0.75) OVER (PARTITION BY username_std) as price_p75,
-    PERCENTILE_CONT(price, 0.90) OVER (PARTITION BY username_std) as price_p90,
-    
-    -- Revenue optimization
-    AVG(rpm) as avg_rpm,
-    CORR(price, purchased_count) as price_conversion_correlation
-    
+    MAX(PERCENTILE_CONT(price, 0.25) OVER (PARTITION BY username_std)) as price_p25,
+    MAX(PERCENTILE_CONT(price, 0.50) OVER (PARTITION BY username_std)) as price_p50,
+    MAX(PERCENTILE_CONT(price, 0.75) OVER (PARTITION BY username_std)) as price_p75,
+    MAX(PERCENTILE_CONT(price, 0.90) OVER (PARTITION BY username_std)) as price_p90
   FROM ${ref("messages_enriched")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
     AND price > 0
-  GROUP BY username_std, local_hour, local_day_of_week
+  GROUP BY username_std
+),
+
+creator_hourly_performance AS (
+  SELECT
+    username_std,
+    local_hour,
+    local_day_of_week,
+    AVG(rpm) as avg_rpm,
+    CORR(price, purchased_count) as price_conversion_correlation
+  FROM ${ref("messages_enriched")}
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
+    AND price > 0
+  GROUP BY
+    username_std,
+    local_hour,
+    local_day_of_week
 )
 
-SELECT 
-  username_std,
-  local_hour,
-  local_day_of_week,
-  
+SELECT
+  hp.username_std,
+  hp.local_hour,
+  hp.local_day_of_week,
+
   -- Dynamic pricing bands (SOLVES PROBLEM 2)
-  price_p25 as price_low,
-  price_p50 as price_medium,
-  price_p75 as price_high, 
-  price_p90 as price_premium,
-  
+  pb.price_p25 as price_low,
+  pb.price_p50 as price_medium,
+  pb.price_p75 as price_high,
+  pb.price_p90 as price_premium,
+
   -- Pricing intelligence
-  avg_rpm,
-  price_conversion_correlation,
-  
+  hp.avg_rpm,
+  hp.price_conversion_correlation,
+
   -- Band assignment logic
-  CASE 
-    WHEN avg_rpm >= 2.0 THEN 'PREMIUM'
-    WHEN avg_rpm >= 1.0 THEN 'HIGH'
-    WHEN avg_rpm >= 0.5 THEN 'MEDIUM'
+  CASE
+    WHEN hp.avg_rpm >= 2.0 THEN 'PREMIUM'
+    WHEN hp.avg_rpm >= 1.0 THEN 'HIGH'
+    WHEN hp.avg_rpm >= 0.5 THEN 'MEDIUM'
     ELSE 'LOW'
   END as recommended_price_tier
 
-FROM creator_price_performance
-QUALIFY ROW_NUMBER() OVER (
-  PARTITION BY username_std, local_hour, local_day_of_week 
-  ORDER BY avg_rpm DESC
-) = 1
+FROM creator_hourly_performance hp
+LEFT JOIN creator_price_bands pb
+  ON hp.username_std = pb.username_std
