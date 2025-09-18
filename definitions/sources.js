@@ -3,7 +3,7 @@ const raw_schema = "eros_source";
 
 // Messaging domain sources
 declare({schema: raw_schema, name: "mass_message_daily_final"});
-declare({schema: raw_schema, name: "mass_message_inactive_final"});
+declare({schema: raw_schema, name: "facts_messages_all"});
 declare({schema: raw_schema, name: "caption_bank_ppv_final"});
 declare({schema: raw_schema, name: "caption_bank_tip_final"});
 declare({schema: raw_schema, name: "caption_bank_renew_final"});

@@ -25,7 +25,7 @@ historical_messages AS (
     message_text,
     'historical' as source_file,
     CURRENT_TIMESTAMP() as loaded_at
-  FROM ${ref("mass_message_inactive_final")}
+  FROM ${ref("facts_messages_all")}
   WHERE sending_time IS NOT NULL
 ),
 
