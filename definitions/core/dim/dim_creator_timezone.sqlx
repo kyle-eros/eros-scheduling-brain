@@ -12,5 +12,5 @@ SELECT
   COALESCE(timezone_iana, 'America/New_York') as timezone_iana,
   CURRENT_TIMESTAMP() as loaded_at
 FROM ${ref("creator_statistics_final")}
-WHERE username IS NOT NULL
-QUALIFY ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(username)) ORDER BY snapshot_ts_utc DESC) = 1
+WHERE username_std IS NOT NULL
+QUALIFY ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(username_std)) ORDER BY snapshot_ts_utc DESC) = 1

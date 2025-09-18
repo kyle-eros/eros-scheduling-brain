@@ -2,7 +2,7 @@ config {
   type: "table",
   schema: "eros_messaging_stg",
   partitionBy: "loaded_date",
-  clusterBy: ["caption_type", "username_std"],
+  clusterBy: ["caption_type"],
   requirePartitionFilter: true,
   description: "Caption bank data for content analysis and optimization",
   labels: {app: "eros", domain: "messaging", layer: "stg"},
