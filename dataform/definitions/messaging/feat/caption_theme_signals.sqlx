@@ -1,0 +1,262 @@
+config {
+  type: "table",
+  schema: "eros_messaging_feat",
+  partitionBy: "tagged_date",
+  clusterBy: ["caption_type"],
+  requirePartitionFilter: true,
+  description: "Automated content themes, explicitness levels, and compliance flags for caption catalog",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  tags: ["messaging_feat", "caption_tagging"],
+  dependencies: ["captions"]
+}
+
+WITH caption_source AS (
+  SELECT
+    caption_sk,
+    caption_type,
+    caption_text,
+    LOWER(REGEXP_REPLACE(caption_text, r'[^a-z0-9\s]', ' ')) AS caption_text_clean,
+    CURRENT_DATE() AS tagged_date,
+    CURRENT_TIMESTAMP() AS tagged_at
+  FROM ${ref("captions")}
+),
+
+theme_config AS (
+  SELECT theme_label, priority, keyword
+  FROM UNNEST([
+    STRUCT('Soft Tease / Lingerie' AS theme_label, 10 AS priority, [
+      'lingerie','lace','stocking','stockings','garter','sheer','outfit','photo set','photoset','strip','striptease','strip tease','try on','dress up','boudoir'
+    ] AS keywords),
+    STRUCT('Slow Sensual / GFE' AS theme_label, 20 AS priority, [
+      'miss you','cuddle','romantic','love letter','slow burn','sensual','date night','girlfriend experience','gfe','soft kiss','spoil you','thinking of you'
+    ]),
+    STRUCT('JOI / Instruction' AS theme_label, 30 AS priority, [
+      'joi','instruction','edge','edging','stroke for me','jerk for me','countdown','dont cum','don t cum','look at me','hands free','finish with me','good boy'
+    ]),
+    STRUCT('Feet & Leg Focus' AS theme_label, 40 AS priority, [
+      'feet','foot','toes','soles','arches','heel','heels','foot job','footjob','stocking tease'
+    ]),
+    STRUCT('Booty Focus / Twerk' AS theme_label, 50 AS priority, [
+      'booty','twerk','peach','shake it','backshot','big butt','behind','ass jiggle'
+    ]),
+    STRUCT('Bust / Chest Focus' AS theme_label, 60 AS priority, [
+      'tits','boobs','topless','bare chest','cleavage','breast','nipple','nipples','titty','bust','rack'
+    ]),
+    STRUCT('Wet & Dripping' AS theme_label, 70 AS priority, [
+      'dripping','soaked','wet','juicy','drip','splash','flood','drenched'
+    ]),
+    STRUCT('Shower / Bath' AS theme_label, 80 AS priority, [
+      'shower','bathtub','bath','bubble bath','bathroom','steam','sauna','hot tub','jacuzzi'
+    ]),
+    STRUCT('Oil & Massage' AS theme_label, 90 AS priority, [
+      'oil','oiled','massage','lotion','glow','slick','greased'
+    ]),
+    STRUCT('Outdoor / Public Vibe' AS theme_label, 100 AS priority, [
+      'outdoor','outside','balcony','beach','garden','forest','public','sun kissed','poolside','hotel balcony','park','patio','sunshine','nature','vacation'
+    ]),
+    STRUCT('Solo Touch' AS theme_label, 110 AS priority, [
+      'touch myself','finger','fingering','solo play','self care','self play','self love','clit rub','clitoral','caress'
+    ]),
+    STRUCT('Toy Play (Hands)' AS theme_label, 120 AS priority, [
+      'toy','dildo','vibrator','wand','plug','rabbit','bullet','toy play','toy show','toy session','toy time'
+    ]),
+    STRUCT('Toy Play (Oral POV)' AS theme_label, 130 AS priority, [
+      'blow toy','suck toy','oral toy','deepthroat toy','mouth on toy','lick toy','pov bj toy','pov blowjob toy'
+    ]),
+    STRUCT('Toy Play (Anal)' AS theme_label, 140 AS priority, [
+      'anal toy','butt plug','backdoor play','anal play','booty play'
+    ]),
+    STRUCT('Machine / Advanced Toys' AS theme_label, 150 AS priority, [
+      'machine','auto toy','piston','automatic toy','stroker','saddle'
+    ]),
+    STRUCT('B/G Action' AS theme_label, 160 AS priority, [
+      'boyfriend','with my man','with him','with my guy','with my partner','with bae','couple content','sex tape','full tape','we had sex','we made love','he filmed me','with my love'
+    ]),
+    STRUCT('Oral on Partner' AS theme_label, 170 AS priority, [
+      'blowjob','bj','oral on him','sloppy bj','deepthroat','throat','face sitting','face sit','lick him','suck him','mouth on him'
+    ]),
+    STRUCT('G/G Action' AS theme_label, 180 AS priority, [
+      'girl on girl','g g','with my girl','with my bestie','with her','she and i','lesbian','gg content','bestie and i'
+    ]),
+    STRUCT('Group / Threesome' AS theme_label, 190 AS priority, [
+      'threesome','3some','triple','group fun','mmf','ffm','two girls one guy','two guys','foursome','swinger','double bj','both of us','two babes'
+    ]),
+    STRUCT('Creampie / Breeding Fantasy' AS theme_label, 200 AS priority, [
+      'creampie','breed','breeding','fill me up','breed me','impregnate','cream dump','finish inside','breed fantasy'
+    ]),
+    STRUCT('Anal with Partner' AS theme_label, 210 AS priority, [
+      'anal with him','he took me anal','backdoor with him','partner anal','anal scene','gave it up back there'
+    ]),
+    STRUCT('Voyeur / Exhibition' AS theme_label, 220 AS priority, [
+      'neighbors watching','people watching','didnt close the curtains','didn t close the curtains','public fun','voyeur','caught on camera','hotel balcony','parking lot','out in public','camera on us'
+    ]),
+    STRUCT('Power Exchange' AS theme_label, 230 AS priority, [
+      'power exchange','dominant','domme','submissive','obedient','command you','discipline','good boy','good girl','brat','tamer','collar','leash','obedience','control'
+    ]),
+    STRUCT('Spoil / Tribute' AS theme_label, 240 AS priority, [
+      'tip','tribute','spoil','cashapp','send a tip','buy me','treat me','first fan','winner tip'
+    ]),
+    STRUCT('Roleplay' AS theme_label, 250 AS priority, [
+      'roleplay','role play','teacher','student','nurse','maid','cosplay','costume','character','princess','gamer girl','schoolgirl','secretary','office play','dress up as','storyline'
+    ]),
+    STRUCT('Daddy / Princess Tone' AS theme_label, 260 AS priority, [
+      'daddy','good girl','princess','baby girl','babygirl','kitten','call me princess'
+    ]),
+    STRUCT('Holiday / Seasonal' AS theme_label, 270 AS priority, [
+      'christmas','halloween','valentine','easter','holiday','xmas','new year','thanksgiving','holiday special','black friday'
+    ]),
+    STRUCT('Travel / Luxury' AS theme_label, 280 AS priority, [
+      'hotel','suite','yacht','cruise','vacation','resort','spa','luxury','penthouse','jet','travel'
+    ]),
+    STRUCT('Gym / Fitness' AS theme_label, 290 AS priority, [
+      'gym','workout','yoga','squats','fitness','stretching','athletic','sweaty'
+    ]),
+    STRUCT('Food & Sensory' AS theme_label, 300 AS priority, [
+      'whipped cream','chocolate','ice cream','candy','honey','wine','cocktail','drink with me','snacks','food play','cake','kitchen fun','taste test','cocktail night'
+    ]),
+    STRUCT('Bundle / Mega Pack' AS theme_label, 310 AS priority, [
+      'bundle','mega pack','pack','collection','vault','library','folder','drop','batch','mix of','set of','20 videos','full series'
+    ]),
+    STRUCT('Conversation Starter' AS theme_label, 320 AS priority, [
+      'what are you up to','good morning','gm baby','question for you','what do you want to see','hey babe','still awake','you up','checking in'
+    ]),
+    STRUCT('Urgent / Last Chance' AS theme_label, 330 AS priority, [
+      'last chance','unlock before','expiring soon','ends tonight','only today','unsend','countdown','hurry','timer'
+    ]),
+    STRUCT('VIP / Loyalty' AS theme_label, 340 AS priority, [
+      'vip','loyal','renew','rebill','top fan','special list','exclusive for renew','renew on'
+    ]),
+    STRUCT('Freebie' AS theme_label, 350 AS priority, [
+      'free','no charge','on me','gift for you','free video','freebie','complimentary','my treat'
+    ])
+  ]) AS theme,
+  UNNEST(theme.keywords) AS keyword
+),
+
+explicit_config AS (
+  SELECT level_label, level_score, keyword
+  FROM UNNEST([
+    STRUCT('Suggestive' AS level_label, 1 AS level_score, [
+      'wink','tease','flirt','smile','chat','talk','conversation','hangout','miss you','thinking of you','sweet','cuddle','kiss'
+    ] AS keywords),
+    STRUCT('Playful' AS level_label, 2 AS level_score, [
+      'strip','topless','booty','peek','peekaboo','cleavage','bikini','lingerie','teasing'
+    ]),
+    STRUCT('Semi-Explicit' AS level_label, 3 AS level_score, [
+      'nude','naked','boobs','tits','ass','booty','wet','dripping','touch','finger','toy','vibrator','squirt','oil'
+    ]),
+    STRUCT('Explicit' AS level_label, 4 AS level_score, [
+      'sex','ride','doggy','cowgirl','missionary','blowjob','bj','oral','deepthroat','threesome','group','pov','finish','pounding'
+    ]),
+    STRUCT('Hardcore' AS level_label, 5 AS level_score, [
+      'creampie','breed','impregnate','dp','double penetration','gangbang','hard pounding','facefuck','gape'
+    ])
+  ]) AS lvl,
+  UNNEST(lvl.keywords) AS keyword
+),
+
+flag_keywords AS (
+  SELECT keyword
+  FROM UNNEST([
+    'choke','asphyx','slave','blood','knife','gun','kid','minor','teen','underage','forced','non consensual','chloroform','drugged','abduct','kidnap','violence','injure','hurt','painful','incest','taboo family'
+  ]) AS keyword
+),
+
+theme_matches AS (
+  SELECT
+    c.caption_sk,
+    c.caption_type,
+    theme.theme_label,
+    theme.priority,
+    theme.keyword
+  FROM caption_source c
+  JOIN theme_config theme
+    ON STRPOS(c.caption_text_clean, theme.keyword) > 0
+),
+
+theme_agg AS (
+  SELECT
+    caption_sk,
+    caption_type,
+    theme_label,
+    priority,
+    ARRAY_AGG(DISTINCT keyword ORDER BY keyword) AS matched_keywords,
+    ARRAY_LENGTH(ARRAY_AGG(DISTINCT keyword)) AS match_count
+  FROM theme_matches
+  GROUP BY caption_sk, caption_type, theme_label, priority
+),
+
+theme_ranked AS (
+  SELECT
+    t.*,
+    ROW_NUMBER() OVER (PARTITION BY caption_sk ORDER BY priority, match_count DESC, theme_label) AS theme_rank
+  FROM theme_agg t
+),
+
+explicit_matches AS (
+  SELECT
+    c.caption_sk,
+    c.caption_type,
+    lvl.level_label,
+    lvl.level_score,
+    lvl.keyword
+  FROM caption_source c
+  JOIN explicit_config lvl
+    ON STRPOS(c.caption_text_clean, lvl.keyword) > 0
+),
+
+explicit_agg AS (
+  SELECT
+    caption_sk,
+    caption_type,
+    level_label,
+    level_score,
+    ARRAY_AGG(DISTINCT keyword ORDER BY keyword) AS matched_keywords,
+    ARRAY_LENGTH(ARRAY_AGG(DISTINCT keyword)) AS match_count
+  FROM explicit_matches
+  GROUP BY caption_sk, caption_type, level_label, level_score
+),
+
+explicit_ranked AS (
+  SELECT
+    e.*,
+    ROW_NUMBER() OVER (PARTITION BY caption_sk ORDER BY level_score DESC, match_count DESC, level_label) AS level_rank
+  FROM explicit_agg e
+),
+
+flagged_captions AS (
+  SELECT DISTINCT
+    c.caption_sk
+  FROM caption_source c
+  JOIN flag_keywords fk
+    ON STRPOS(c.caption_text_clean, fk.keyword) > 0
+),
+
+final AS (
+  SELECT
+    c.caption_sk,
+    c.caption_type,
+    c.caption_text,
+    c.tagged_date,
+    c.tagged_at,
+    COALESCE(
+      (SELECT theme_label FROM theme_ranked WHERE caption_sk = c.caption_sk AND theme_rank = 1),
+      'General'
+    ) AS primary_theme,
+    ARRAY(SELECT theme_label FROM theme_ranked WHERE caption_sk = c.caption_sk AND theme_rank > 1 ORDER BY theme_rank) AS secondary_themes,
+    ARRAY(SELECT DISTINCT keyword FROM theme_matches WHERE caption_sk = c.caption_sk ORDER BY keyword) AS theme_keywords,
+    COALESCE(
+      (SELECT level_label FROM explicit_ranked WHERE caption_sk = c.caption_sk AND level_rank = 1),
+      CASE WHEN c.caption_type = 'BUMP' THEN 'Suggestive' ELSE 'Semi-Explicit' END
+    ) AS explicitness_level,
+    COALESCE(
+      (SELECT level_score FROM explicit_ranked WHERE caption_sk = c.caption_sk AND level_rank = 1),
+      CASE WHEN c.caption_type = 'BUMP' THEN 1 ELSE 3 END
+    ) AS explicitness_score,
+    ARRAY(SELECT DISTINCT keyword FROM explicit_matches WHERE caption_sk = c.caption_sk ORDER BY keyword) AS explicitness_keywords,
+    IFNULL((SELECT TRUE FROM flagged_captions WHERE caption_sk = c.caption_sk LIMIT 1), FALSE) AS needs_compliance_review
+  FROM caption_source c
+)
+
+SELECT *
+FROM final
