@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+body{font:14px/1.4 Arial;padding:12px}
+input,select,button{margin:6px 0;padding:6px}
+pre{background:#0b1020;color:#e2e8f0;padding:8px;border-radius:6px;overflow:auto;max-height:320px}
+label{display:block;margin-top:8px;color:#334155}
+</style></head><body>
+<h3>Ask EROS (live)</h3>
+<label>Creator <input id="creator" placeholder="creator_id"/></label>
+<label>Question
+  <select id="kind">
+    <option value="best_hours">Best hours next 7d</option>
+    <option value="fatigue_today">Fatigue today</option>
+    <option value="top_captions">Top captions (90d)</option>
+  </select>
+</label>
+<button onclick="go()">Ask</button>
+<pre id="out"></pre>
+<script>
+function go(){
+  const creator=document.getElementById('creator').value||'';
+  const kind=document.getElementById('kind').value;
+  google.script.run.withSuccessHandler(res=>{
+    document.getElementById('out').textContent=res;
+  }).qa(creator,kind);
+}
+</script>
+</body></html>
