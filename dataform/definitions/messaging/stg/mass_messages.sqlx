@@ -37,7 +37,7 @@ daily_source AS (
     SAFE_CAST(viewed AS INT64) as viewed,
     SAFE_CAST(purchased AS INT64) as purchased,
     CAST(earnings AS STRING) as earnings,
-    message_text,
+    message as message_text,
     'daily' as source_file
   FROM ${ref("mass_message_daily_final")}
   WHERE sending_time IS NOT NULL AND TRIM(sending_time) != ''
