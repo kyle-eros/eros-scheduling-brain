@@ -10,23 +10,27 @@ config {
   dependencies: ["mass_messages", "dim_creator_timezone"]
 }
 
-WITH 
-enriched_base AS (
-  SELECT 
+WITH timezone_context AS (
+  SELECT
     m.*,
-    -- Time intelligence (PROBLEM 1: TIMING CHAOS)
-    EXTRACT(HOUR FROM DATETIME(m.sending_ts, tz.timezone_iana)) as local_hour,
-    FORMAT_DATE('%A', DATETIME(m.sending_ts, tz.timezone_iana)) as local_day_of_week,
-    EXTRACT(DAYOFWEEK FROM DATETIME(m.sending_ts, tz.timezone_iana)) IN (1,7) as is_weekend,
-    
-    -- Performance metrics (PROBLEMS 2,5: PRICING & QUALITY)
-    SAFE_DIVIDE(m.purchased_count, m.sent_count) as purchase_rate,
-    SAFE_DIVIDE(m.earnings_total, m.sent_count) as rpm,
-    SAFE_DIVIDE(m.viewed_count, m.sent_count) as view_rate
-    
+    ${df_to_local('m.sending_ts', 'tz.timezone_iana')} AS local_sending_dt
   FROM ${ref("mass_messages")} m
   LEFT JOIN ${ref("dim_creator_timezone")} tz 
     ON m.username_std = tz.username_std
+),
+
+enriched_base AS (
+  SELECT 
+    tc.*,
+    EXTRACT(HOUR FROM tc.local_sending_dt) AS local_hour,
+    FORMAT_DATE('%A', DATE(tc.local_sending_dt)) AS local_day_of_week,
+    EXTRACT(DAYOFWEEK FROM DATE(tc.local_sending_dt)) IN (1, 7) AS is_weekend,
+
+    -- Performance metrics (PROBLEMS 2,5: PRICING & QUALITY)
+    ${df_safe_divide('tc.purchased_count', 'tc.sent_count', 0)} AS purchase_rate,
+    ${df_safe_divide('tc.earnings_total', 'tc.sent_count', 0)} AS rpm,
+    ${df_safe_divide('tc.viewed_count', 'tc.sent_count', 0)} AS view_rate
+  FROM timezone_context tc
 )
 
 SELECT * FROM enriched_base

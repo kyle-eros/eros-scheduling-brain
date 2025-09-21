@@ -12,7 +12,7 @@ config {
 WITH 
 ppv_captions AS (
   SELECT 
-    FARM_FINGERPRINT(CONCAT(caption_id, '_ppv')) as caption_sk,
+    ${df_mk_sk(["'CAPTION'", "'PPV'", "CAST(caption_id AS STRING)"])} as caption_sk,
     'PPV' as caption_type,
     caption_text,
     CURRENT_DATE() as loaded_date,
@@ -23,7 +23,7 @@ ppv_captions AS (
 
 tip_captions AS (
   SELECT 
-    FARM_FINGERPRINT(CONCAT(caption_id, '_tip')) as caption_sk,
+    ${df_mk_sk(["'CAPTION'", "'TIP'", "CAST(caption_id AS STRING)"])} as caption_sk,
     'TIP' as caption_type,
     caption_text,
     CURRENT_DATE() as loaded_date,
@@ -34,7 +34,7 @@ tip_captions AS (
 
 renew_captions AS (
   SELECT 
-    FARM_FINGERPRINT(CONCAT(caption_id, '_renew')) as caption_sk,
+    ${df_mk_sk(["'CAPTION'", "'RENEW'", "CAST(caption_id AS STRING)"])} as caption_sk,
     'RENEW' as caption_type,
     caption_text,
     CURRENT_DATE() as loaded_date,
@@ -45,7 +45,7 @@ renew_captions AS (
 
 bump_captions AS (
   SELECT 
-    FARM_FINGERPRINT(CONCAT(caption_id, '_bump')) as caption_sk,
+    ${df_mk_sk(["'CAPTION'", "'BUMP'", "CAST(caption_id AS STRING)"])} as caption_sk,
     'BUMP' as caption_type,
     caption_text,
     CURRENT_DATE() as loaded_date,

@@ -1,84 +1,190 @@
 # EROS Intelligence Engine - Dataform Pipeline
 
-This directory contains the Dataform transformations that power the EROS Intelligence Engine for revenue optimization.
+## Overview
+This Dataform pipeline processes messaging data for the EROS Intelligence Engine, solving 6 core problems:
+1. Timing Chaos - Optimizing message send times
+2. Pricing Paradox - Finding optimal pricing strategies
+3. Fatigue Factor - Preventing subscriber burnout
+4. Content Crisis - Improving message quality
+5. Quality Variance - Maintaining consistent performance
+6. Pattern Blindness - Identifying successful patterns
 
-## 🏗️ Architecture
+## Project Structure
 
-The pipeline is organized into layers following modern data engineering best practices:
-
-### 📁 Directory Structure
 ```
-definitions/
-├── core/              # Shared dimensions and core data
-│   └── dim/          # Dimension tables
-├── messaging/        # Message-related transformations
-│   ├── stg/         # Staging transformations
-│   ├── feat/        # Feature engineering
-│   ├── mart/        # Data marts
-│   └── srv/         # Service views/dashboards
-├── pricing/         # Pricing analytics
-├── ops/            # Operations and learning insights
-└── assertions/     # Data quality checks
+dataform/
+├── dataform.json          # Project configuration
+├── package.json           # Node dependencies
+├── index.js              # Main entry point
+├── includes/             # Custom JavaScript functions
+│   └── index.js          # Helper function definitions
+├── definitions/          # SQL transformations
+│   ├── sources.js        # Source table declarations
+│   ├── assertions/       # Data quality checks
+│   │   ├── accepted_values/
+│   │   ├── freshness/
+│   │   └── uniqueness/
+│   ├── core/            # Core dimension tables
+│   │   └── dim/
+│   ├── messaging/       # Messaging domain
+│   │   ├── stg/        # Staging layer
+│   │   ├── feat/       # Feature engineering
+│   │   ├── srv/        # Service layer
+│   │   └── mart/       # Data marts
+│   ├── ops/            # Operations domain
+│   │   ├── stg/
+│   │   ├── feat/
+│   │   └── mart/
+│   └── pricing/        # Pricing domain
+│       └── feat/
 ```
 
-## 🔄 Data Flow
+## Data Flow
 
-1. **Raw Data** → `eros_source.mass_message_daily_final` (from Gmail-ETL)
-2. **Staging** → `eros_messaging_stg.mass_messages` (cleaned & standardized)
-3. **Features** → `eros_messaging_feat.messages_enriched` (time features, metrics)
-4. **Marts** → `eros_messaging_mart.daily_recommendations` (ML-ready insights)
-5. **Services** → `eros_messaging_srv.scheduler_dashboard` (end-user views)
+1. **Sources** → Raw data from BigQuery tables (declared in sources.js)
+2. **Staging (stg)** → Cleaned and standardized data
+3. **Features (feat)** → Engineered features and calculations
+4. **Service (srv)** → Business logic and aggregations
+5. **Marts (mart)** → Final analytical outputs
 
-## 🎯 Key Models
+## Key Tables
 
-### Core Staging
-- **`mass_messages.sqlx`** - Main staging table that unions historical and daily data
-- **`captions.sqlx`** - Caption bank processing
+### Staging Layer
+- `mass_messages` - Incremental mass message data with 14-day watermark
+- `captions` - Unified caption bank across all message types
 
-### Feature Engineering
-- **`messages_enriched.sqlx`** - Adds time intelligence and performance metrics
-- **`creator_heatmap.sqlx`** - Audience engagement patterns
+### Feature Layer
+- `messages_enriched` - Messages with time features and performance metrics
+- `creator_heatmap` - Hourly performance patterns by creator
+- `caption_theme_signals` - Caption performance analysis
+- `fatigue_scores` - Subscriber engagement tracking
+- `pricing_bands` - Optimal pricing recommendations
 
-### Analytics & ML
-- **`daily_recommendations.sqlx`** - ML-powered sending recommendations
-- **`learning_insights.sqlx`** - Model training insights
-- **`fatigue_scores.sqlx`** - Audience fatigue detection
+### Mart Layer
+- `daily_recommendations` - Main output: ranked daily send recommendations
+- `learning_insights` - Analytical insights for continuous improvement
+- `scheduler_dashboard` - Dashboard-ready data for scheduling UI
 
-## 🚀 Getting Started
+## Setup Instructions
 
-1. **Setup Dataform workspace** with BigQuery connection
-2. **Pull this repository** into your Dataform workspace
-3. **Configure variables** in `dataform.json`:
-   ```json
-   {
-     "defaultDatabase": "your-project-id",
-     "vars": {
-       "raw_schema": "eros_source"
-     }
-   }
-   ```
-4. **Run compilation** to validate dependencies
-5. **Execute incremental runs** or full refresh as needed
+### 1. Prerequisites
+- Google Cloud Project: `of-scheduler-proj`
+- BigQuery dataset access to `eros_source`
+- Dataform CLI or Dataform Web UI access
 
-## 📊 Data Sources
+### 2. Initial Setup
+```bash
+# Install dependencies
+cd dataform
+npm install
 
-The pipeline expects these tables in `eros_source`:
-- `mass_message_daily_final` - Daily message data from Gmail-ETL
-- `facts_messages_all` - Historical message data
-- `creator_statistics_final` - Creator metrics
-- `scheduler_assignments_final` - Scheduler assignments
+# Compile the project
+dataform compile
 
-## 🔧 Configuration
+# Run all tables
+dataform run
+```
 
-Key configuration in `dataform.json`:
-- **defaultSchema**: `eros_messaging_stg` (staging layer)
-- **assertionSchema**: `eros_assertions` (data quality checks)
-- **defaultDatabase**: Your GCP project ID
-- **vars.raw_schema**: `eros_source` (source data location)
+### 3. Dataform Web UI Setup
+1. Connect your repository to Dataform
+2. Set up authentication with your Google Cloud project
+3. Configure the workspace with:
+   - Default database: `of-scheduler-proj`
+   - Default location: `US`
 
-## 📈 Performance Features
+### 4. Running the Pipeline
 
-- **Partitioning**: All models partitioned by date for performance
-- **Clustering**: Clustered by `username_std` for query optimization
-- **Incremental processing**: Staging models use 14-day watermarks
-- **Data quality**: Comprehensive assertions and freshness checks
+#### Option 1: Run All Tables
+```bash
+dataform run
+```
+
+#### Option 2: Run Specific Tags
+```bash
+# Run only staging tables
+dataform run --tags messaging_stg
+
+# Run only marts
+dataform run --tags messaging_mart
+```
+
+#### Option 3: Run with Dependencies
+```bash
+# Run a specific table and its dependencies
+dataform run --actions daily_recommendations --include-deps
+```
+
+### 5. Validate Locally
+```bash
+node dataform/validate.js
+```
+
+Running the validation script compiles the project, inspects dependency wiring, and prints a concise inventory of tables/assertions so you can confirm the build before deploying.
+
+## Data Quality Checks
+
+The pipeline includes assertions for:
+- **Uniqueness**: Ensures message_sk values are unique
+- **Freshness**: Validates data recency (< 2 days old)
+- **Accepted Values**: Checks price_tier values are valid
+
+Run assertions:
+```bash
+dataform run --tags data_quality
+```
+
+## Incremental Processing
+
+Key tables use incremental processing:
+- `mass_messages` - 14-day watermark for late-arriving data
+- Partition by `sending_date` for efficient queries
+- Clustering by `username_std` for performance
+
+## Custom Functions
+
+Available helper functions in `includes/index.js`:
+- `df_mk_sk()` - Deterministic surrogate key fingerprint built on a JSON struct
+- `df_safe_divide()` - Wrapper around SAFE_DIVIDE with configurable fallbacks
+- `df_std_username()` - Lowercases and sanitizes handles to join-safe tokens
+- `df_to_local()` - Render UTC timestamps as DATETIME/DATE/TIMESTAMP in timezone
+- `df_date_diff()` - DATE_DIFF helper with allowed units guardrails
+- `df_safe_cast_numeric()` - Removes formatting noise before SAFE_CAST to numeric
+
+## Monitoring & Maintenance
+
+### Daily Checks
+1. Verify source data freshness
+2. Check assertion results
+3. Monitor incremental processing
+
+### Weekly Tasks
+1. Review data quality metrics
+2. Analyze pipeline performance
+3. Update documentation as needed
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Partition filter required error**
+   - Always include a WHERE clause on partitioned tables
+   - Use `sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL X DAY)`
+
+2. **Missing source data**
+   - Verify source tables exist in `eros_source` dataset
+   - Check BigQuery permissions
+
+3. **Incremental processing gaps**
+   - Check the 14-day watermark is sufficient
+   - Verify no data arrives later than 14 days
+
+## Support
+
+For questions or issues:
+- Check Dataform logs in the web UI
+- Review BigQuery job history
+- Validate source data availability
+
+## Version History
+
+- v1.0 (2025-09-20) - Initial pipeline setup with 6-problem framework

@@ -1,5 +1,5 @@
-// EROS Intelligence Engine - Custom helper functions for Dataform models
-// These helpers keep SQLX files concise and consistent across the project.
+// EROS Intelligence Engine - Helper functions for Dataform models
+// These functions are made available globally to SQLX files
 
 const VALID_DATE_DIFF_UNITS = new Set([
   'MICROSECOND',
@@ -89,11 +89,20 @@ function df_safe_cast_numeric(columnExpression, targetType = 'NUMERIC') {
   return `SAFE_CAST(NULLIF(REGEXP_REPLACE(${columnExpression}, ${numericRegex}, ''), '') AS ${normalizedType})`;
 }
 
+// Export all functions globally for SQLX files
 module.exports = {
   df_mk_sk,
   df_safe_divide,
   df_std_username,
-  df_to_local,
+  df_to_local,  
   df_date_diff,
   df_safe_cast_numeric
 };
+
+// Also make them available globally
+global.df_mk_sk = df_mk_sk;
+global.df_safe_divide = df_safe_divide;
+global.df_std_username = df_std_username;
+global.df_to_local = df_to_local;
+global.df_date_diff = df_date_diff;
+global.df_safe_cast_numeric = df_safe_cast_numeric;
