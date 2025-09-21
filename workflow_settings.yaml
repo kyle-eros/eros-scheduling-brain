@@ -1,0 +1,6 @@
+defaultProject: of-scheduler-proj
+defaultDataset: eros_messaging_stg
+defaultAssertionDataset: eros_assertions
+defaultLocation: US
+vars:
+  raw_schema: eros_source
