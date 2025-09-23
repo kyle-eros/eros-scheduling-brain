@@ -19,6 +19,7 @@ WITH caption_source AS (
     CURRENT_DATE() AS tagged_date,
     CURRENT_TIMESTAMP() AS tagged_at
   FROM ${ref("captions")}
+  WHERE loaded_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
 ),
 
 theme_config AS (
