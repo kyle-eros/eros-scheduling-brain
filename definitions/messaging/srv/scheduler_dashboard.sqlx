@@ -33,7 +33,7 @@ SELECT
 
 FROM ${ref("daily_recommendations")} r
 JOIN ${ref("scheduler_assignments_final")} sa
-  ON r.username_std = ${df_std_username('sa.username_std')}
+  ON r.username_std = sa.username_std
 WHERE r.recommendation_date = CURRENT_DATE()
   AND r.recommendation_rank <= 3
 ORDER BY sa.scheduler_email, r.recommendation_score DESC

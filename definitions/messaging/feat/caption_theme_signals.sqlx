@@ -233,6 +233,43 @@ flagged_captions AS (
     ON STRPOS(c.caption_text_clean, fk.keyword) > 0
 ),
 
+primary_themes AS (
+  SELECT caption_sk, theme_label AS primary_theme
+  FROM theme_ranked
+  WHERE theme_rank = 1
+),
+
+secondary_themes_agg AS (
+  SELECT
+    caption_sk,
+    ARRAY_AGG(theme_label ORDER BY theme_rank) AS secondary_themes
+  FROM theme_ranked
+  WHERE theme_rank > 1
+  GROUP BY caption_sk
+),
+
+theme_keywords_agg AS (
+  SELECT
+    caption_sk,
+    ARRAY_AGG(DISTINCT keyword ORDER BY keyword) AS theme_keywords
+  FROM theme_matches
+  GROUP BY caption_sk
+),
+
+primary_explicit AS (
+  SELECT caption_sk, level_label AS explicitness_level, level_score AS explicitness_score
+  FROM explicit_ranked
+  WHERE level_rank = 1
+),
+
+explicit_keywords_agg AS (
+  SELECT
+    caption_sk,
+    ARRAY_AGG(DISTINCT keyword ORDER BY keyword) AS explicitness_keywords
+  FROM explicit_matches
+  GROUP BY caption_sk
+),
+
 final AS (
   SELECT
     c.caption_sk,
@@ -240,23 +277,26 @@ final AS (
     c.caption_text,
     c.tagged_date,
     c.tagged_at,
+    COALESCE(pt.primary_theme, 'General') AS primary_theme,
+    COALESCE(sta.secondary_themes, []) AS secondary_themes,
+    COALESCE(tka.theme_keywords, []) AS theme_keywords,
     COALESCE(
-      (SELECT theme_label FROM theme_ranked WHERE caption_sk = c.caption_sk AND theme_rank = 1),
-      'General'
-    ) AS primary_theme,
-    ARRAY(SELECT theme_label FROM theme_ranked WHERE caption_sk = c.caption_sk AND theme_rank > 1 ORDER BY theme_rank) AS secondary_themes,
-    ARRAY(SELECT DISTINCT keyword FROM theme_matches WHERE caption_sk = c.caption_sk ORDER BY keyword) AS theme_keywords,
-    COALESCE(
-      (SELECT level_label FROM explicit_ranked WHERE caption_sk = c.caption_sk AND level_rank = 1),
+      pe.explicitness_level,
       CASE WHEN c.caption_type = 'BUMP' THEN 'Suggestive' ELSE 'Semi-Explicit' END
     ) AS explicitness_level,
     COALESCE(
-      (SELECT level_score FROM explicit_ranked WHERE caption_sk = c.caption_sk AND level_rank = 1),
+      pe.explicitness_score,
       CASE WHEN c.caption_type = 'BUMP' THEN 1 ELSE 3 END
     ) AS explicitness_score,
-    ARRAY(SELECT DISTINCT keyword FROM explicit_matches WHERE caption_sk = c.caption_sk ORDER BY keyword) AS explicitness_keywords,
-    IFNULL((SELECT TRUE FROM flagged_captions WHERE caption_sk = c.caption_sk LIMIT 1), FALSE) AS needs_compliance_review
+    COALESCE(eka.explicitness_keywords, []) AS explicitness_keywords,
+    IFNULL(fc.caption_sk IS NOT NULL, FALSE) AS needs_compliance_review
   FROM caption_source c
+  LEFT JOIN primary_themes pt ON c.caption_sk = pt.caption_sk
+  LEFT JOIN secondary_themes_agg sta ON c.caption_sk = sta.caption_sk
+  LEFT JOIN theme_keywords_agg tka ON c.caption_sk = tka.caption_sk
+  LEFT JOIN primary_explicit pe ON c.caption_sk = pe.caption_sk
+  LEFT JOIN explicit_keywords_agg eka ON c.caption_sk = eka.caption_sk
+  LEFT JOIN flagged_captions fc ON c.caption_sk = fc.caption_sk
 )
 
 SELECT *
