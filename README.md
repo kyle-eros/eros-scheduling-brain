@@ -46,6 +46,58 @@ Automatically extracts OnlyFans mass message performance data from Infloww email
 
 ---
 
+The computations and factors involved in building the best 7-day templates for the EROS system include:
+
+1. Optimal Send Times:
+
+• Recommended Timing: BigQuery computes the optimal times for message sending based on historical performance data.
+
+• Reason Codes: Each recommended time slot is accompanied by a reason code explaining why it was chosen (e.g., peak hour, high demand).
+
+2. Fatigue Risk Management:
+
+• Fatigue Scoring: A fatigue score (0-100) is calculated based on the volume of messages sent in the past 7 days and their performance impact.
+
+• Risk Banding: Time slots are categorized into risk bands (e.g., safe, moderate, high risk) to prevent over-messaging.
+
+3. AI-Generated Pricing:
+
+• Dynamic Pricing: Calculations for recommended price points based on past revenue-per-message (RPM) and demand metrics.
+
+• Price Optimization: Ensures the price correlates with expected engagement and conversions.
+
+4. Data Enrichment:
+
+• Caption Recommendations: AI ranks captions based on their historical performance (engagement, RPM, etc.) and suggests the best ones for the given time slots.
+
+• Creator Heatmaps: Analyzes creator-specific engagement patterns to adjust timing dynamically.
+
+5. Content and Action Planning:
+
+• Action Types: Determines the type of message (e.g., PPV, Tip) to send during a specific time slot.
+
+• Preview and Customization: Includes previews of captions and allows for last-minute changes or overrides by schedulers.
+
+6. Real-Time Adjustments:
+
+• Time Randomization: Adds a ±15-minute variance to scheduled times to avoid messaging patterns.
+
+• Live Updates: Integrates real-time insights via the Google Sheets dashboard for dynamic scheduling decisions.
+
+7. Data Validation:
+
+• Deduplication: Ensures that no duplicate time slots or messages are planned.
+
+• Consistency Checks: Enforces data validation rules, such as permissible actions and statuses.
+
+8. Continuous Feedback Loop:
+
+• Learning from Results: The system collects performance data from executed schedules and feeds it back to improve future recommendations.
+
+• Manual Overrides: Allows schedulers to adjust plans, which are also analyzed for their impact.
+
+These computations are implemented through BigQuery queries, Dataform pipelines, and the Google Sheets dashboard, ensuring the scheduling templates are data-driven, optimized, and actionable.
+
 ## 🗄️ **STAGE 2: BIGQUERY DATA WAREHOUSE**
 *The Data Foundation*
 
