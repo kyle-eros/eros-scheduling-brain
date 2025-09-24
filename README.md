@@ -55,7 +55,7 @@ python main.py          # Incremental updates
 
 ### Stage 1: Data Ingestion 📧→🗃️
 **Gmail-ETL Pipeline** (`gmail-etl/`)
-- ✅ **20,645 rows processed** from 493 messages
+- ✅ **20,645 rows processed** from 493 mm stats files from infloww.com
 - ✅ **Deduplication working** - prevents duplicate data
 - ✅ **Real-time loading** to `eros_source.mass_message_daily_final`
 
