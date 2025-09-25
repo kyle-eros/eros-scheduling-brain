@@ -22,8 +22,8 @@ ppv_captions AS (
 ),
 
 tip_captions AS (
-  SELECT 
-    ${df_mk_sk(["'CAPTION'", "'TIP'", "CAST(caption_id AS STRING)"])} as caption_sk,
+  SELECT
+    ${df_mk_sk(["'CAPTION'", "'TIP'", "CAST(tip_campaign_id AS STRING)"])} as caption_sk,
     'TIP' as caption_type,
     caption_text,
     CURRENT_DATE() as loaded_date,
@@ -33,8 +33,8 @@ tip_captions AS (
 ),
 
 renew_captions AS (
-  SELECT 
-    ${df_mk_sk(["'CAPTION'", "'RENEW'", "CAST(caption_id AS STRING)"])} as caption_sk,
+  SELECT
+    ${df_mk_sk(["'CAPTION'", "'RENEW'", "CAST(renew_campaign_id AS STRING)"])} as caption_sk,
     'RENEW' as caption_type,
     caption_text,
     CURRENT_DATE() as loaded_date,

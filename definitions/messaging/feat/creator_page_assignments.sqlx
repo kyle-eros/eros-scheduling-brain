@@ -13,26 +13,26 @@ config {
 WITH page_type_detection AS (
   SELECT
     username_std,
-    subscription_price,
-    total_followers,
-    avg_weekly_revenue,
-    rebill_pct,
-    ppv_sends_7d,
-    ppv_buys_7d,
+    subscription_net as subscription_price,
+    following_count as total_followers,
+    total_earnings_net as avg_weekly_revenue,
+    renew_on_percent as rebill_pct,
+    message_net as ppv_sends_7d,
+    active_fans as ppv_buys_7d,
     CURRENT_DATE() as assignment_date,
 
     -- Page type detection based on subscription price
     CASE
-      WHEN subscription_price > 0 THEN 'PAID'
-      WHEN subscription_price = 0 OR subscription_price IS NULL THEN 'FREE'
+      WHEN subscription_net > 0 THEN 'PAID'
+      WHEN subscription_net = 0 OR subscription_net IS NULL THEN 'FREE'
     END as page_type,
 
     -- Calculate buy rate for performance metrics
-    SAFE_DIVIDE(ppv_buys_7d, GREATEST(ppv_sends_7d, 1)) as buy_rate,
+    SAFE_DIVIDE(active_fans, GREATEST(message_net, 1)) as buy_rate,
 
     -- Extract additional metrics
-    COALESCE(rebill_pct, 0) as rebill_rate,
-    COALESCE(avg_weekly_revenue, 0) as weekly_revenue
+    COALESCE(renew_on_percent, 0) as rebill_rate,
+    COALESCE(total_earnings_net, 0) as weekly_revenue
 
   FROM ${ref("creator_statistics_final")}
   WHERE username_std IS NOT NULL
