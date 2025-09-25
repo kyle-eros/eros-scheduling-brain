@@ -1,9 +1,7 @@
 config {
   type: "table",
   schema: "eros_messaging_feat",
-  partitionBy: "adjustment_date",
   clusterBy: ["page_handle", "adjustment_rule"],
-  requirePartitionFilter: true,
   description: "Weekly performance-based adjustments to tier baseline templates",
   labels: {app: "eros", domain: "messaging", layer: "feat"},
   tags: ["messaging_feat", "tier_adjustments"],

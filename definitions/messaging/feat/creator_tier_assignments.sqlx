@@ -1,9 +1,7 @@
 config {
   type: "table",
   schema: "eros_messaging_feat",
-  partitionBy: "assignment_date",
   clusterBy: ["username_std", "full_tier_assignment"],
-  requirePartitionFilter: true,
   description: "Creator tier assignments with page-type aware scoring and tier classification",
   labels: {app: "eros", domain: "messaging", layer: "feat"},
   tags: ["messaging_feat", "tier_assignments"],

@@ -1,9 +1,7 @@
 config {
   type: "table",
   schema: "eros_messaging_feat",
-  partitionBy: "assignment_date",
   clusterBy: ["username_std", "page_type"],
-  requirePartitionFilter: true,
   description: "Page type assignments for each creator with FREE/PAID/BOTH detection",
   labels: {app: "eros", domain: "messaging", layer: "feat"},
   tags: ["messaging_feat", "page_types"],
