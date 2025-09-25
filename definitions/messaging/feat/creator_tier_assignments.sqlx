@@ -187,4 +187,3 @@ SELECT
   'tier_assignment_v1' as assignment_version
 
 FROM final_tier_assignments
-ORDER BY tier_score DESC, username_std, page_type

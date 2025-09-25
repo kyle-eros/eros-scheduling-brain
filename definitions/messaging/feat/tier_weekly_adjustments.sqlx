@@ -241,4 +241,3 @@ SELECT
   adjustment_version
 
 FROM final_adjustments
-ORDER BY total_revenue_7d DESC, buy_rate DESC

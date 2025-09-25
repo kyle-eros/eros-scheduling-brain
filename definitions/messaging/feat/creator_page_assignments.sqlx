@@ -119,4 +119,3 @@ SELECT
 
 FROM final_assignments
 WHERE assignment_date = CURRENT_DATE()
-ORDER BY username_std, individual_page_type
