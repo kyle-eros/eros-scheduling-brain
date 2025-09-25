@@ -1,0 +1,192 @@
+config {
+  type: "table",
+  schema: "eros_messaging_feat",
+  partitionBy: "assignment_date",
+  clusterBy: ["username_std", "full_tier_assignment"],
+  requirePartitionFilter: true,
+  description: "Creator tier assignments with page-type aware scoring and tier classification",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  tags: ["messaging_feat", "tier_assignments"],
+  dependencies: ["creator_page_assignments"]
+}
+
+WITH tier_scoring AS (
+  SELECT
+    username_std,
+    page_handle,
+    page_type,
+    final_page_type,
+    messaging_strategy,
+    is_primary_page,
+    subscription_price,
+    total_followers,
+    weekly_revenue,
+    rebill_rate,
+    ppv_sends_7d,
+    ppv_buys_7d,
+    buy_rate,
+    assignment_date,
+
+    -- Calculate percentile ranks within page type groups
+    PERCENT_RANK() OVER (
+      PARTITION BY page_type
+      ORDER BY weekly_revenue
+    ) as revenue_pct,
+
+    PERCENT_RANK() OVER (
+      PARTITION BY page_type
+      ORDER BY total_followers
+    ) as followers_pct,
+
+    PERCENT_RANK() OVER (
+      PARTITION BY page_type
+      ORDER BY buy_rate
+    ) as buy_rate_pct,
+
+    -- Page-type specific tier scoring algorithms
+    CASE page_type
+      WHEN 'FREE' THEN
+        -- FREE pages: Emphasize conversion metrics and volume potential
+        0.45 * PERCENT_RANK() OVER (PARTITION BY page_type ORDER BY weekly_revenue) +
+        0.35 * PERCENT_RANK() OVER (PARTITION BY page_type ORDER BY buy_rate) +
+        0.20 * PERCENT_RANK() OVER (PARTITION BY page_type ORDER BY total_followers)
+      WHEN 'PAID' THEN
+        -- PAID pages: Emphasize revenue and retention
+        0.50 * PERCENT_RANK() OVER (PARTITION BY page_type ORDER BY weekly_revenue) +
+        0.30 * COALESCE(rebill_rate, 0) +
+        0.20 * PERCENT_RANK() OVER (PARTITION BY page_type ORDER BY total_followers)
+    END as tier_score,
+
+    -- Additional performance metrics for tier refinement
+    CASE
+      WHEN buy_rate >= 0.08 THEN 'high_converter'
+      WHEN buy_rate >= 0.05 THEN 'good_converter'
+      WHEN buy_rate >= 0.03 THEN 'average_converter'
+      ELSE 'low_converter'
+    END as conversion_performance,
+
+    CASE
+      WHEN weekly_revenue >= 2000 THEN 'high_earner'
+      WHEN weekly_revenue >= 1000 THEN 'good_earner'
+      WHEN weekly_revenue >= 500 THEN 'average_earner'
+      ELSE 'low_earner'
+    END as revenue_performance
+
+  FROM ${ref("creator_page_assignments")}
+  WHERE assignment_date = CURRENT_DATE()
+),
+
+tier_assignments AS (
+  SELECT
+    *,
+
+    -- Base tier calculation (A/B/C/D)
+    CASE
+      WHEN tier_score >= 0.85 THEN 'D'  -- Intensive (Top 15%)
+      WHEN tier_score >= 0.60 THEN 'C'  -- Established (Top 40%)
+      WHEN tier_score >= 0.35 THEN 'B'  -- Balanced (Top 65%)
+      ELSE 'A'                          -- Launch (Bottom 35%)
+    END as base_tier,
+
+    -- Full tier assignment with page type
+    CONCAT(
+      CASE
+        WHEN tier_score >= 0.85 THEN 'D'
+        WHEN tier_score >= 0.60 THEN 'C'
+        WHEN tier_score >= 0.35 THEN 'B'
+        ELSE 'A'
+      END,
+      '_',
+      page_type
+    ) as full_tier_assignment,
+
+    -- Tier confidence score
+    CASE
+      WHEN tier_score >= 0.85 OR tier_score < 0.35 THEN 'HIGH'
+      WHEN tier_score >= 0.75 OR tier_score < 0.45 THEN 'MEDIUM'
+      ELSE 'LOW'
+    END as tier_confidence,
+
+    -- Risk assessment
+    CASE
+      WHEN buy_rate < 0.02 AND weekly_revenue < 300 THEN 'HIGH_RISK'
+      WHEN buy_rate < 0.03 AND weekly_revenue < 500 THEN 'MEDIUM_RISK'
+      ELSE 'LOW_RISK'
+    END as performance_risk
+
+  FROM tier_scoring
+),
+
+-- Add tier descriptions and strategy recommendations
+final_tier_assignments AS (
+  SELECT
+    *,
+
+    -- Tier description
+    CASE full_tier_assignment
+      WHEN 'A_FREE' THEN 'Launch Free: 6-15 PPVs/day, conversion-focused, lower prices'
+      WHEN 'A_PAID' THEN 'Launch Paid: 3-8 PPVs/day, quality-focused, premium prices'
+      WHEN 'B_FREE' THEN 'Balanced Free: 6-12 PPVs/day, steady conversion strategy'
+      WHEN 'B_PAID' THEN 'Balanced Paid: 4-6 PPVs/day, retention-focused approach'
+      WHEN 'C_FREE' THEN 'Established Free: 8-15 PPVs/day, optimized conversion'
+      WHEN 'C_PAID' THEN 'Established Paid: 5-8 PPVs/day, premium retention'
+      WHEN 'D_FREE' THEN 'Intensive Free: 10-20 PPVs/day, high-volume conversion'
+      WHEN 'D_PAID' THEN 'Intensive Paid: 7-10 PPVs/day, VIP experience focus'
+      ELSE 'Unknown tier configuration'
+    END as tier_description,
+
+    -- Expected daily message range
+    CASE full_tier_assignment
+      WHEN 'A_FREE' THEN STRUCT(6 as min_daily, 15 as max_daily)
+      WHEN 'A_PAID' THEN STRUCT(3 as min_daily, 8 as max_daily)
+      WHEN 'B_FREE' THEN STRUCT(6 as min_daily, 12 as max_daily)
+      WHEN 'B_PAID' THEN STRUCT(4 as min_daily, 6 as max_daily)
+      WHEN 'C_FREE' THEN STRUCT(8 as min_daily, 15 as max_daily)
+      WHEN 'C_PAID' THEN STRUCT(5 as min_daily, 8 as max_daily)
+      WHEN 'D_FREE' THEN STRUCT(10 as min_daily, 20 as max_daily)
+      WHEN 'D_PAID' THEN STRUCT(7 as min_daily, 10 as max_daily)
+      ELSE STRUCT(3 as min_daily, 6 as max_daily)
+    END as daily_message_range
+
+  FROM tier_assignments
+)
+
+SELECT
+  username_std,
+  page_handle,
+  page_type,
+  final_page_type,
+  messaging_strategy,
+  is_primary_page,
+  base_tier,
+  full_tier_assignment,
+  tier_score,
+  tier_confidence,
+  tier_description,
+  daily_message_range.min_daily as min_daily_messages,
+  daily_message_range.max_daily as max_daily_messages,
+
+  -- Performance metrics
+  revenue_pct,
+  followers_pct,
+  buy_rate_pct,
+  conversion_performance,
+  revenue_performance,
+  performance_risk,
+
+  -- Raw data for reference
+  subscription_price,
+  total_followers,
+  weekly_revenue,
+  rebill_rate,
+  ppv_sends_7d,
+  ppv_buys_7d,
+  buy_rate,
+  assignment_date,
+
+  -- Metadata
+  CURRENT_TIMESTAMP() as created_at,
+  'tier_assignment_v1' as assignment_version
+
+FROM final_tier_assignments
+ORDER BY tier_score DESC, username_std, page_type

@@ -1,0 +1,246 @@
+config {
+  type: "table",
+  schema: "eros_messaging_feat",
+  partitionBy: "adjustment_date",
+  clusterBy: ["page_handle", "adjustment_rule"],
+  requirePartitionFilter: true,
+  description: "Weekly performance-based adjustments to tier baseline templates",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  tags: ["messaging_feat", "tier_adjustments"],
+  dependencies: ["creator_tier_assignments", "messages_enriched"]
+}
+
+WITH weekly_performance AS (
+  SELECT
+    CONCAT(cta.username_std,
+           CASE WHEN cta.page_type != cta.final_page_type
+           THEN CONCAT('_', LOWER(cta.page_type))
+           ELSE '' END) as page_handle,
+    cta.username_std,
+    cta.page_type,
+    cta.full_tier_assignment,
+    cta.base_tier,
+    CURRENT_DATE() as adjustment_date,
+
+    -- Performance metrics over last 7 days
+    COUNT(me.message_id) as messages_sent_7d,
+    SUM(me.revenue_usd) as total_revenue_7d,
+    AVG(me.revenue_usd) as avg_revenue_per_message,
+    SUM(me.purchased_count) as total_purchases_7d,
+    SUM(me.sent_count) as total_recipients_7d,
+    SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as buy_rate,
+
+    -- Revenue per message (RPM)
+    SAFE_DIVIDE(SUM(me.revenue_usd), COUNT(me.message_id)) as rpm_current,
+
+    -- Compare to previous 7 days for trend analysis
+    LAG(SAFE_DIVIDE(SUM(me.revenue_usd), COUNT(me.message_id)), 1) OVER (
+      PARTITION BY cta.username_std, cta.page_type
+      ORDER BY DATE_TRUNC(me.sending_date, WEEK)
+    ) as rpm_previous_week,
+
+    -- Weekend vs weekday performance
+    AVG(CASE WHEN EXTRACT(DAYOFWEEK FROM me.sending_date) IN (1, 7)
+             THEN me.revenue_usd ELSE NULL END) as weekend_avg_rpm,
+    AVG(CASE WHEN EXTRACT(DAYOFWEEK FROM me.sending_date) NOT IN (1, 7)
+             THEN me.revenue_usd ELSE NULL END) as weekday_avg_rpm,
+
+    -- Unsubscribe tracking (if available)
+    COUNTIF(me.message_type = 'unsub') as unsubscribes_7d,
+    SAFE_DIVIDE(COUNTIF(me.message_type = 'unsub'), SUM(me.sent_count)) as unsub_rate
+
+  FROM ${ref("creator_tier_assignments")} cta
+  LEFT JOIN ${ref("messages_enriched")} me
+    ON cta.username_std = me.username_std
+    AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+    AND me.sending_date < CURRENT_DATE()
+  WHERE cta.assignment_date = CURRENT_DATE()
+  GROUP BY 1,2,3,4,5,6
+),
+
+performance_analysis AS (
+  SELECT
+    *,
+
+    -- Calculate trend direction
+    CASE
+      WHEN rpm_previous_week IS NULL THEN 'new'
+      WHEN rpm_current > rpm_previous_week * 1.1 THEN 'up'
+      WHEN rpm_current < rpm_previous_week * 0.9 THEN 'down'
+      ELSE 'stable'
+    END as rpm_trend,
+
+    -- Weekend boost calculation
+    SAFE_DIVIDE(weekend_avg_rpm, GREATEST(weekday_avg_rpm, 0.01)) as weekend_boost_ratio,
+
+    -- Performance flags
+    CASE
+      WHEN buy_rate >= 0.08 THEN 'high_converter'
+      WHEN buy_rate >= 0.05 THEN 'good_converter'
+      WHEN buy_rate >= 0.03 THEN 'average_converter'
+      ELSE 'low_converter'
+    END as conversion_tier,
+
+    CASE
+      WHEN unsub_rate > 0.08 THEN 'high_churn'
+      WHEN unsub_rate > 0.05 THEN 'moderate_churn'
+      ELSE 'low_churn'
+    END as churn_tier
+
+  FROM weekly_performance
+),
+
+adjustment_rules AS (
+  SELECT
+    *,
+
+    -- Determine adjustment rules based on performance
+    CASE
+      -- Rule 1: High performance - add volume
+      WHEN buy_rate >= 0.07 AND rpm_trend = 'up' THEN 'add_mid_slot_afternoon'
+
+      -- Rule 2: Low performance - reduce volume and pricing
+      WHEN buy_rate < 0.04 THEN 'reduce_ppv_and_price'
+
+      -- Rule 3: High retention creator - add thankyou freebies
+      WHEN buy_rate >= 0.06 AND churn_tier = 'low_churn' THEN 'add_thankyou_freebie'
+
+      -- Rule 4: High churn - reduce volume and step down prices
+      WHEN churn_tier = 'high_churn' THEN 'reduce_volume_step_down_prices'
+
+      -- Rule 5: Strong weekend performance - add weekend premium
+      WHEN weekend_boost_ratio > 1.15 AND weekend_avg_rpm > weekday_avg_rpm THEN 'add_weekend_premium'
+
+      -- Rule 6: Trending down - conservative approach
+      WHEN rpm_trend = 'down' AND buy_rate < 0.05 THEN 'conservative_approach'
+
+      -- Default: maintain baseline
+      ELSE 'maintain_baseline'
+    END as adjustment_rule,
+
+    -- Calculate specific numeric adjustments
+    CASE
+      WHEN buy_rate >= 0.07 AND rpm_trend = 'up' THEN 1  -- Add 1 slot
+      WHEN buy_rate < 0.04 THEN -1                       -- Remove 1 slot
+      WHEN churn_tier = 'high_churn' THEN -1             -- Remove 1 slot
+      WHEN rpm_trend = 'down' AND buy_rate < 0.05 THEN -1 -- Remove 1 slot
+      ELSE 0                                              -- No change
+    END as daily_quota_adjustment,
+
+    CASE
+      WHEN buy_rate < 0.04 THEN -5.0                     -- Reduce prices by $5
+      WHEN churn_tier = 'high_churn' THEN -5.0           -- Reduce prices by $5
+      WHEN rpm_trend = 'down' AND buy_rate < 0.05 THEN -3.0 -- Reduce prices by $3
+      ELSE 0.0                                            -- No price change
+    END as price_adjustment_usd,
+
+    -- Weekend-specific adjustments
+    CASE
+      WHEN weekend_boost_ratio > 1.15 AND weekend_avg_rpm > weekday_avg_rpm THEN 1
+      ELSE 0
+    END as weekend_premium_slots_adjustment,
+
+    -- Special content adjustments
+    CASE
+      WHEN buy_rate >= 0.06 AND churn_tier = 'low_churn' THEN TRUE
+      ELSE FALSE
+    END as add_thankyou_content
+
+  FROM performance_analysis
+),
+
+final_adjustments AS (
+  SELECT
+    page_handle,
+    username_std,
+    page_type,
+    full_tier_assignment,
+    base_tier,
+    adjustment_date,
+    adjustment_rule,
+
+    -- Performance metrics
+    buy_rate,
+    rpm_current,
+    rpm_trend,
+    weekend_boost_ratio,
+    conversion_tier,
+    churn_tier,
+    messages_sent_7d,
+    total_revenue_7d,
+
+    -- Adjustment values
+    daily_quota_adjustment,
+    price_adjustment_usd,
+    weekend_premium_slots_adjustment,
+    add_thankyou_content,
+
+    -- Adjustment reasoning
+    CASE adjustment_rule
+      WHEN 'add_mid_slot_afternoon' THEN
+        CONCAT('High performance: Buy rate ', ROUND(buy_rate * 100, 1), '% with upward trend. Adding afternoon slot.')
+      WHEN 'reduce_ppv_and_price' THEN
+        CONCAT('Low performance: Buy rate ', ROUND(buy_rate * 100, 1), '%. Reducing volume and pricing.')
+      WHEN 'add_thankyou_freebie' THEN
+        CONCAT('High retention: Buy rate ', ROUND(buy_rate * 100, 1), '% with low churn. Adding thankyou content.')
+      WHEN 'reduce_volume_step_down_prices' THEN
+        CONCAT('High churn: ', ROUND(unsub_rate * 100, 1), '% unsub rate. Reducing volume and prices.')
+      WHEN 'add_weekend_premium' THEN
+        CONCAT('Weekend boost: ', ROUND((weekend_boost_ratio - 1) * 100, 1), '% higher weekend RPM. Adding premium slots.')
+      WHEN 'conservative_approach' THEN
+        CONCAT('Declining trend: RPM down with ', ROUND(buy_rate * 100, 1), '% buy rate. Conservative approach.')
+      ELSE 'Performance stable - maintaining baseline tier configuration.'
+    END as adjustment_reasoning,
+
+    -- Confidence in adjustment
+    CASE
+      WHEN messages_sent_7d >= 20 AND ABS(daily_quota_adjustment) <= 1 THEN 'HIGH'
+      WHEN messages_sent_7d >= 10 AND ABS(daily_quota_adjustment) <= 2 THEN 'MEDIUM'
+      ELSE 'LOW'
+    END as adjustment_confidence,
+
+    -- Meta
+    CURRENT_TIMESTAMP() as created_at,
+    'tier_adjustment_v1' as adjustment_version
+
+  FROM adjustment_rules
+  WHERE adjustment_rule != 'maintain_baseline'  -- Only store active adjustments
+)
+
+SELECT
+  page_handle,
+  username_std,
+  page_type,
+  full_tier_assignment,
+  base_tier,
+  adjustment_date,
+  adjustment_rule,
+  adjustment_reasoning,
+  adjustment_confidence,
+
+  -- Performance context
+  buy_rate,
+  rpm_current,
+  rpm_trend,
+  weekend_boost_ratio,
+  conversion_tier,
+  churn_tier,
+  messages_sent_7d,
+  total_revenue_7d,
+
+  -- Adjustments to apply
+  daily_quota_adjustment,
+  price_adjustment_usd,
+  weekend_premium_slots_adjustment,
+  add_thankyou_content,
+
+  -- Validity period (adjustments active for 7 days)
+  adjustment_date as valid_from_date,
+  DATE_ADD(adjustment_date, INTERVAL 7 DAY) as valid_until_date,
+
+  -- Meta
+  created_at,
+  adjustment_version
+
+FROM final_adjustments
+ORDER BY total_revenue_7d DESC, buy_rate DESC

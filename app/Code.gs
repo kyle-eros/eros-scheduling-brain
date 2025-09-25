@@ -5,6 +5,7 @@ const DEFAULTS = {
   TZ: 'America/Denver',
   VIEWS: {
     WEEK_SLOTS: 'eros_core.vw_week_slots_7d_rbac',
+    DAILY_RECOMMENDATIONS: 'eros_messaging_mart.daily_recommendations',
     CAPTION_RANK: 'mart.caption_rank_next24_v3_tbl',
     BRIEF: 'sheets.v_daily_brief_user_flat',
     ALERTS: 'mart.v_weekly_feasibility_alerts'
@@ -89,6 +90,8 @@ function onOpen(){
     .addSeparator()
     .addItem('📤 Submit Ready/Sent','submitPlan')
     .addItem('❓ Ask EROS (sidebar)','openAskSidebar')
+    .addSeparator()
+    .addItem('🔧 Test BigQuery Connection','testBigQueryConnection')
     .addToUi();
   ensureTabs_(cfg);
 }
@@ -123,22 +126,22 @@ function ensureTabs_(cfg){
     const need = [live.SHEETS.WEEK, live.SHEETS.DAY, live.SHEETS.BANK, live.SHEETS.SOP, live.SHEETS.BRIEF, live.SHEETS.ALERTS, live.SHEETS.LOG];
     need.forEach(n=>{ if (!ss.getSheetByName(n)) ss.insertSheet(n); });
 
-    // Week headers/format
+    // Week headers/format (updated for tier system)
     const wk = ss.getSheetByName(live.SHEETS.WEEK);
-    wk.getRange(1,1,1,12).setValues([['Date','Day','Creator','Page','Type','Time','Price','$ Why','Fatigue','CaptionID','Preview','Status']]);
-    wk.setFrozenRows(1); wk.setColumnWidths(1,12,120); wk.setColumnWidth(7,80);
+    wk.getRange(1,1,1,16).setValues([['Date','Day','Creator','Page Handle','Page Type','Tier','Strategy','Time','Price','Daily Limit','Fatigue','CaptionID','Preview','Status','Adjustment','Window']]);
+    wk.setFrozenRows(1); wk.setColumnWidths(1,16,100); wk.setColumnWidth(9,80); wk.setColumnWidth(13,200);
 
-    // Day headers/format
+    // Day headers/format (updated for tier system)
     const day = ss.getSheetByName(live.SHEETS.DAY);
-    day.getRange(1,1,1,12).setValues([['Time','Creator','Page','Type','Price','CaptionID','Preview','Status','Notes','Hash','HOD','Rank']]);
-    day.setFrozenRows(1); day.setColumnWidths(1,12,120); day.setColumnWidth(7,300);
+    day.getRange(1,1,1,16).setValues([['Time','Creator','Page Handle','Page Type','Tier','Price','CaptionID','Preview','Status','Notes','Hash','HOD','Rank','Window','Adjustment','Limit']]);
+    day.setFrozenRows(1); day.setColumnWidths(1,16,100); day.setColumnWidth(8,200);
 
-    // **V1.1: Data validation for Status (H column)**
+    // **V1.2: Data validation for Status (I column for new layout)**
     const rule = SpreadsheetApp.newDataValidation()
       .requireValueInList(['Planned','Ready','Sent','Skipped'], true)
       .setAllowInvalid(false)
       .build();
-    day.getRange('H2:H').setDataValidation(rule);
+    day.getRange('I2:I').setDataValidation(rule);
 
   }catch(e){
     console.error('ensureTabs_ error:', e);
@@ -157,50 +160,123 @@ function loadMyWeek(){
   try{
     const email = activeEmail_(cfg);
     const sql = `
-      SELECT creator_id, plan_date,
-        FORMAT_TIME('%H:%M', recommended_time) AS hhmm,
-        COALESCE(action_type,'PPV') AS action_type,
-        recommended_price_usd, reason_time_code, fatigue_risk_band
-      FROM 
-${cfg.PROJECT}.${cfg.VIEWS.WEEK_SLOTS}
-      WHERE LOWER(scheduler_email)=LOWER('${email}')
-      ORDER BY creator_id, plan_date, hhmm`;
+      WITH scheduler_assignments AS (
+        SELECT DISTINCT username_std, page_handle
+        FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments_final\`
+        WHERE LOWER(scheduler_email) = LOWER('${email}')
+      )
+      SELECT
+        dr.username_std as creator_id,
+        DATE(dr.recommended_send_ts) as plan_date,
+        FORMAT_TIMESTAMP('%H:%M', dr.recommended_send_ts) AS hhmm,
+        'PPV' as action_type,
+        dr.page_handle,
+        dr.page_type,
+        dr.full_tier_assignment,
+        dr.messaging_strategy,
+        dr.suggested_price as recommended_price_usd,
+        dr.daily_limit,
+        CASE
+          WHEN dr.fatigue_safety_score < 30 THEN '🔴 HIGH'
+          WHEN dr.fatigue_safety_score < 60 THEN '🟡 MOD'
+          ELSE '🟢 SAFE'
+        END as fatigue_risk_band,
+        CASE WHEN dr.in_tier_window THEN '✅' ELSE '⚠️' END as tier_window_indicator,
+        dr.adjustment_rule
+      FROM \`${cfg.PROJECT}.${cfg.VIEWS.DAILY_RECOMMENDATIONS}\` dr
+      INNER JOIN scheduler_assignments sa ON dr.page_handle = sa.page_handle
+      WHERE dr.recommendation_date >= CURRENT_DATE()
+        AND dr.recommendation_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 6 DAY)
+      ORDER BY dr.page_handle, dr.recommended_send_ts`;
+
     const rows = _rows(_bq(sql, cfg));
     const out = rows.map(r=>{
-      const d=new Date(r.plan_date+'T00:00:00');
-      const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-      return [r.plan_date, day, r.creator_id, 'main', r.action_type, r.hhmm,
-              Number(r.recommended_price_usd||0), r.reason_time_code||'', r.fatigue_risk_band||'',
-              '', '', 'Planned'];
+      const d = new Date(r.plan_date + 'T00:00:00');
+      const day = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+      return [
+        r.plan_date,
+        day,
+        r.creator_id,
+        r.page_handle || 'main',
+        r.page_type || 'UNKNOWN',
+        r.full_tier_assignment || 'UNKNOWN',
+        r.messaging_strategy || '',
+        r.hhmm,
+        Number(r.recommended_price_usd || 0),
+        r.daily_limit || 0,
+        r.fatigue_risk_band || '',
+        '', // CaptionID (empty for now)
+        '', // Preview (empty for now)
+        'Planned',
+        r.adjustment_rule === 'maintain_baseline' ? '' : r.adjustment_rule,
+        r.tier_window_indicator || ''
+      ];
     });
-    const wk=SpreadsheetApp.getActive().getSheetByName(cfg.SHEETS.WEEK);
-    wk.getRange(2,1,Math.max(0,wk.getLastRow()-1),12).clearContent();
-    if (out.length) wk.getRange(2,1,out.length,12).setValues(out);
-    wk.getRange(2,7,Math.max(out.length,1),1).setNumberFormat('$0.00');
-    SpreadsheetApp.getActive().toast(`Loaded ${out.length} weekly rows for ${email}`);
+
+    const wk = SpreadsheetApp.getActive().getSheetByName(cfg.SHEETS.WEEK);
+    wk.getRange(2,1,Math.max(0,wk.getLastRow()-1),16).clearContent();
+    if (out.length) wk.getRange(2,1,out.length,16).setValues(out);
+    wk.getRange(2,9,Math.max(out.length,1),1).setNumberFormat('$0.00');
+    SpreadsheetApp.getActive().toast(`Loaded ${out.length} tier-aware weekly rows for ${email}`);
   }catch(e){
     console.error('Error in loadMyWeek:', e);
     SpreadsheetApp.getUi().alert('Could not load weekly data. Please try again. If this persists, contact support.');
   }
 }
 
-/** ====== day board ====== */
+/** ====== day board (updated for tier system) ====== */
 function loadDayBoard(){
-  const cfg=getCfg_();
+  const cfg = getCfg_();
   try{
-    const ss=SpreadsheetApp.getActive(), wk=ss.getSheetByName(cfg.SHEETS.WEEK), day=ss.getSheetByName(cfg.SHEETS.DAY);
-    const vals=wk.getRange(2,1,Math.max(0,wk.getLastRow()-1),12).getValues();
-    const today=_fmtDate(new Date(), cfg), tomorrow=_fmtDate(new Date(Date.now()+86400000), cfg);
-    const keep=vals.filter(r=> [today,tomorrow].includes(_fmtDate(r[0], cfg)));
-    const out=keep.map(r=>{
-      const creator=String(r[2]||''), timeStr=String(r[5]||'00:00');
-      const hod=parseInt(timeStr.split(':')[0],10)||0;
-      const hash=_hash([creator,_fmtDate(r[0],cfg),timeStr,r[4]].join('|'));
-      return [ timeStr, creator, r[3]||'main', r[4]||'PPV', Number(r[6]||0), '', '', 'Planned', '', hash, hod, '' ];
+    const ss = SpreadsheetApp.getActive();
+    const wk = ss.getSheetByName(cfg.SHEETS.WEEK);
+    const day = ss.getSheetByName(cfg.SHEETS.DAY);
+
+    // Get all values from week tab (now 16 columns)
+    const vals = wk.getRange(2, 1, Math.max(0, wk.getLastRow()-1), 16).getValues();
+    const today = _fmtDate(new Date(), cfg);
+    const tomorrow = _fmtDate(new Date(Date.now() + 86400000), cfg);
+
+    // Filter for today and tomorrow only
+    const keep = vals.filter(r => [today, tomorrow].includes(_fmtDate(r[0], cfg)));
+
+    const out = keep.map(r => {
+      const creator = String(r[2] || '');
+      const pageHandle = String(r[3] || 'main');
+      const pageType = String(r[4] || 'UNKNOWN');
+      const tier = String(r[5] || 'UNKNOWN');
+      const timeStr = String(r[7] || '00:00');
+      const hod = parseInt(timeStr.split(':')[0], 10) || 0;
+      const hash = _hash([pageHandle, _fmtDate(r[0], cfg), timeStr, 'PPV'].join('|'));
+      const adjustment = String(r[14] || '');
+      const window = String(r[15] || '');
+      const dailyLimit = r[9] || 0;
+
+      return [
+        timeStr,           // Time
+        creator,           // Creator
+        pageHandle,        // Page Handle
+        pageType,          // Page Type
+        tier,              // Tier
+        Number(r[8] || 0), // Price
+        '',                // CaptionID (empty for now)
+        '',                // Preview (empty for now)
+        'Planned',         // Status
+        '',                // Notes
+        hash,              // Hash
+        hod,               // HOD
+        '',                // Rank
+        window,            // Window
+        adjustment,        // Adjustment
+        dailyLimit         // Limit
+      ];
     });
-    day.getRange(2,1,Math.max(0,day.getLastRow()-1),12).clearContent();
-    if (out.length) day.getRange(2,1,out.length,12).setValues(out);
-    day.getRange(2,5,Math.max(out.length,1),1).setNumberFormat('$0.00');
+
+    day.getRange(2, 1, Math.max(0, day.getLastRow()-1), 16).clearContent();
+    if (out.length) day.getRange(2, 1, out.length, 16).setValues(out);
+    day.getRange(2, 6, Math.max(out.length, 1), 1).setNumberFormat('$0.00');
+
+    SpreadsheetApp.getActive().toast(`Loaded ${out.length} tier-aware day board items`);
   }catch(e){
     console.error('Error in loadDayBoard:', e);
     SpreadsheetApp.getUi().alert('Could not load day board. Please try again.');
@@ -326,6 +402,21 @@ function submitPlan(){
   }catch(e){
     console.error('submitPlan error:', e);
     SpreadsheetApp.getUi().alert('Could not submit plan. Please try again.');
+  }
+}
+
+/** ====== testing & debugging ====== */
+function testBigQueryConnection(){
+  try {
+    const cfg = getCfg_();
+    const testSql = `SELECT COUNT(*) as row_count FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments_final\``;
+    const result = _bq(testSql, cfg);
+    const rows = _rows(result);
+    SpreadsheetApp.getUi().alert(`BigQuery Test: Found ${rows[0].row_count} scheduler assignments`);
+    return true;
+  } catch (e) {
+    SpreadsheetApp.getUi().alert(`BigQuery Error: ${e.toString()}`);
+    return false;
   }
 }
 

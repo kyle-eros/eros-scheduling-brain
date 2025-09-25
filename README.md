@@ -12,80 +12,6 @@ The EROS Scheduling Brain is an intelligent, automated data pipeline that transf
     ↑                                                                                    ↓
     └────────────────────── CONTINUOUS FEEDBACK LOOP ──────────────────────────────────┘
 ```
-💡 THE 6 CORE PROBLEMS WE'RE SOLVING FOR EROS
-
-🔴 Problem 1: Timing Chaos
-
-Current State: Schedulers manually guess when to send messages, missing peak engagement windows
-
-💊 EROS Solution:
-
-🕐 Creator Heatmaps: AI identifies optimal hours for each performer
-📊 Historical Analysis: 90+ days of performance data per time slot
-🎯 Confidence Scoring: HIGH/MEDIUM/LOW confidence ratings
-⚡ Real-time Recommendations: Live BigQuery queries for instant insights
-📈 Impact: Improves message open rates and conversions by identifying optimal send times
-
-🔴 Problem 2: Pricing Blindness
-
-Current State: Static $10-20 pricing ignores demand variations and fan willingness to pay
-
-💊 EROS Solution:
-
-💎 Dynamic Pricing Tiers: PREMIUM ($25+), HIGH ($20-25), MEDIUM ($15-20), LOW (<$15)
-📊 Demand Analysis: Price recommendations based on time slot performance
-🎯 Revenue Per Message: Optimizes for total earnings, not just conversions
-⚡ Live Price Suggestions: Real-time pricing in Google Sheets dashboard
-📈 Impact: Increases Revenue Per Message (RPM) through dynamic pricing optimization
-
-🔴 Problem 3: Message Fatigue
-
-Current State: Over-messaging causes unsubscribes; under-messaging leaves money on the table
-
-💊 EROS Solution:
-
-📉 Fatigue Risk Scoring: 0-100 scale based on 7-day sending patterns
-🚦 Visual Warnings: 🔴 HIGH RISK, 🟡 MODERATE, 🟢 SAFE indicators
-📊 Performance Correlation: Tracks RPM decline vs. message frequency
-🎯 Safe Daily Limits: 1-4 messages per day based on creator risk profile
-📈 Impact: Reduces unsubscribes by preventing over-messaging while maintaining revenue
-
-🔴 Problem 4: Content Repetition
-
-Current State: Same captions used repeatedly, making pages feel robotic
-
-💊 EROS Solution:
-
-🧠 AI Caption Ranking: Performance-based content recommendations
-🎯 Context-Aware Selection: Best captions for specific times and creators
-📊 Performance Tracking: RPM, engagement, and style scores for each caption
-⚡ One-Click Picker: Instant access to top 10 captions in dashboard
-📈 Impact: Improves click-through rates with fresh, time-appropriate content
-
-🔴 Problem 5: Inconsistent Quality
-
-Current State: Performance varies wildly between schedulers and shifts
-
-💊 EROS Solution:
-
-📱 Standardized Interface: Every scheduler uses the same Google Sheets workflow
-🎯 Visual Quality Indicators: ⭐⭐⭐ EXCELLENT to ⚠️ LOW CONFIDENCE ratings
-🛡️ Built-in Guardrails: Data validation prevents mistakes
-📋 Complete Audit Trail: Every action logged for accountability
-📈 Impact: Ensures every page gets the same high-quality scheduling approach
-
-🔴 Problem 6: No Learning Loop
-
-Current State: No way to know what actually drives revenue or learn from successes
-
-💊 EROS Solution:
-
-🔄 Continuous Data Collection: Every send tracked with performance outcomes
-🧠 Pattern Recognition: AI identifies what works and scales successful strategies
-📊 Success Metrics: Tracks scheduler overrides and their performance impact
-⚡ Real-time Adaptation: System improves recommendations based on latest results
-📈 Impact: System learns from every send AND from successful human overrides, getting smarter over time
-
 
 ---
 
@@ -119,7 +45,6 @@ Automatically extracts OnlyFans mass message performance data from Infloww email
 - ❌ **Format Inconsistencies**: Standardizes all data formats
 
 ---
-
 
 ## 🗄️ **STAGE 2: BIGQUERY DATA WAREHOUSE**
 *The Data Foundation*
@@ -584,8 +509,59 @@ Team members use dashboard insights to make informed scheduling and content deci
 
 ---
 
+## 💡 **THE 6 CORE PROBLEMS WE'RE SOLVING FOR EROS**
 
-**
+### 🔴 **Problem 1: Timing Chaos**
+**Current State:** Schedulers manually guess when to send messages, missing peak engagement windows
+
+**💊 EROS Solution:**
+- **🕐 Creator Heatmaps**: AI identifies optimal hours for each performer
+- **📊 Historical Analysis**: 90+ days of performance data per time slot
+- **🎯 Confidence Scoring**: HIGH/MEDIUM/LOW confidence ratings
+- **⚡ Real-time Recommendations**: Live BigQuery queries for instant insights
+
+**📈 Impact:** Improves message open rates and conversions by identifying optimal send times
+
+---
+
+### 🔴 **Problem 2: Pricing Blindness**
+**Current State:** Static $10-20 pricing ignores demand variations and fan willingness to pay
+
+**💊 EROS Solution:**
+- **💎 Dynamic Pricing Tiers**: PREMIUM ($25+), HIGH ($20-25), MEDIUM ($15-20), LOW (<$15)
+- **📊 Demand Analysis**: Price recommendations based on time slot performance
+- **🎯 Revenue Per Message**: Optimizes for total earnings, not just conversions
+- **⚡ Live Price Suggestions**: Real-time pricing in Google Sheets dashboard
+
+**📈 Impact:** Increases Revenue Per Message (RPM) through dynamic pricing optimization
+
+---
+
+### 🔴 **Problem 3: Message Fatigue**
+**Current State:** Over-messaging causes unsubscribes; under-messaging leaves money on the table
+
+**💊 EROS Solution:**
+- **📉 Fatigue Risk Scoring**: 0-100 scale based on 7-day sending patterns
+- **🚦 Visual Warnings**: 🔴 HIGH RISK, 🟡 MODERATE, 🟢 SAFE indicators
+- **📊 Performance Correlation**: Tracks RPM decline vs. message frequency
+- **🎯 Safe Daily Limits**: 1-4 messages per day based on creator risk profile
+
+**📈 Impact:** Reduces unsubscribes by preventing over-messaging while maintaining revenue
+
+---
+
+### 🔴 **Problem 4: Content Repetition**
+**Current State:** Same captions used repeatedly, making pages feel robotic
+
+**💊 EROS Solution:**
+- **🧠 AI Caption Ranking**: Performance-based content recommendations
+- **🎯 Context-Aware Selection**: Best captions for specific times and creators
+- **📊 Performance Tracking**: RPM, engagement, and style scores for each caption
+- **⚡ One-Click Picker**: Instant access to top 10 captions in dashboard
+
+**📈 Impact:** Improves click-through rates with fresh, time-appropriate content
+
+---
 
 ### 🔴 **Problem 5: Inconsistent Quality**
 **Current State:** Performance varies wildly between schedulers and shifts
