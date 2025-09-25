@@ -21,31 +21,31 @@ WITH weekly_performance AS (
     CURRENT_DATE() as adjustment_date,
 
     -- Performance metrics over last 7 days
-    COUNT(me.message_id) as messages_sent_7d,
-    SUM(me.revenue_usd) as total_revenue_7d,
-    AVG(me.revenue_usd) as avg_revenue_per_message,
+    COUNT(me.message_sk) as messages_sent_7d,
+    SUM(me.earnings_total) as total_revenue_7d,
+    AVG(me.earnings_total) as avg_revenue_per_message,
     SUM(me.purchased_count) as total_purchases_7d,
     SUM(me.sent_count) as total_recipients_7d,
     SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as buy_rate,
 
     -- Revenue per message (RPM)
-    SAFE_DIVIDE(SUM(me.revenue_usd), COUNT(me.message_id)) as rpm_current,
+    SAFE_DIVIDE(SUM(me.earnings_total), COUNT(me.message_sk)) as rpm_current,
 
     -- Compare to previous 7 days for trend analysis
-    LAG(SAFE_DIVIDE(SUM(me.revenue_usd), COUNT(me.message_id)), 1) OVER (
+    LAG(SAFE_DIVIDE(SUM(me.earnings_total), COUNT(me.message_sk)), 1) OVER (
       PARTITION BY cta.username_std, cta.page_type
       ORDER BY DATE_TRUNC(me.sending_date, WEEK)
     ) as rpm_previous_week,
 
     -- Weekend vs weekday performance
     AVG(CASE WHEN EXTRACT(DAYOFWEEK FROM me.sending_date) IN (1, 7)
-             THEN me.revenue_usd ELSE NULL END) as weekend_avg_rpm,
+             THEN me.earnings_total ELSE NULL END) as weekend_avg_rpm,
     AVG(CASE WHEN EXTRACT(DAYOFWEEK FROM me.sending_date) NOT IN (1, 7)
-             THEN me.revenue_usd ELSE NULL END) as weekday_avg_rpm,
+             THEN me.earnings_total ELSE NULL END) as weekday_avg_rpm,
 
-    -- Unsubscribe tracking (if available)
-    COUNTIF(me.message_type = 'unsub') as unsubscribes_7d,
-    SAFE_DIVIDE(COUNTIF(me.message_type = 'unsub'), SUM(me.sent_count)) as unsub_rate
+    -- Unsubscribe tracking (placeholder - no message_type field available)
+    0 as unsubscribes_7d,
+    0.0 as unsub_rate
 
   FROM ${ref("creator_tier_assignments")} cta
   LEFT JOIN ${ref("messages_enriched")} me
