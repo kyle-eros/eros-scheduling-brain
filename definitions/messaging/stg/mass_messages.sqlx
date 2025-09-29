@@ -81,7 +81,7 @@ WHERE sending_date >= DATE '2024-01-01'
   
 ${ when(incremental(), `
   AND sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
-  AND sending_ts > (SELECT MAX(sending_ts) FROM ${self()})
+  AND sending_ts > (SELECT MAX(sending_ts) FROM ${self()} WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY))
 `) }
 
 QUALIFY ROW_NUMBER() OVER (

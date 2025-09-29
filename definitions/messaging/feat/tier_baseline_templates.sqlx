@@ -38,9 +38,9 @@ SELECT * FROM UNNEST([
 
     -- RENEWAL CAMPAIGN SCHEDULE (Mandatory)
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -96,9 +96,9 @@ SELECT * FROM UNNEST([
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY (Higher prices for paid pages)
@@ -153,9 +153,9 @@ SELECT * FROM UNNEST([
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -209,9 +209,9 @@ SELECT * FROM UNNEST([
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -265,9 +265,9 @@ SELECT * FROM UNNEST([
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -323,9 +323,9 @@ SELECT * FROM UNNEST([
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -381,9 +381,9 @@ SELECT * FROM UNNEST([
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -439,9 +439,9 @@ SELECT * FROM UNNEST([
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY (Highest prices for VIP tier)

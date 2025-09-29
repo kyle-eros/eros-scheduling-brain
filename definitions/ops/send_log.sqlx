@@ -10,6 +10,10 @@ config {
   tags: ["ops", "logging", "scheduler"]
 }
 
+pre_operations {
+  DROP TABLE IF EXISTS ${self()}
+}
+
 -- This creates the ops logging table structure
 -- It will be populated by the Apps Script when schedulers take actions
 
