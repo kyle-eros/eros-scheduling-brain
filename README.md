@@ -215,24 +215,23 @@ Google Sheets interface where our team interacts with the AI recommendations.
 
 ## Team Structure
 
-### Our 13 Schedulers and Their Assignments
+### Scheduler Assignments
 
-| Scheduler | Email | Creators | Total Pages |
-|-----------|-------|----------|-------------|
-| Lead SD | leadsd@erosops.com | Chloe, Delia | 2 |
-| MOCHI | mochi@erosops.com | Kassie (both pages) | 2 |
-| LYN | lyn@erosops.com | Scarlett, Aurora, Stormii, Sophia | 4 |
-| PAM | pam@erosops.com | Ms. Lexa (both), Alex | 3 |
-| JAY | jay@erosops.com | Grace (both), Corvette, Talia | 4 |
-| KEVIN A | kevina@erosops.com | Mia H, Carmen | 2 |
-| MAYETTE | mayette@erosops.com | Jade B, Jade V, Lola | 3 |
-| CHU | chu@erosops.com | Olivia (both), Taylor, Aspyn | 4 |
-| AC | ac@erosops.com | Madison, Selena, Cali, Mia F | 4 |
-| GEORGE | george@erosops.com | Tessa T, Dianna, Tessa D | 3 |
-| STAN | stan@erosops.com | Tessa Th (both), Francesca, Adrianna, Neenah | 5 |
-| JOHN | john@erosops.com | Jade W, Ann, Isabelle, Kayleigh, Nora | 5 |
+| Scheduler | Assigned Creators | Total Pages |
+|-----------|-------------------|-------------|
+| MOCHI | Kassie (both pages) | 2 |
+| LYN | Scarlett, Aurora, Stormii, Sophia | 4 |
+| PAM | Ms. Lexa (both), Alex | 3 |
+| JAY | Grace (both), Corvette, Talia | 4 |
+| KEVIN | Mia H, Carmen | 2 |
+| MAYETTE | Jade B, Jade V, Lola | 3 |
+| CHU | Olivia (both), Taylor, Aspyn | 4 |
+| AC | Madison, Selena, Cali, Mia F | 4 |
+| GEORGE | Tessa T, Dianna, Tessa D | 3 |
+| STAN | Tessa Th (both), Francesca, Adrianna, Neenah | 5 |
+| JOHN | Jade W, Ann, Isabelle, Kayleigh, Nora | 5 |
 
-Each scheduler has their own personalized dashboard showing only their assigned creators.
+**Access Management**: All schedulers access the system through the Google Group `eros-schedulers-bq@erosops.com`. Each scheduler selects their name from a dropdown in the dashboard to view their personalized assignments.
 
 ---
 

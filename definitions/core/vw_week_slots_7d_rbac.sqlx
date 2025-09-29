@@ -4,7 +4,7 @@ config {
   description: "7-day weekly slots with scheduler RBAC assignments",
   labels: {app: "eros", domain: "core", layer: "view"},
   tags: ["core", "rbac", "scheduling"],
-  dependencies: ["daily_recommendations", "scheduler_assignments_final"]
+  dependencies: ["daily_recommendations", "scheduler_assignments"]
 }
 
 WITH next_7_days AS (
@@ -17,11 +17,11 @@ WITH next_7_days AS (
 
 scheduler_creator_mapping AS (
   SELECT
-    sa.string_field_0 as scheduler_email,
-    sa.string_field_1 as creator_id
-  FROM ${ref("scheduler_assignments_final")} sa
-  WHERE sa.string_field_0 IS NOT NULL
-    AND sa.string_field_1 IS NOT NULL
+    sa.scheduler_code,
+    sa.creator_username as creator_id
+  FROM ${ref("scheduler_assignments")} sa
+  WHERE sa.scheduler_code IS NOT NULL
+    AND sa.creator_username IS NOT NULL
 ),
 
 extended_recommendations AS (
@@ -61,7 +61,7 @@ extended_recommendations AS (
 -- Generate slots for all 7 days for each creator
 all_creator_days AS (
   SELECT
-    scm.scheduler_email,
+    scm.scheduler_code,
     scm.creator_id,
     nd.plan_date
   FROM scheduler_creator_mapping scm
@@ -70,7 +70,7 @@ all_creator_days AS (
 
 final_slots AS (
   SELECT
-    acd.scheduler_email,
+    acd.scheduler_code,
     acd.creator_id,
     acd.plan_date,
     COALESCE(er.recommended_time,
@@ -87,7 +87,7 @@ final_slots AS (
 )
 
 SELECT
-  scheduler_email,
+  scheduler_code,
   creator_id,
   plan_date,
   recommended_time,
@@ -96,4 +96,4 @@ SELECT
   fatigue_risk_band,
   reason_time_code
 FROM final_slots
-ORDER BY scheduler_email, creator_id, plan_date
+ORDER BY scheduler_code, creator_id, plan_date

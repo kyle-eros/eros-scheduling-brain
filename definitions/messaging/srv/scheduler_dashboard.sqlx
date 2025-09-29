@@ -8,7 +8,7 @@ config {
 }
 
 SELECT
-  sa.string_field_0 as scheduler_email,
+  sa.scheduler_code,
   r.username_std,
   r.recommended_send_ts,
   r.recommendation_rank,

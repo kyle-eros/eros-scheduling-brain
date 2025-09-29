@@ -39,28 +39,29 @@ All components are now live and ready for your 13 schedulers to start using the 
 | project_id | of-scheduler-proj |
 | location | US |
 | time_zone | America/Denver |
-| scheduler_email | [your email from list below] |
+| scheduler_name | [Select your name from dropdown] |
 
 ---
 
-## 👥 **Scheduler Email Assignments**
+## 👥 **Scheduler Assignments**
 
-Use your assigned email in the Settings tab:
+Select your name from the dropdown in the Settings tab:
 
-| Scheduler | Email | Assigned Creators | Total Pages |
-|-----------|-------|-------------------|-------------|
-| **Lead SD** | leadsd@erosops.com | Chloe Wildd, Delia | 2 |
-| **MOCHI** | mochi@erosops.com | Kassie Lee (both) | 2 |
-| **LYN** | lyn@erosops.com | Scarlett, Aurora, Stormii, Sophia | 4 |
-| **PAM** | pam@erosops.com | Ms. Lexa (both), Alex Love | 3 |
-| **JAY** | jay@erosops.com | Grace Bennet (both), Corvette, Talia | 4 |
-| **KEVIN A** | kevina@erosops.com | Mia Harper, Carmen Rose | 2 |
-| **MAYETTE** | mayette@erosops.com | Jade Bri, Jade Valentine, Lola Rivers | 3 |
-| **CHU** | chu@erosops.com | Olivia (both), Taylor Wild, Aspyn | 4 |
-| **AC** | ac@erosops.com | Madison, Selena, Cali Love, Mia Foster | 4 |
-| **GEORGE** | george@erosops.com | Tessa Tan, Dianna Grace, Tessa Dove | 3 |
-| **STAN** | stan@erosops.com | Tessa Thomas (both), Francesca, Adrianna, Neenah | 5 |
-| **JOHN** | john@erosops.com | Jade W, Ann, Isabelle, Kayleigh, Nora | 5 |
+| Scheduler | Assigned Creators | Total Pages |
+|-----------|-------------------|-------------|
+| **MOCHI** | Kassie Lee (both) | 2 |
+| **LYN** | Scarlett, Aurora, Stormii, Sophia | 4 |
+| **PAM** | Ms. Lexa (both), Alex Love | 3 |
+| **JAY** | Grace Bennet (both), Corvette, Talia | 4 |
+| **KEVIN** | Mia Harper, Carmen Rose | 2 |
+| **MAYETTE** | Jade Bri, Jade Valentine, Lola Rivers | 3 |
+| **CHU** | Olivia (both), Taylor Wild, Aspyn | 4 |
+| **AC** | Madison, Selena, Cali Love, Mia Foster | 4 |
+| **GEORGE** | Tessa Tan, Dianna Grace, Tessa Dove | 3 |
+| **STAN** | Tessa Thomas (both), Francesca, Adrianna, Neenah | 5 |
+| **JOHN** | Jade W, Ann, Isabelle, Kayleigh, Nora | 5 |
+
+**Note**: All access is managed through the Google Group. Contact Kyle if you need to be added or removed from the team.
 
 ---
 

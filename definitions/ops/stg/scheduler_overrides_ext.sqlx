@@ -15,6 +15,6 @@ SELECT
   CAST(NULL AS DATE) as override_date,
   CAST(NULL AS STRING) as override_type,
   CAST(NULL AS STRING) as override_reason,
-  CAST(NULL AS STRING) as scheduler_email,
+  CAST(NULL AS STRING) as scheduler_code,
   CAST(NULL AS TIMESTAMP) as loaded_at
 LIMIT 0

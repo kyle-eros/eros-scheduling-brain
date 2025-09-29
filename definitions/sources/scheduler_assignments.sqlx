@@ -8,71 +8,71 @@ config {
 }
 
 -- Scheduler assignments with tier mappings
--- High → A, Med/High → B, Med → C, Low → D
+-- Uses scheduler codes instead of emails for privacy and flexibility
+-- Access controlled via Google Group: eros-schedulers-bq@erosops.com
 SELECT * FROM (
-  -- Lead SD Assignments
-  SELECT 'leadsd@erosops.com' as scheduler_email, 'chloe_wildd' as creator_username, 'PAID' as page_type, 'A' as tier, 'Explicit' as content_style
-  UNION ALL SELECT 'leadsd@erosops.com', 'delia', 'PAID', 'A', 'Explicit'
-
   -- MOCHI Assignments
-  UNION ALL SELECT 'mochi@erosops.com', 'kassie_lee', 'PAID', 'A', 'Explicit'
-  UNION ALL SELECT 'mochi@erosops.com', 'kassie_lee_free', 'FREE', 'A', 'Explicit'
+  SELECT 'MOCHI' as scheduler_code, 'kassie_lee' as creator_username, 'PAID' as page_type, 'A' as tier, 'Explicit' as content_style
+  UNION ALL SELECT 'MOCHI', 'kassie_lee_free', 'FREE', 'A', 'Explicit'
 
   -- LYN Assignments
-  UNION ALL SELECT 'lyn@erosops.com', 'scarlett_grace', 'FREE', 'A', 'Implied'
-  UNION ALL SELECT 'lyn@erosops.com', 'aurora_benson', 'FREE', 'B', 'Implied'
-  UNION ALL SELECT 'lyn@erosops.com', 'stormii', 'PAID', 'C', 'Implied'
-  UNION ALL SELECT 'lyn@erosops.com', 'sophia_grace', 'FREE', 'D', 'Implied'
+  UNION ALL SELECT 'LYN', 'scarlett_grace', 'FREE', 'A', 'Implied'
+  UNION ALL SELECT 'LYN', 'aurora_benson', 'FREE', 'B', 'Implied'
+  UNION ALL SELECT 'LYN', 'stormii', 'PAID', 'C', 'Implied'
+  UNION ALL SELECT 'LYN', 'sophia_grace', 'FREE', 'D', 'Implied'
 
   -- PAM Assignments
-  UNION ALL SELECT 'pam@erosops.com', 'ms_lexa', 'PAID', 'A', 'Explicit'
-  UNION ALL SELECT 'pam@erosops.com', 'ms_lexa_free', 'FREE', 'A', 'Explicit'
-  UNION ALL SELECT 'pam@erosops.com', 'alex_love', 'FREE', 'C', 'Explicit'
+  UNION ALL SELECT 'PAM', 'ms_lexa', 'PAID', 'A', 'Explicit'
+  UNION ALL SELECT 'PAM', 'ms_lexa_free', 'FREE', 'A', 'Explicit'
+  UNION ALL SELECT 'PAM', 'alex_love', 'FREE', 'C', 'Explicit'
 
   -- JAY Assignments
-  UNION ALL SELECT 'jay@erosops.com', 'grace_bennet', 'PAID', 'A', 'Implied'
-  UNION ALL SELECT 'jay@erosops.com', 'grace_bennet_free', 'FREE', 'A', 'Implied'
-  UNION ALL SELECT 'jay@erosops.com', 'corvette_mikayla', 'FREE', 'D', 'Explicit'
-  UNION ALL SELECT 'jay@erosops.com', 'talia', 'FREE', 'B', 'Implied'
+  UNION ALL SELECT 'JAY', 'grace_bennet', 'PAID', 'A', 'Implied'
+  UNION ALL SELECT 'JAY', 'grace_bennet_free', 'FREE', 'A', 'Implied'
+  UNION ALL SELECT 'JAY', 'corvette_mikayla', 'FREE', 'D', 'Explicit'
+  UNION ALL SELECT 'JAY', 'talia', 'FREE', 'B', 'Implied'
 
-  -- KEVIN A Assignments
-  UNION ALL SELECT 'kevina@erosops.com', 'mia_harper', 'FREE', 'A', 'Implied'
-  UNION ALL SELECT 'kevina@erosops.com', 'carmen_rose', 'FREE', 'C', 'Explicit'
+  -- KEVIN Assignments
+  UNION ALL SELECT 'KEVIN', 'mia_harper', 'FREE', 'A', 'Implied'
+  UNION ALL SELECT 'KEVIN', 'carmen_rose', 'FREE', 'C', 'Explicit'
 
   -- MAYETTE Assignments
-  UNION ALL SELECT 'mayette@erosops.com', 'jade_bri', 'PAID', 'A', 'Semi-Explicit'
-  UNION ALL SELECT 'mayette@erosops.com', 'jade_valentine', 'FREE', 'B', 'Explicit'
-  UNION ALL SELECT 'mayette@erosops.com', 'lola_rivers', 'FREE', 'C', 'Explicit'
+  UNION ALL SELECT 'MAYETTE', 'jade_bri', 'PAID', 'A', 'Semi-Explicit'
+  UNION ALL SELECT 'MAYETTE', 'jade_valentine', 'FREE', 'B', 'Explicit'
+  UNION ALL SELECT 'MAYETTE', 'lola_rivers', 'FREE', 'C', 'Explicit'
 
   -- CHU Assignments
-  UNION ALL SELECT 'chu@erosops.com', 'olivia_hansley', 'PAID', 'A', 'Implied'
-  UNION ALL SELECT 'chu@erosops.com', 'olivia_hansley_free', 'FREE', 'A', 'Implied'
-  UNION ALL SELECT 'chu@erosops.com', 'taylor_wild', 'FREE', 'B', 'Implied'
-  UNION ALL SELECT 'chu@erosops.com', 'aspyn_hayes', 'FREE', 'C', 'Implied'
+  UNION ALL SELECT 'CHU', 'olivia_hansley', 'PAID', 'A', 'Implied'
+  UNION ALL SELECT 'CHU', 'olivia_hansley_free', 'FREE', 'A', 'Implied'
+  UNION ALL SELECT 'CHU', 'taylor_wild', 'FREE', 'B', 'Implied'
+  UNION ALL SELECT 'CHU', 'aspyn_hayes', 'FREE', 'C', 'Implied'
 
   -- AC Assignments
-  UNION ALL SELECT 'ac@erosops.com', 'madison_summers', 'FREE', 'A', 'Implied'
-  UNION ALL SELECT 'ac@erosops.com', 'selena', 'PAID', 'C', 'Implied'
-  UNION ALL SELECT 'ac@erosops.com', 'cali_love', 'FREE', 'C', 'Implied'
-  UNION ALL SELECT 'ac@erosops.com', 'mia_foster', 'FREE', 'D', 'Implied'
+  UNION ALL SELECT 'AC', 'madison_summers', 'FREE', 'A', 'Implied'
+  UNION ALL SELECT 'AC', 'selena', 'PAID', 'C', 'Implied'
+  UNION ALL SELECT 'AC', 'cali_love', 'FREE', 'C', 'Implied'
+  UNION ALL SELECT 'AC', 'mia_foster', 'FREE', 'D', 'Implied'
 
   -- GEORGE Assignments
-  UNION ALL SELECT 'george@erosops.com', 'tessa_tan', 'FREE', 'A', 'Implied'
-  UNION ALL SELECT 'george@erosops.com', 'dianna_grace', 'FREE', 'B', 'Explicit'
-  UNION ALL SELECT 'george@erosops.com', 'tessa_dove', 'FREE', 'D', 'Implied'
+  UNION ALL SELECT 'GEORGE', 'tessa_tan', 'FREE', 'A', 'Implied'
+  UNION ALL SELECT 'GEORGE', 'dianna_grace', 'FREE', 'B', 'Explicit'
+  UNION ALL SELECT 'GEORGE', 'tessa_dove', 'FREE', 'D', 'Implied'
 
   -- STAN Assignments
-  UNION ALL SELECT 'stan@erosops.com', 'tessa_thomas', 'PAID', 'B', 'Explicit'
-  UNION ALL SELECT 'stan@erosops.com', 'tessa_thomas_free', 'FREE', 'B', 'Explicit'
-  UNION ALL SELECT 'stan@erosops.com', 'francesca_le', 'PAID', 'B', 'Explicit'
-  UNION ALL SELECT 'stan@erosops.com', 'adrianna_rodriguez', 'FREE', 'C', 'Implied'
-  UNION ALL SELECT 'stan@erosops.com', 'neenah_brown', 'PAID', 'C', 'Implied'
+  UNION ALL SELECT 'STAN', 'tessa_thomas', 'PAID', 'B', 'Explicit'
+  UNION ALL SELECT 'STAN', 'tessa_thomas_free', 'FREE', 'B', 'Explicit'
+  UNION ALL SELECT 'STAN', 'francesca_le', 'PAID', 'B', 'Explicit'
+  UNION ALL SELECT 'STAN', 'adrianna_rodriguez', 'FREE', 'C', 'Implied'
+  UNION ALL SELECT 'STAN', 'neenah_brown', 'PAID', 'C', 'Implied'
 
   -- JOHN Assignments
-  UNION ALL SELECT 'john@erosops.com', 'jade_wilkinson', 'FREE', 'C', 'Explicit'
-  UNION ALL SELECT 'john@erosops.com', 'ann_grayson', 'PAID', 'C', 'Implied'
-  UNION ALL SELECT 'john@erosops.com', 'isabelle_layla', 'FREE', 'D', 'Implied'
-  UNION ALL SELECT 'john@erosops.com', 'kayleigh_ashford', 'FREE', 'D', 'Implied'
-  UNION ALL SELECT 'john@erosops.com', 'nora_rhodes', 'FREE', 'D', 'Implied'
+  UNION ALL SELECT 'JOHN', 'jade_wilkinson', 'FREE', 'C', 'Explicit'
+  UNION ALL SELECT 'JOHN', 'ann_grayson', 'PAID', 'C', 'Implied'
+  UNION ALL SELECT 'JOHN', 'isabelle_layla', 'FREE', 'D', 'Implied'
+  UNION ALL SELECT 'JOHN', 'kayleigh_ashford', 'FREE', 'D', 'Implied'
+  UNION ALL SELECT 'JOHN', 'nora_rhodes', 'FREE', 'D', 'Implied'
+
+  -- Additional schedulers can be added here as needed
+  -- RONMAR, PHIL, CAMSY, MISHY assignments to be added when creator assignments are confirmed
 ) assignments
-ORDER BY scheduler_email, creator_username
+ORDER BY scheduler_code, creator_username

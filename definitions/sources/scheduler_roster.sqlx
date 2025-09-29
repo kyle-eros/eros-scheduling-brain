@@ -1,0 +1,31 @@
+config {
+  type: "table",
+  schema: "eros_source",
+  name: "scheduler_roster",
+  description: "Scheduler roster with codes and display names",
+  labels: {app: "eros", domain: "ops", layer: "source"},
+  tags: ["scheduler", "roster", "source"]
+}
+
+-- Scheduler roster mapping codes to display names
+-- All schedulers access the system via Google Group: eros-schedulers-bq@erosops.com
+SELECT * FROM (
+  SELECT 'PAM' as scheduler_code, 'Pam' as display_name, TRUE as is_active, 3 as assigned_creators
+  UNION ALL SELECT 'KEVIN', 'Kevin', TRUE, 2
+  UNION ALL SELECT 'RONMAR', 'Ronmar', TRUE, 0  -- To be assigned
+  UNION ALL SELECT 'MAYETTE', 'Mayette', TRUE, 3
+  UNION ALL SELECT 'JAY', 'Jay', TRUE, 4
+  UNION ALL SELECT 'AC', 'AC', TRUE, 4
+  UNION ALL SELECT 'PHIL', 'Phil', TRUE, 0  -- To be assigned
+  UNION ALL SELECT 'LYN', 'Lyn', TRUE, 4
+  UNION ALL SELECT 'CAMSY', 'Camsy', TRUE, 0  -- To be assigned
+  UNION ALL SELECT 'GEORGE', 'George', TRUE, 3
+  UNION ALL SELECT 'CHU', 'Chu', TRUE, 4
+  UNION ALL SELECT 'MISHY', 'Mishy', TRUE, 0  -- To be assigned
+  UNION ALL SELECT 'JOHN', 'John', TRUE, 5
+  UNION ALL SELECT 'STAN', 'Stan', TRUE, 5
+  UNION ALL SELECT 'MOCHI', 'Mochi', TRUE, 2
+  -- Manager
+  UNION ALL SELECT 'NIELLE', 'Nielle (Manager)', TRUE, 0
+) roster
+ORDER BY scheduler_code
