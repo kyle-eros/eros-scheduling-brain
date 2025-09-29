@@ -82,7 +82,7 @@ The system automatically adjusts daily quotas based on performance:
 *Automated Data Collection*
 
 ## **What It Does:**
-Eliminates manual data entry by automatically capturing OnlyFans performance data from your Infloww email reports every hour.
+Eliminates manual data entry by automatically capturing OnlyFans performance data from your Infloww email reports twice per day.
 
 ## **The Magic Behind The Scenes:**
 1. **📨 Email Monitoring**: Watches kyle@erosops.com 24/7 for new reports
