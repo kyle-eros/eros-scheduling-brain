@@ -29,4 +29,4 @@ SELECT
   'Planned' as status,
   'caption_selected' as action,
   'sheets_hub_v1' as source
-WHERE FALSE  -- This ensures no actual data is inserted, just creates the schema
+LIMIT 0  -- This ensures no actual data is inserted, just creates the schema
