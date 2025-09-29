@@ -86,11 +86,12 @@ function _hash(s){ const b=Utilities.computeDigest(Utilities.DigestAlgorithm.SHA
 function onOpen(){
   const cfg = getCfg_();
   const ui = SpreadsheetApp.getUi();
-  ui.createMenu('🚀 Scheduler Hub')
+  ui.createMenu('🚀 Enhanced Scheduler Hub')
     .addItem('📅 Load My Week','loadMyWeek')
-    .addItem('✅ Load Day Board','loadDayBoard')
+    .addItem('✅ Load Enhanced Day Board','loadEnhancedDayBoard')
     .addSeparator()
-    .addItem('🧠 Pick Caption (Top-N)','showCaptionPicker')
+    .addItem('🧠 Get Smart Captions','showCaptionMenu')
+    .addItem('📊 Check Creator Authenticity','checkAuthenticityStatus')
     .addItem('↔ Randomize Minutes (±15)','randomizeMinutes')
     .addSeparator()
     .addItem('📤 Submit Ready/Sent','submitPlan')
@@ -496,9 +497,9 @@ function loadEnhancedDayBoard(){
       FROM \`${cfg.PROJECT}.${cfg.VIEWS.DAILY_RECOMMENDATIONS}\`
       WHERE recommendation_date = '${today}'
         AND username_std IN (
-          SELECT string_field_1
-          FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments_final\`
-          WHERE string_field_0 = '${activeEmail}'
+          SELECT creator_username
+          FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments\`
+          WHERE scheduler_email = '${activeEmail}'
         )
       ORDER BY username_std, recommendation_rank
     `;
@@ -590,8 +591,169 @@ function loadEnhancedDayBoard(){
   }
 }
 
-/** Get authentic captions based on message type and time energy */
-function getAuthenticCaptions(messageType, timeEnergy, creator = '') {
+// Get authentic captions from specialized banks
+function getAuthenticCaptions(captionType) {
+  const cfg = getCfg_();
+  const ui = SpreadsheetApp.getUi();
+
+  // Map caption type to appropriate table
+  const captionTables = {
+    'drip': cfg.VIEWS.CAPTION_DRIP,
+    'renewal': cfg.VIEWS.CAPTION_RENEWAL,
+    'tip': cfg.VIEWS.CAPTION_TIP
+  };
+
+  const table = captionTables[captionType];
+  if (!table) {
+    ui.alert('Invalid caption type. Use: drip, renewal, or tip');
+    return;
+  }
+
+  const sql = `
+    SELECT
+      caption_id,
+      caption_text,
+      time_energy,
+      authenticity_score,
+      last_used_date,
+      usage_count
+    FROM \`${cfg.PROJECT}.${table}\`
+    WHERE authenticity_score >= 75
+    ORDER BY authenticity_score DESC, RAND()
+    LIMIT 20
+  `;
+
+  try {
+    const result = _bq(sql, cfg);
+    const rows = _rows(result);
+
+    if (rows.length === 0) {
+      ui.alert('No captions found for type: ' + captionType);
+      return;
+    }
+
+    // Display captions in a sidebar or dialog
+    const html = HtmlService.createHtmlOutput(`
+      <h3>${captionType.toUpperCase()} Captions</h3>
+      <div style="max-height: 400px; overflow-y: auto;">
+        ${rows.map(row => `
+          <div style="border: 1px solid #ddd; padding: 10px; margin: 5px; border-radius: 5px;">
+            <p><strong>Score: ${row.authenticity_score}</strong> | Energy: ${row.time_energy}</p>
+            <p>${row.caption_text}</p>
+            <small>Used ${row.usage_count || 0} times | Last: ${row.last_used_date || 'Never'}</small>
+          </div>
+        `).join('')}
+      </div>
+    `)
+    .setWidth(400)
+    .setHeight(500);
+
+    ui.showModalDialog(html, `${captionType.toUpperCase()} Caption Bank`);
+  } catch(e) {
+    ui.alert('Error fetching captions: ' + e.toString());
+  }
+}
+
+/** Get authentic captions for enhanced scheduling */
+function showCaptionMenu() {
+  const ui = SpreadsheetApp.getUi();
+  const result = ui.alert(
+    'Select Caption Type',
+    'Which type of captions do you need?\n\n' +
+    '1. Drip Bumps (time-energy matched)\n' +
+    '2. Renewal Campaigns (FOMO/appreciation)\n' +
+    '3. Tip Campaigns (choice-based)',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (result == ui.Button.OK) {
+    const response = ui.prompt('Enter number (1, 2, or 3):');
+    const choice = response.getResponseText();
+
+    switch(choice) {
+      case '1':
+        getAuthenticCaptions('drip');
+        break;
+      case '2':
+        getAuthenticCaptions('renewal');
+        break;
+      case '3':
+        getAuthenticCaptions('tip');
+        break;
+      default:
+        ui.alert('Invalid choice. Please enter 1, 2, or 3.');
+    }
+  }
+}
+
+/** Check creator authenticity status */
+function checkAuthenticityStatus() {
+  const cfg = getCfg_();
+  const ui = SpreadsheetApp.getUi();
+  const activeEmail = _email();
+
+  const sql = `
+    SELECT
+      am.username_std,
+      am.overall_authenticity_score,
+      am.pattern_risk_level,
+      am.timing_authenticity_score,
+      am.content_authenticity_score,
+      am.improvement_recommendations,
+      ARRAY_TO_STRING(am.authenticity_alerts, ', ') as alerts
+    FROM \`${cfg.PROJECT}.${cfg.VIEWS.AUTHENTICITY_MONITOR}\` am
+    WHERE am.username_std IN (
+      SELECT creator_username
+      FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments\`
+      WHERE scheduler_email = '${activeEmail}'
+    )
+    AND am.analysis_date = CURRENT_DATE()
+    ORDER BY am.pattern_risk_level DESC, am.overall_authenticity_score ASC
+  `;
+
+  try {
+    const result = _bq(sql, cfg);
+    const rows = _rows(result);
+
+    if (rows.length === 0) {
+      ui.alert('No authenticity data found for your creators today.');
+      return;
+    }
+
+    // Create HTML report
+    const html = HtmlService.createHtmlOutput(`
+      <h2>Creator Authenticity Report</h2>
+      <div style="max-height: 500px; overflow-y: auto;">
+        ${rows.map(row => {
+          const riskColor = row.pattern_risk_level === 'CRITICAL' ? 'red' :
+                           row.pattern_risk_level === 'HIGH' ? 'orange' :
+                           row.pattern_risk_level === 'MEDIUM' ? 'yellow' : 'green';
+
+          return `
+            <div style="border: 2px solid ${riskColor}; padding: 10px; margin: 10px; border-radius: 5px;">
+              <h3>${row.username_std}</h3>
+              <p><strong>Overall Score:</strong> ${Math.round(row.overall_authenticity_score || 0)}/100</p>
+              <p><strong>Risk Level:</strong> <span style="color: ${riskColor}; font-weight: bold;">${row.pattern_risk_level}</span></p>
+              <p><strong>Timing Score:</strong> ${Math.round(row.timing_authenticity_score || 0)}/100</p>
+              <p><strong>Content Score:</strong> ${Math.round(row.content_authenticity_score || 0)}/100</p>
+              ${row.alerts ? `<p><strong>Alerts:</strong> ${row.alerts}</p>` : ''}
+              <p><strong>Recommendations:</strong> ${row.improvement_recommendations}</p>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `)
+    .setWidth(500)
+    .setHeight(600);
+
+    ui.showModalDialog(html, 'Authenticity Monitoring Report');
+  } catch(e) {
+    ui.alert('Error checking authenticity: ' + e.toString());
+  }
+}
+
+/** Legacy function for backward compatibility */
+function getAuthenticCaptionsLegacy(messageType, timeEnergy, creator = '') {
   try {
     const cfg = getCfg_();
     let tableName = '';
