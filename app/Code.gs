@@ -71,7 +71,10 @@ function getCfg_(){
   const s = readSheetSettings_();
   const merged = deepMerge_(DEFAULTS, s);
   // Optional: per-scheduler override
-  merged._schedulerOverride = s['scheduler_email (optional override)'] || '';
+  merged._schedulerOverride =
+    s['scheduler_override (optional code/email)'] ||
+    s['scheduler_email (optional override)'] ||
+    '';
   return merged;
 }
 
@@ -110,10 +113,11 @@ function ensureTabs_(cfg){
     const set = ss.getSheetByName(cfg.SHEETS.SET) || ss.insertSheet(cfg.SHEETS.SET);
     if (set.getLastRow()<2){
       set.getRange(1,1,1,2).setValues([['Key','Value']]).setFontWeight('bold');
-      set.getRange(2,1,10,2).setValues([
+      set.getRange(2,1,11,2).setValues([
         ['project_id', cfg.PROJECT],
         ['location', cfg.LOCATION],
         ['time_zone', cfg.TZ],
+        ['scheduler_override (optional code/email)',''],
         ['scheduler_email (optional override)',''],
         ['sheet_week', cfg.SHEETS.WEEK],
         ['sheet_day',  cfg.SHEETS.DAY],
@@ -156,20 +160,59 @@ function ensureTabs_(cfg){
 }
 
 /** ====== weekly loader ====== */
-function activeEmail_(cfg){
-  const set = SpreadsheetApp.getActive().getSheetByName(cfg.SHEETS.SET);
-  const override = set && set.getRange(2,2,set.getLastRow()-1,1).getValues().find(r=>String(r[0]).toLowerCase().includes('@'));
-  return override ? String(override[0]).toLowerCase() : _email();
+function resolveSchedulerIdentity_(cfg){
+  if (cfg._schedulerIdentity) {
+    return cfg._schedulerIdentity;
+  }
+
+  const overrideRaw = String(cfg._schedulerOverride || '').trim();
+  const sessionEmail = String(_email() || '').trim();
+
+  const lookups = [];
+  if (overrideRaw) {
+    if (overrideRaw.toLowerCase().indexOf('@') > -1) {
+      lookups.push({ field: 'scheduler_email', value: overrideRaw });
+    } else {
+      lookups.push({ field: 'scheduler_code', value: overrideRaw });
+    }
+  }
+  if (sessionEmail) {
+    lookups.push({ field: 'scheduler_email', value: sessionEmail });
+  }
+
+  for (let i = 0; i < lookups.length; i++) {
+    const { field, value } = lookups[i];
+    if (!value) continue;
+    const sanitized = value.replace(/'/g, "\\'");
+    const sql = `
+      SELECT scheduler_code, scheduler_email, display_name, group_email, is_manager
+      FROM \`${cfg.PROJECT}.eros_source.scheduler_roster\`
+      WHERE is_active = TRUE AND LOWER(${field}) = LOWER('${sanitized}')
+      LIMIT 1`;
+
+    try {
+      const rows = _rows(_bq(sql, cfg));
+      if (rows.length) {
+        cfg._schedulerIdentity = rows[0];
+        return cfg._schedulerIdentity;
+      }
+    } catch (err) {
+      console.error('resolveSchedulerIdentity_ query failed:', err);
+    }
+  }
+
+  throw new Error('Unable to resolve scheduler identity. Ensure your email is in the scheduler roster or set an override code.');
 }
 function loadMyWeek(){
   const cfg = getCfg_();
   try{
-    const email = activeEmail_(cfg);
+    const identity = resolveSchedulerIdentity_(cfg);
+    const schedulerCode = identity.scheduler_code;
     const sql = `
       WITH scheduler_assignments AS (
         SELECT DISTINCT username_std, page_handle
-        FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments_final\`
-        WHERE LOWER(scheduler_email) = LOWER('${email}')
+        FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments\`
+        WHERE LOWER(scheduler_code) = LOWER('${schedulerCode}')
       )
       SELECT
         dr.username_std as creator_id,
@@ -223,7 +266,7 @@ function loadMyWeek(){
     wk.getRange(2,1,Math.max(0,wk.getLastRow()-1),16).clearContent();
     if (out.length) wk.getRange(2,1,out.length,16).setValues(out);
     wk.getRange(2,9,Math.max(out.length,1),1).setNumberFormat('$0.00');
-    SpreadsheetApp.getActive().toast(`Loaded ${out.length} tier-aware weekly rows for ${email}`);
+    SpreadsheetApp.getActive().toast(`Loaded ${out.length} tier-aware weekly rows for ${schedulerCode}`);
   }catch(e){
     console.error('Error in loadMyWeek:', e);
     SpreadsheetApp.getUi().alert('Could not load weekly data. Please try again. If this persists, contact support.');
@@ -335,6 +378,7 @@ ${cfg.PROJECT}.${cfg.VIEWS.CAPTION_RANK}
 function applyCaptionToRow(row, sheetName, captionId, captionText){
   const cfg=getCfg_();
   try{
+    const identity = resolveSchedulerIdentity_(cfg);
     const sh=SpreadsheetApp.getActive().getSheetByName(sheetName);
     const isDay=(sheetName===cfg.SHEETS.DAY);
     sh.getRange(row, isDay?6:10).setValue(captionId);
@@ -351,7 +395,7 @@ function applyCaptionToRow(row, sheetName, captionId, captionText){
         (action_ts, action_date, tracking_hash, username_std, page_type, username_page,
          scheduler_code, scheduler_email, date_local, hod_local, price_usd, caption_id, status, action, source)
       SELECT CURRENT_TIMESTAMP(), CURRENT_DATE(), '${hash}','${creator}','main','${creator}__main',
-             '', '${activeEmail_(cfg)}', '${dateISO}', ${hod}, ${price}, '${captionId}', 'Planned','caption_selected','sheets_hub_v1'
+             '${identity.scheduler_code}', '${identity.scheduler_email}', '${dateISO}', ${hod}, ${price}, '${captionId}', 'Planned','caption_selected','sheets_hub_v1'
       WHERE NOT EXISTS (SELECT 1 FROM \`${cfg.PROJECT}.ops.send_log\` WHERE tracking_hash='${hash}' AND action='caption_selected')`;
     _bq(sql,cfg);
   }catch(e){
@@ -384,6 +428,7 @@ function randomizeMinutes(){
 function submitPlan(){
   const cfg=getCfg_();
   try{
+    const identity = resolveSchedulerIdentity_(cfg);
     const sh=SpreadsheetApp.getActive().getSheetByName(cfg.SHEETS.DAY);
     const vals=sh.getRange(2,1,Math.max(0,sh.getLastRow()-1),12).getValues();
     let ready=0, sent=0;
@@ -399,7 +444,7 @@ function submitPlan(){
         (action_ts, action_date, tracking_hash, username_std, page_type, username_page,
          scheduler_code, scheduler_email, date_local, hod_local, price_usd, caption_id, status, action, source)
         SELECT CURRENT_TIMESTAMP(), CURRENT_DATE(), '${hash}','${creator}','main','${up}',
-               '', '${activeEmail_(cfg)}', '${dateISO}', ${hod}, ${price}, NULLIF('${cap}',''), '${status}', '${act}', 'sheets_hub_v1'
+               '${identity.scheduler_code}', '${identity.scheduler_email}', '${dateISO}', ${hod}, ${price}, NULLIF('${cap}',''), '${status}', '${act}', 'sheets_hub_v1'
         WHERE NOT EXISTS (SELECT 1 FROM \`${cfg.PROJECT}.ops.send_log\` WHERE tracking_hash='${hash}' AND action='${act}')`;
       _bq(sql,cfg);
       if (act==='sent') sent++; else ready++;
@@ -415,7 +460,7 @@ function submitPlan(){
 function testBigQueryConnection(){
   try {
     const cfg = getCfg_();
-    const testSql = `SELECT COUNT(*) as row_count FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments_final\``;
+    const testSql = `SELECT COUNT(*) as row_count FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments\``;
     const result = _bq(testSql, cfg);
     const rows = _rows(result);
     SpreadsheetApp.getUi().alert(`BigQuery Test: Found ${rows[0].row_count} scheduler assignments`);
@@ -471,7 +516,8 @@ ${cfg.PROJECT}.${cfg.VIEWS.CAPTION_RANK}
 function loadEnhancedDayBoard(){
   try {
     const cfg = getCfg_();
-    const activeEmail = _email();
+    const identity = resolveSchedulerIdentity_(cfg);
+    const schedulerCode = identity.scheduler_code;
     const today = _fmtDate(new Date(), cfg);
 
     const sql = `
@@ -499,7 +545,7 @@ function loadEnhancedDayBoard(){
         AND username_std IN (
           SELECT creator_username
           FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments\`
-          WHERE scheduler_email = '${activeEmail}'
+          WHERE LOWER(scheduler_code) = LOWER('${schedulerCode}')
         )
       ORDER BY username_std, recommendation_rank
     `;
@@ -583,7 +629,7 @@ function loadEnhancedDayBoard(){
     }
 
     daySheet.autoResizeColumns(1, headers.length);
-    SpreadsheetApp.getActive().toast(`Loaded ${rows.length} enhanced recommendations for ${today}`);
+    SpreadsheetApp.getActive().toast(`Loaded ${rows.length} enhanced recommendations for ${schedulerCode} (${today})`);
 
   } catch (e) {
     console.error('loadEnhancedDayBoard error:', e);
@@ -690,7 +736,16 @@ function showCaptionMenu() {
 function checkAuthenticityStatus() {
   const cfg = getCfg_();
   const ui = SpreadsheetApp.getUi();
-  const activeEmail = _email();
+  let identity;
+  try {
+    identity = resolveSchedulerIdentity_(cfg);
+  } catch (err) {
+    console.error('checkAuthenticityStatus identity error:', err);
+    ui.alert('Could not resolve scheduler identity. Please verify your access.');
+    return;
+  }
+
+  const schedulerCode = identity.scheduler_code;
 
   const sql = `
     SELECT
@@ -705,7 +760,7 @@ function checkAuthenticityStatus() {
     WHERE am.username_std IN (
       SELECT creator_username
       FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments\`
-      WHERE scheduler_email = '${activeEmail}'
+      WHERE LOWER(scheduler_code) = LOWER('${schedulerCode}')
     )
     AND am.analysis_date = CURRENT_DATE()
     ORDER BY am.pattern_risk_level DESC, am.overall_authenticity_score ASC
@@ -894,30 +949,4 @@ Risk Level: ${row.performance_risk}
     console.error('getTierInfo error:', e);
     return 'Error getting tier info: ' + e.toString();
   }
-}
-
-/** Enhanced menu system */
-function onOpen(){
-  const cfg = getCfg_();
-  const ui = SpreadsheetApp.getUi();
-  ui.createMenu('🚀 Enhanced Scheduler Hub')
-    .addItem('📅 Load My Week','loadMyWeek')
-    .addItem('✅ Load Enhanced Day Board','loadEnhancedDayBoard')
-    .addSeparator()
-    .addSubMenu(ui.createMenu('🧠 Smart Captions')
-      .addItem('Get Drip Captions','getDripCaptions')
-      .addItem('Get Renewal Captions','getRenewalCaptions')
-      .addItem('Get Tip Captions','getTipCaptions'))
-    .addSeparator()
-    .addSubMenu(ui.createMenu('📊 Analytics')
-      .addItem('Check Creator Authenticity','checkCreatorAuthenticity')
-      .addItem('View Tier Assignment','viewTierAssignment'))
-    .addSeparator()
-    .addItem('↔ Randomize Minutes (±15)','randomizeMinutes')
-    .addItem('📤 Submit Ready/Sent','submitPlan')
-    .addItem('❓ Ask EROS (sidebar)','openAskSidebar')
-    .addSeparator()
-    .addItem('🔧 Test BigQuery Connection','testBigQueryConnection')
-    .addToUi();
-  ensureTabs_(cfg);
 }

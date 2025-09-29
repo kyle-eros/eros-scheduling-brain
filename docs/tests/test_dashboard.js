@@ -5,7 +5,8 @@ const path = require('path');
 console.log('🧪 Testing EROS Dashboard Setup...\n');
 
 // Test 1: Check Apps Script files exist
-const appsScriptPath = path.join(__dirname, 'app');
+const repoRoot = path.resolve(__dirname, '..', '..');
+const appsScriptPath = path.join(repoRoot, 'app');
 const requiredFiles = ['Code.gs', 'AskSidebar.html', 'appsscript.json', '.clasp.json'];
 
 console.log('✅ Apps Script Files:');
@@ -25,7 +26,7 @@ const viewFiles = [
 
 console.log('\n✅ BigQuery Views:');
 viewFiles.forEach(file => {
-  const filePath = path.join(__dirname, file);
+  const filePath = path.join(repoRoot, file);
   const exists = fs.existsSync(filePath);
   console.log(`  ${exists ? '✅' : '❌'} ${file.split('/').pop()}`);
 });
@@ -45,8 +46,9 @@ try {
   const codeGs = fs.readFileSync(path.join(appsScriptPath, 'Code.gs'), 'utf8');
   const menuItems = [
     'Load My Week',
-    'Load Day Board',
-    'Pick Caption (Top-N)',
+    'Load Enhanced Day Board',
+    'Get Smart Captions',
+    'Check Creator Authenticity',
     'Submit Ready/Sent',
     'Ask EROS (sidebar)'
   ];
@@ -65,7 +67,7 @@ const requiredViews = [
   'daily_recommendations',
   'vw_week_slots_7d_rbac',
   'caption_rank_next24_v3_tbl',
-  'scheduler_assignments_final'
+  'scheduler_assignments'
 ];
 
 console.log('\n✅ BigQuery View References in Apps Script:');

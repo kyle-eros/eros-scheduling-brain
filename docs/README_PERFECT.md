@@ -85,7 +85,7 @@ Tables that store raw data exactly as it comes from Gmail:
 - `mass_message_daily_final` - Daily message performance
 - `caption_bank_*` - Your content libraries (PPV, tips, renewals, bumps)
 - `creator_statistics_final` - Creator performance metrics
-- `scheduler_assignments_final` - Who's assigned to which creators
+- `scheduler_assignments` - Who's assigned to which creators
 
 #### **Layer 2: Staging (Cleaning)**
 Clean and standardize the messy raw data:
@@ -283,7 +283,7 @@ After running the pipeline, you should see:
    ```sql
    SELECT * FROM `of-scheduler-proj.eros_messaging_srv.scheduler_dashboard`
    WHERE DATE(recommended_send_ts) = CURRENT_DATE()
-   ORDER BY scheduler_email, recommendation_score DESC
+   ORDER BY scheduler_code, recommendation_score DESC
    ```
 
 5. **8:30 AM - Team Reviews Recommendations**

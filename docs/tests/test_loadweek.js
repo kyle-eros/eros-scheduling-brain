@@ -11,16 +11,15 @@ function testLoadMyWeek() {
     }
   };
 
-  // Simulate different scheduler emails
+  // Simulate different scheduler identities (code + email)
   const testSchedulers = [
-    'kyle@erosops.com',
-    'geesushee07@gmail.com',
-    'kevinicer@gmail.com',
-    'niefredeluces@gmail.com'
+    { code: 'PAM', email: 'geesushee07@gmail.com' },
+    { code: 'KEVIN', email: 'kevinicer@gmail.com' },
+    { code: 'NIELLE', email: 'niefredeluces@gmail.com' }
   ];
 
-  testSchedulers.forEach(email => {
-    console.log(`\n📋 Testing for scheduler: ${email}`);
+  testSchedulers.forEach(({ code, email }) => {
+    console.log(`\n📋 Testing for scheduler: ${code} <${email}>`);
 
     const sql = `
       SELECT creator_id, plan_date,
@@ -29,7 +28,7 @@ function testLoadMyWeek() {
         recommended_price_usd, reason_time_code, fatigue_risk_band
       FROM
         \`${cfg.PROJECT}.${cfg.VIEWS.WEEK_SLOTS}\`
-      WHERE LOWER(scheduler_email)=LOWER('${email}')
+      WHERE LOWER(scheduler_code)=LOWER('${code}')
       ORDER BY creator_id, plan_date, hhmm`;
 
     console.log('SQL Query:', sql);

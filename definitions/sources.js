@@ -9,9 +9,10 @@ declare({schema: raw_schema, name: "caption_bank_tip_final"});
 declare({schema: raw_schema, name: "caption_bank_renew_final"});
 declare({schema: raw_schema, name: "caption_bank_bump_final"});
 
-// Core domain sources  
+// Core domain sources
 declare({schema: raw_schema, name: "creator_statistics_final"});
-declare({schema: raw_schema, name: "scheduler_assignments_final"});
+// Note: scheduler_assignments is defined as a table in definitions/sources/scheduler_assignments.sqlx
+// So we don't need to declare it here
 
 // External sources (Google Sheets via External Tables)
 declare({schema: raw_schema, name: "scheduler_overrides_external"});

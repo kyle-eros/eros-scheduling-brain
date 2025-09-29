@@ -2,30 +2,37 @@ config {
   type: "table",
   schema: "eros_source",
   name: "scheduler_roster",
-  description: "Scheduler roster with codes and display names",
+  description: "Scheduler roster with codes, contact emails, and assignment metadata",
   labels: {app: "eros", domain: "ops", layer: "source"},
   tags: ["scheduler", "roster", "source"]
 }
 
--- Scheduler roster mapping codes to display names
--- All schedulers access the system via Google Group: eros-schedulers-bq@erosops.com
+-- Centralized roster for all schedulers.
+-- Each member authenticates with the Google Group: eros-schedulers-bq@erosops.com
 SELECT * FROM (
-  SELECT 'PAM' as scheduler_code, 'Pam' as display_name, TRUE as is_active, 3 as assigned_creators
-  UNION ALL SELECT 'KEVIN', 'Kevin', TRUE, 2
-  UNION ALL SELECT 'RONMAR', 'Ronmar', TRUE, 0  -- To be assigned
-  UNION ALL SELECT 'MAYETTE', 'Mayette', TRUE, 3
-  UNION ALL SELECT 'JAY', 'Jay', TRUE, 4
-  UNION ALL SELECT 'AC', 'AC', TRUE, 4
-  UNION ALL SELECT 'PHIL', 'Phil', TRUE, 0  -- To be assigned
-  UNION ALL SELECT 'LYN', 'Lyn', TRUE, 4
-  UNION ALL SELECT 'CAMSY', 'Camsy', TRUE, 0  -- To be assigned
-  UNION ALL SELECT 'GEORGE', 'George', TRUE, 3
-  UNION ALL SELECT 'CHU', 'Chu', TRUE, 4
-  UNION ALL SELECT 'MISHY', 'Mishy', TRUE, 0  -- To be assigned
-  UNION ALL SELECT 'JOHN', 'John', TRUE, 5
-  UNION ALL SELECT 'STAN', 'Stan', TRUE, 5
-  UNION ALL SELECT 'MOCHI', 'Mochi', TRUE, 2
-  -- Manager
-  UNION ALL SELECT 'NIELLE', 'Nielle (Manager)', TRUE, 0
+  SELECT
+    'PAM' AS scheduler_code,
+    'Pam' AS display_name,
+    'geesushee07@gmail.com' AS scheduler_email,
+    'eros-schedulers-bq@erosops.com' AS group_email,
+    TRUE AS is_active,
+    FALSE AS is_manager,
+    3 AS assigned_creators
+
+  UNION ALL SELECT 'KEVIN', 'Kevin', 'kevinicer@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 2
+  UNION ALL SELECT 'RONMAR', 'Ronmar', 'bundaronmar@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 0
+  UNION ALL SELECT 'MAYETTE', 'Mayette', 'yette.palculio322@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 3
+  UNION ALL SELECT 'JAY', 'Jay', 'chappneerjz@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 4
+  UNION ALL SELECT 'AC', 'AC', 'accanda103@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 4
+  UNION ALL SELECT 'PHIL', 'Phil', 'llacunap@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 0
+  UNION ALL SELECT 'LYN', 'Lyn', 'rileyainfs06@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 4
+  UNION ALL SELECT 'CAMSY', 'Camsy', 'chikass013@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 0
+  UNION ALL SELECT 'GEORGE', 'George', 'nielsenflores27@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 3
+  UNION ALL SELECT 'CHU', 'Chu', 'cholocruz1612@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 4
+  UNION ALL SELECT 'MISHY', 'Mishy', 'mish.llenren@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 0
+  UNION ALL SELECT 'JOHN', 'John', 'ejgabanes.work@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 5
+  UNION ALL SELECT 'STAN', 'Stan', 'stan.olmedo28@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 5
+  UNION ALL SELECT 'MOCHI', 'Mochi', 'baby.f.j.dayandayan@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 2
+  UNION ALL SELECT 'NIELLE', 'Nielle (Manager)', 'niefredeluces@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, TRUE, 0
 ) roster
 ORDER BY scheduler_code

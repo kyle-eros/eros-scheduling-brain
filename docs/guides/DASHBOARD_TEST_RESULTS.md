@@ -20,7 +20,7 @@
 ### **2. BigQuery Views** ✅
 - **vw_week_slots_7d_rbac**: ✅ Created and functional
 - **caption_rank_next24_v3_tbl**: ✅ Created with sample data
-- **scheduler_assignments_final**: ✅ Populated with 17 schedulers
+- **scheduler_assignments**: ✅ Populated with 17 schedulers
 
 ### **3. Weekly Data Loading** ✅
 **Test Query Results:**
@@ -91,7 +91,7 @@ Creator: test_creator_1 (geesushee07@gmail.com)
 
 ### **Issue 1: First-Time Setup**
 - **Problem**: New schedulers need creator assignments
-- **Solution**: Update `scheduler_assignments_final` table with real creator usernames
+- **Solution**: Update `scheduler_assignments` table with real creator usernames
 
 ### **Issue 2**: **Test Data Only**
 - **Problem**: Currently using test_creator_1, test_creator_2, etc.

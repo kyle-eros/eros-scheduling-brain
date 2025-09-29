@@ -7,12 +7,12 @@ config {
   tags: ["scheduler", "assignments", "source"]
 }
 
--- Scheduler assignments with tier mappings
--- Uses scheduler codes instead of emails for privacy and flexibility
--- Access controlled via Google Group: eros-schedulers-bq@erosops.com
-SELECT * FROM (
+-- Master assignment list keyed by scheduler code. Join to the roster to expose
+-- contact information for Google Group-based RBAC while keeping creator mapping
+-- centralized inside BigQuery.
+WITH assignments AS (
   -- MOCHI Assignments
-  SELECT 'MOCHI' as scheduler_code, 'kassie_lee' as creator_username, 'PAID' as page_type, 'A' as tier, 'Explicit' as content_style
+  SELECT 'MOCHI' AS scheduler_code, 'kassie_lee' AS creator_username, 'PAID' AS page_type, 'A' AS tier, 'Explicit' AS content_style
   UNION ALL SELECT 'MOCHI', 'kassie_lee_free', 'FREE', 'A', 'Explicit'
 
   -- LYN Assignments
@@ -72,7 +72,42 @@ SELECT * FROM (
   UNION ALL SELECT 'JOHN', 'kayleigh_ashford', 'FREE', 'D', 'Implied'
   UNION ALL SELECT 'JOHN', 'nora_rhodes', 'FREE', 'D', 'Implied'
 
-  -- Additional schedulers can be added here as needed
-  -- RONMAR, PHIL, CAMSY, MISHY assignments to be added when creator assignments are confirmed
-) assignments
-ORDER BY scheduler_code, creator_username
+  -- Pending creator assignments for Ronmar, Phil, Camsy, Mishy will be added later.
+)
+, enriched AS (
+  SELECT
+    a.scheduler_code,
+    r.scheduler_email,
+    r.group_email,
+    r.display_name AS scheduler_display_name,
+    r.is_active,
+    r.is_manager,
+    r.assigned_creators,
+    a.creator_username,
+    a.page_type,
+    a.tier,
+    a.content_style,
+    -- Provide both username_std and page_handle aliases for downstream usage
+    a.creator_username AS username_std,
+    a.creator_username AS page_handle,
+    CONCAT(a.tier, '_', a.page_type) AS full_tier_assignment
+  FROM assignments a
+  LEFT JOIN ${ref("scheduler_roster")} r USING (scheduler_code)
+)
+
+SELECT
+  scheduler_code,
+  scheduler_email,
+  group_email,
+  scheduler_display_name,
+  is_manager,
+  assigned_creators,
+  username_std,
+  page_handle,
+  page_type,
+  tier,
+  full_tier_assignment,
+  content_style
+FROM enriched
+WHERE is_active
+ORDER BY scheduler_code, username_std

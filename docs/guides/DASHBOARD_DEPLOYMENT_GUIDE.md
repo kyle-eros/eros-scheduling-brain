@@ -8,7 +8,7 @@ All required BigQuery views have been created:
 - ✅ `daily_recommendations` - ML recommendations
 - ✅ `vw_week_slots_7d_rbac` - Weekly scheduling with RBAC
 - ✅ `caption_rank_next24_v3_tbl` - Caption ranking system
-- ✅ `scheduler_assignments_final` - Scheduler assignments
+- ✅ `scheduler_assignments` - Scheduler assignments
 - ✅ `send_log` - Activity logging table
 
 ### Phase 2: Deploy to BigQuery
@@ -63,7 +63,7 @@ The Apps Script will automatically create required tabs when first run:
 
 **Update the scheduler assignments table:**
 ```sql
--- Edit definitions/messaging/stg/scheduler_assignments.sqlx
+- Edit definitions/messaging/stg/scheduler_assignments.sqlx
 -- Replace sample data with your actual scheduler assignments:
 
 SELECT 'sarah@yourcompany.com' as string_field_0, 'creator1' as string_field_1
@@ -122,7 +122,7 @@ SELECT 'jen@yourcompany.com', 'creator3'
 ### Settings Configuration:
 The `⚙ Settings` tab allows customization:
 - `project_id` - Your BigQuery project
-- `scheduler_email (optional override)` - Override user email
+- `scheduler_override (optional code/email)` - Override default identity (rare)
 - `time_zone` - Scheduler timezone
 - Custom view names and sheet tabs
 

@@ -169,7 +169,7 @@ Then optimizes:
 ## 🆘 **Troubleshooting**
 
 ### **"No data found" error:**
-- Check Settings tab has correct scheduler_email
+- Check ⚙ Settings tab (optional) for a scheduler override if you’re using one
 - Verify you're using assigned email from list
 - Ensure BigQuery connection test passed
 

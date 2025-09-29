@@ -21,8 +21,8 @@ echo "3. Testing dashboard query..."
 bq query --use_legacy_sql=false --max_rows=3 "
 WITH scheduler_assignments AS (
   SELECT DISTINCT username_std, page_handle
-  FROM \`of-scheduler-proj.eros_source.scheduler_assignments_final\`
-  WHERE LOWER(scheduler_email) = LOWER('kyle@erosops.com')
+  FROM \`of-scheduler-proj.eros_source.scheduler_assignments\`
+  WHERE LOWER(scheduler_code) = LOWER('PAM')
 )
 SELECT
   dr.username_std as creator_id,

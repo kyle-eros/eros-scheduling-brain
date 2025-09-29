@@ -384,7 +384,7 @@ ORDER BY score DESC LIMIT 10
 |----------------------------------------|---------------------------------|
 | project_id                            | of-scheduler-proj               |
 | time_zone                             | America/Denver                  |
-| scheduler_email (optional override)   | john@erosops.com               |
+| scheduler_override (optional code/email) | (leave blank unless testing) |
 | caption_rank_view                     | mart.caption_rank_next24_v3_tbl |
 ```
 
