@@ -1,0 +1,419 @@
+config {
+  type: "table",
+  schema: "eros_messaging_mart",
+  partitionBy: "recommendation_date",
+  clusterBy: ["page_handle", "message_type", "recommendation_rank"],
+  requirePartitionFilter: true,
+  description: "Enhanced daily scheduling recommendations with mandatory drip bumps, renewals, and AI-optimized PPVs with authentic time-energy matching",
+  labels: {app: "eros", domain: "messaging", layer: "mart"},
+  tags: ["messaging_mart", "enhanced_scheduling"],
+  dependencies: ["creator_tier_assignments", "tier_baseline_templates", "caption_bank_drip", "caption_bank_renewal", "caption_bank_tip", "messages_enriched", "creator_heatmap", "fatigue_scores"]
+}
+
+WITH
+-- Get active creators with their tier assignments and templates
+active_creators_with_tiers AS (
+  SELECT
+    cta.*,
+    tbt.drip_schedule,
+    tbt.renewal_schedule,
+    tbt.ppv_windows,
+    tbt.base_daily_quota,
+    tbt.mandatory_drip_bumps,
+    tbt.min_daily_ppvs,
+    tbt.max_daily_ppvs,
+    tbt.mandatory_renewals,
+    tbt.mandatory_wall_posts,
+    tbt.max_tip_campaigns_per_week,
+    tbt.max_link_drops_per_day,
+    tbt.min_spacing_minutes,
+    tbt.randomize_offset_minutes
+  FROM ${ref("creator_tier_assignments")} cta
+  INNER JOIN ${ref("tier_baseline_templates")} tbt
+    ON cta.full_tier_assignment = tbt.tier_id
+  WHERE cta.assignment_date = CURRENT_DATE()
+    AND cta.performance_risk != 'HIGH_RISK'  -- Exclude high-risk creators
+),
+
+-- MANDATORY DRIP BUMP RECOMMENDATIONS (Non-negotiable - always 6 per day)
+drip_recommendations AS (
+  SELECT
+    ac.username_std,
+    ac.page_handle,
+    ac.page_type,
+    ac.final_page_type,
+    ac.full_tier_assignment,
+    CURRENT_DATE() as recommendation_date,
+
+    -- Create drip bump schedule with randomization
+    TIMESTAMP_ADD(
+      TIMESTAMP(CURRENT_DATE()),
+      INTERVAL (
+        drip.hour * 60 +
+        CAST(FLOOR(RAND() * (2 * ac.randomize_offset_minutes + 1) - ac.randomize_offset_minutes) AS INT64)
+      ) MINUTE
+    ) as recommended_send_ts,
+
+    'drip_bump' as message_type,
+    drip.type as drip_type,
+    drip.label as slot_description,
+
+    -- Rank drip bumps by time order (1-6)
+    ROW_NUMBER() OVER (
+      PARTITION BY ac.username_std
+      ORDER BY drip.hour
+    ) as recommendation_rank,
+
+    -- Drip bumps are mandatory - high confidence
+    0.95 as recommendation_score,
+    'HIGH' as timing_confidence,
+    'MANDATORY' as price_tier,
+    0.0 as suggested_price,  -- Drip bumps are free content
+
+    -- Fatigue safety (drip bumps should be spread out)
+    GREATEST(100 - (ROW_NUMBER() OVER (PARTITION BY ac.username_std ORDER BY drip.hour) * 5), 70) as fatigue_safety_score,
+
+    ac.base_daily_quota as daily_limit,
+    TRUE as is_mandatory,
+
+    -- Enhanced reasoning with time-energy context
+    CONCAT(
+      'MANDATORY DRIP: ', drip.label, ' (',
+      CASE
+        WHEN drip.hour BETWEEN 6 AND 11 THEN 'Morning Energy'
+        WHEN drip.hour BETWEEN 12 AND 17 THEN 'Afternoon Energy'
+        WHEN drip.hour BETWEEN 18 AND 23 THEN 'Evening Energy'
+        ELSE 'Late Night Energy'
+      END,
+      ') - Tier ', ac.base_tier, ' scheduled with ±', ac.randomize_offset_minutes, 'min randomization'
+    ) as recommendation_reason,
+
+    -- Authenticity requirements
+    CASE
+      WHEN drip.hour BETWEEN 6 AND 11 THEN 'morning'
+      WHEN drip.hour BETWEEN 12 AND 17 THEN 'afternoon'
+      WHEN drip.hour BETWEEN 18 AND 23 THEN 'evening'
+      ELSE 'late_night'
+    END as time_energy_required
+
+  FROM active_creators_with_tiers ac
+  CROSS JOIN UNNEST(ac.drip_schedule) as drip
+),
+
+-- MANDATORY RENEWAL RECOMMENDATIONS (Always 3 per day)
+renewal_recommendations AS (
+  SELECT
+    ac.username_std,
+    ac.page_handle,
+    ac.page_type,
+    ac.final_page_type,
+    ac.full_tier_assignment,
+    CURRENT_DATE() as recommendation_date,
+
+    -- Create renewal schedule (fixed times - no randomization for campaigns)
+    TIMESTAMP_ADD(
+      TIMESTAMP(CURRENT_DATE()),
+      INTERVAL renewal.hour * 60 MINUTE
+    ) as recommended_send_ts,
+
+    'renewal_campaign' as message_type,
+    renewal.type as renewal_type,
+    renewal.label as slot_description,
+
+    -- Rank renewals by time order (7-9 after drip bumps)
+    ROW_NUMBER() OVER (
+      PARTITION BY ac.username_std
+      ORDER BY renewal.hour
+    ) + 6 as recommendation_rank,  -- After 6 drip bumps
+
+    0.90 as recommendation_score,  -- High priority but slightly less than drip
+    'HIGH' as timing_confidence,
+    'CAMPAIGN' as price_tier,
+    0.0 as suggested_price,  -- Renewal campaigns are typically free
+
+    85 as fatigue_safety_score,  -- Renewals are less frequent
+    ac.base_daily_quota as daily_limit,
+    TRUE as is_mandatory,
+
+    CONCAT(
+      'MANDATORY RENEWAL: ', renewal.label, ' - ',
+      CASE renewal.hour
+        WHEN 8 THEN 'Morning energy boost for expired fans'
+        WHEN 16 THEN 'Afternoon reminder for evening renewals'
+        WHEN 0 THEN 'Final midnight push for immediate action'
+      END
+    ) as recommendation_reason,
+
+    CASE renewal.hour
+      WHEN 8 THEN 'morning'
+      WHEN 16 THEN 'afternoon'
+      WHEN 0 THEN 'midnight'
+    END as time_energy_required
+
+  FROM active_creators_with_tiers ac
+  CROSS JOIN UNNEST(ac.renewal_schedule) as renewal
+),
+
+-- AI-OPTIMIZED PPV RECOMMENDATIONS (Variable based on tier)
+ppv_candidate_slots AS (
+  SELECT
+    ac.username_std,
+    ac.page_handle,
+    ac.page_type,
+    ac.final_page_type,
+    ac.full_tier_assignment,
+    CURRENT_DATE() as recommendation_date,
+
+    -- Generate PPV slots based on tier windows
+    TIMESTAMP_ADD(
+      TIMESTAMP(CURRENT_DATE()),
+      INTERVAL (
+        ppv_window.hours[OFFSET(0)] * 60 +
+        CAST(FLOOR(RAND() * 60) AS INT64)  -- Random within the hour
+      ) MINUTE
+    ) as candidate_send_ts,
+
+    ppv_window.label as window_label,
+    ppv_window.price_type,
+    ppv_window.hours,
+
+    -- AI scoring based on historical performance + tier strategy
+    COALESCE(hm.avg_rpm, 0.5) as historical_rpm,
+    COALESCE(hm.confidence_level, 'MEDIUM') as timing_confidence,
+
+    -- Tier-based pricing
+    CASE ppv_window.price_type
+      WHEN 'premium' THEN ac.premium_price_range.min + FLOOR(RAND() * (ac.premium_price_range.max - ac.premium_price_range.min))
+      WHEN 'mid' THEN ac.mid_price_range.min + FLOOR(RAND() * (ac.mid_price_range.max - ac.mid_price_range.min))
+      WHEN 'teaser' THEN ac.teaser_price_range.min + FLOOR(RAND() * (ac.teaser_price_range.max - ac.teaser_price_range.min))
+      ELSE ac.mid_price_range.min
+    END as suggested_price,
+
+    -- Enhanced recommendation scoring
+    (
+      -- Base timing performance (40%)
+      COALESCE(hm.avg_rpm, 0.5) * 0.4 +
+
+      -- Price tier optimization (25%)
+      CASE ppv_window.price_type
+        WHEN 'premium' THEN 1.0
+        WHEN 'mid' THEN 0.8
+        WHEN 'teaser' THEN 0.6
+        ELSE 0.7
+      END * 0.25 +
+
+      -- Fatigue safety (20%)
+      COALESCE((100 - fs.fatigue_risk_score)/100, 0.8) * 0.2 +
+
+      -- Tier strategy alignment (15%)
+      CASE ac.strategy
+        WHEN 'conversion_aggressive' THEN 0.9
+        WHEN 'conversion_intensive' THEN 1.0
+        WHEN 'retention_quality' THEN 0.85
+        WHEN 'retention_vip' THEN 0.95
+        ELSE 0.8
+      END * 0.15
+
+    ) as ai_score
+
+  FROM active_creators_with_tiers ac
+  CROSS JOIN UNNEST(ac.ppv_windows) as ppv_window
+  LEFT JOIN ${ref("creator_heatmap")} hm
+    ON ac.username_std = hm.username_std
+    AND EXTRACT(HOUR FROM TIMESTAMP_ADD(TIMESTAMP(CURRENT_DATE()), INTERVAL ppv_window.hours[OFFSET(0)] * 60 MINUTE)) = hm.local_hour
+    AND FORMAT_DATE('%A', CURRENT_DATE()) = hm.local_day_of_week
+  LEFT JOIN ${ref("fatigue_scores")} fs
+    ON ac.username_std = fs.username_std
+    AND fs.score_date = CURRENT_DATE()
+),
+
+-- Select top PPVs based on tier limits
+ppv_recommendations AS (
+  SELECT
+    username_std,
+    page_handle,
+    page_type,
+    final_page_type,
+    full_tier_assignment,
+    recommendation_date,
+    candidate_send_ts as recommended_send_ts,
+    'ppv' as message_type,
+    'ai_optimized' as ppv_type,
+    window_label as slot_description,
+
+    -- Rank PPVs starting after mandatory messages (10+)
+    ROW_NUMBER() OVER (
+      PARTITION BY username_std
+      ORDER BY ai_score DESC, historical_rpm DESC
+    ) + 9 as recommendation_rank,  -- After 6 drip + 3 renewal
+
+    ai_score as recommendation_score,
+    timing_confidence,
+    price_type as price_tier,
+    suggested_price,
+
+    COALESCE((100 - fs.fatigue_risk_score), 75) as fatigue_safety_score,
+    ac.base_daily_quota as daily_limit,
+    FALSE as is_mandatory,
+
+    CONCAT(
+      'AI PPV: ', window_label, ' (', timing_confidence, ' confidence, $', suggested_price, ' ', price_type, ') - ',
+      'Historical RPM: $', ROUND(historical_rpm, 2), ', AI Score: ', ROUND(ai_score * 100, 1), '%'
+    ) as recommendation_reason,
+
+    CASE
+      WHEN EXTRACT(HOUR FROM candidate_send_ts) BETWEEN 6 AND 11 THEN 'morning'
+      WHEN EXTRACT(HOUR FROM candidate_send_ts) BETWEEN 12 AND 17 THEN 'afternoon'
+      WHEN EXTRACT(HOUR FROM candidate_send_ts) BETWEEN 18 AND 23 THEN 'evening'
+      ELSE 'late_night'
+    END as time_energy_required
+
+  FROM ppv_candidate_slots pcs
+  LEFT JOIN active_creators_with_tiers ac
+    ON pcs.username_std = ac.username_std
+  LEFT JOIN ${ref("fatigue_scores")} fs
+    ON pcs.username_std = fs.username_std
+    AND fs.score_date = CURRENT_DATE()
+
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY username_std
+    ORDER BY ai_score DESC
+  ) <= ac.max_daily_ppvs  -- Respect tier limits
+),
+
+-- OPTIONAL TIP CAMPAIGNS (Based on performance and tier)
+tip_recommendations AS (
+  SELECT
+    ac.username_std,
+    ac.page_handle,
+    ac.page_type,
+    ac.final_page_type,
+    ac.full_tier_assignment,
+    CURRENT_DATE() as recommendation_date,
+
+    -- Schedule tip campaigns in off-peak slots
+    TIMESTAMP_ADD(
+      TIMESTAMP(CURRENT_DATE()),
+      INTERVAL (14 * 60 + CAST(FLOOR(RAND() * 120) AS INT64)) MINUTE  -- 2-4 PM window
+    ) as recommended_send_ts,
+
+    'tip_campaign' as message_type,
+    'weekly_allowance' as tip_type,
+    'Afternoon Tip Opportunity' as slot_description,
+
+    100 as recommendation_rank,  -- Low priority, optional
+    0.6 as recommendation_score,  -- Lower priority than mandatory content
+    'MEDIUM' as timing_confidence,
+    'TIP' as price_tier,
+    0.0 as suggested_price,
+
+    70 as fatigue_safety_score,  -- Tips should be used sparingly
+    ac.base_daily_quota as daily_limit,
+    FALSE as is_mandatory,
+
+    'OPTIONAL TIP: Afternoon engagement boost - use if performance is strong' as recommendation_reason,
+    'afternoon' as time_energy_required
+
+  FROM active_creators_with_tiers ac
+  WHERE ac.max_tip_campaigns_per_week > 0
+    -- Only suggest tips for creators who haven't hit weekly limit
+    AND NOT EXISTS (
+      SELECT 1 FROM ${ref("messages_enriched")} me
+      WHERE me.username_std = ac.username_std
+        AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+        AND LOWER(me.message_text) LIKE '%tip%'
+      HAVING COUNT(*) >= ac.max_tip_campaigns_per_week
+    )
+),
+
+-- COMBINE ALL RECOMMENDATIONS
+all_recommendations AS (
+  SELECT * FROM drip_recommendations
+  UNION ALL
+  SELECT * FROM renewal_recommendations
+  UNION ALL
+  SELECT * FROM ppv_recommendations
+  UNION ALL
+  SELECT * FROM tip_recommendations
+),
+
+-- FINAL RANKING AND CLEANUP
+final_recommendations AS (
+  SELECT
+    *,
+    -- Anti-pattern detection flags
+    CASE
+      WHEN recommendation_rank <= 9 THEN 'MANDATORY'
+      WHEN recommendation_score >= 0.8 THEN 'HIGH_OPPORTUNITY'
+      WHEN recommendation_score >= 0.6 THEN 'GOOD_OPPORTUNITY'
+      WHEN recommendation_score >= 0.4 THEN 'FAIR_OPPORTUNITY'
+      ELSE 'LOW_CONFIDENCE'
+    END as opportunity_quality,
+
+    -- Time spacing validation
+    LAG(recommended_send_ts) OVER (
+      PARTITION BY username_std
+      ORDER BY recommended_send_ts
+    ) as previous_send_ts,
+
+    -- Caption selection hint based on time energy
+    CONCAT(
+      'Use ', time_energy_required, ' energy captions - ',
+      CASE time_energy_required
+        WHEN 'morning' THEN 'sleepy, casual, just woke up vibes'
+        WHEN 'afternoon' THEN 'bored, playful, getting ready themes'
+        WHEN 'evening' THEN 'seductive, going out, shower themes'
+        WHEN 'late_night' THEN 'cant sleep, horny, explicit vibes'
+        WHEN 'midnight' THEN 'final call, urgent, deadline pressure'
+      END
+    ) as caption_guidance
+
+  FROM all_recommendations
+)
+
+SELECT
+  username_std,
+  page_handle,
+  page_type,
+  final_page_type,
+  full_tier_assignment,
+  recommendation_date,
+  recommended_send_ts,
+  message_type,
+
+  -- Type-specific fields
+  CASE message_type
+    WHEN 'drip_bump' THEN drip_type
+    WHEN 'renewal_campaign' THEN renewal_type
+    WHEN 'ppv' THEN ppv_type
+    WHEN 'tip_campaign' THEN tip_type
+  END as message_subtype,
+
+  slot_description,
+  recommendation_rank,
+  recommendation_score,
+  timing_confidence,
+  price_tier,
+  suggested_price,
+  fatigue_safety_score,
+  daily_limit,
+  is_mandatory,
+  opportunity_quality,
+  recommendation_reason,
+  time_energy_required,
+  caption_guidance,
+
+  -- Spacing validation
+  CASE
+    WHEN previous_send_ts IS NULL THEN TRUE
+    WHEN TIMESTAMP_DIFF(recommended_send_ts, previous_send_ts, MINUTE) >= 60 THEN TRUE
+    ELSE FALSE
+  END as spacing_ok,
+
+  -- Meta
+  CURRENT_TIMESTAMP() as created_at
+
+FROM final_recommendations
+WHERE recommendation_rank <= daily_limit  -- Respect tier daily limits
+  AND fatigue_safety_score >= 50  -- Safety threshold
+ORDER BY username_std, recommendation_rank

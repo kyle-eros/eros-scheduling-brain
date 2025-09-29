@@ -1,0 +1,245 @@
+config {
+  type: "table",
+  schema: "eros_messaging_feat",
+  partitionBy: "analysis_date",
+  clusterBy: ["username_std", "pattern_risk_level"],
+  description: "Authenticity monitoring and anti-pattern detection system to prevent robotic behavior patterns",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  tags: ["messaging_feat", "authenticity", "anti_pattern"],
+  dependencies: ["messages_enriched", "creator_tier_assignments"]
+}
+
+WITH
+-- Analyze recent messaging patterns for each creator
+recent_messaging_patterns AS (
+  SELECT
+    me.username_std,
+    me.page_handle,
+    CURRENT_DATE() as analysis_date,
+
+    -- TIMING PATTERN ANALYSIS
+    COUNT(DISTINCT me.sending_date) as active_days_7d,
+    COUNT(*) as total_messages_7d,
+    AVG(COUNT(*)) OVER (PARTITION BY me.username_std ORDER BY me.sending_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) as avg_daily_messages,
+
+    -- Time patterns that indicate automation
+    COUNT(DISTINCT EXTRACT(MINUTE FROM me.sending_ts)) as unique_minutes_used,
+    COUNT(DISTINCT EXTRACT(HOUR FROM me.sending_ts)) as unique_hours_used,
+
+    -- Detect exact time repetition (major red flag)
+    COUNT(*) - COUNT(DISTINCT FORMAT_TIMESTAMP('%H:%M', me.sending_ts)) as exact_time_repetitions,
+
+    -- Spacing pattern analysis
+    STDDEV(TIMESTAMP_DIFF(me.sending_ts, LAG(me.sending_ts) OVER (PARTITION BY me.username_std ORDER BY me.sending_ts), MINUTE)) as spacing_variance,
+    AVG(TIMESTAMP_DIFF(me.sending_ts, LAG(me.sending_ts) OVER (PARTITION BY me.username_std ORDER BY me.sending_ts), MINUTE)) as avg_spacing_minutes,
+
+    -- CONTENT PATTERN ANALYSIS
+    COUNT(DISTINCT me.message_text) as unique_messages,
+    COUNT(*) - COUNT(DISTINCT me.message_text) as message_repetitions,
+
+    -- Caption length and structure patterns
+    AVG(LENGTH(me.message_text)) as avg_caption_length,
+    STDDEV(LENGTH(me.message_text)) as caption_length_variance,
+
+    -- Emoji and punctuation patterns (authentic vs scripted)
+    AVG(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(me.message_text, r'[😀-🿿]'))) as avg_emojis_per_message,
+    AVG(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(me.message_text, r'[.!?]'))) as avg_punctuation_per_message,
+
+    -- Language authenticity indicators
+    SUM(CASE WHEN REGEXP_CONTAINS(me.message_text, r'\b(lol|omg|wtf|tbh|imo|rn|ur|u|gonna|wanna)\b') THEN 1 ELSE 0 END) as casual_language_count,
+    SUM(CASE WHEN REGEXP_CONTAINS(me.message_text, r'\b(purchase|acquire|obtain|purchase|transaction)\b') THEN 1 ELSE 0 END) as formal_language_count,
+
+    -- PRICING PATTERN ANALYSIS
+    COUNT(DISTINCT me.price) as unique_price_points,
+    STDDEV(me.price) as price_variance,
+    SUM(CASE WHEN me.price % 5 = 0 THEN 1 ELSE 0 END) as round_number_prices,  -- Over-use of round numbers
+
+    -- TIME-ENERGY MATCHING ANALYSIS
+    SUM(CASE
+      WHEN EXTRACT(HOUR FROM me.sending_ts) BETWEEN 6 AND 11
+           AND REGEXP_CONTAINS(LOWER(me.message_text), r'\b(morning|sleep|woke|wake|bed|tired)\b') THEN 1
+      ELSE 0
+    END) as morning_energy_matches,
+
+    SUM(CASE
+      WHEN EXTRACT(HOUR FROM me.sending_ts) BETWEEN 20 AND 23
+           AND REGEXP_CONTAINS(LOWER(me.message_text), r'\b(shower|evening|night|sexy|bed)\b') THEN 1
+      ELSE 0
+    END) as evening_energy_matches,
+
+    SUM(CASE
+      WHEN EXTRACT(HOUR FROM me.sending_ts) >= 0 AND EXTRACT(HOUR FROM me.sending_ts) < 3
+           AND REGEXP_CONTAINS(LOWER(me.message_text), r'\b(cant sleep|horny|wet|touching|late)\b') THEN 1
+      ELSE 0
+    END) as late_night_energy_matches
+
+  FROM ${ref("messages_enriched")} me
+  WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+    AND me.sending_date < CURRENT_DATE()
+  GROUP BY me.username_std, me.page_handle
+),
+
+-- Calculate authenticity scores and pattern risk
+authenticity_analysis AS (
+  SELECT
+    rmp.*,
+
+    -- TIMING AUTHENTICITY SCORE (0-100, higher = more authentic)
+    LEAST(100, GREATEST(0,
+      -- Good variance in timing
+      CASE WHEN rmp.unique_minutes_used >= 20 THEN 25 ELSE rmp.unique_minutes_used * 1.25 END +
+
+      -- No exact time repetitions
+      CASE WHEN rmp.exact_time_repetitions = 0 THEN 20 ELSE GREATEST(0, 20 - rmp.exact_time_repetitions * 5) END +
+
+      -- Good spacing variance
+      CASE WHEN rmp.spacing_variance >= 30 THEN 25 ELSE COALESCE(rmp.spacing_variance * 0.8, 0) END +
+
+      -- Reasonable message frequency
+      CASE WHEN rmp.avg_daily_messages BETWEEN 8 AND 15 THEN 15
+           WHEN rmp.avg_daily_messages BETWEEN 6 AND 20 THEN 10
+           ELSE 5 END +
+
+      -- Good hour distribution
+      CASE WHEN rmp.unique_hours_used >= 8 THEN 15 ELSE rmp.unique_hours_used * 1.8 END
+    )) as timing_authenticity_score,
+
+    -- CONTENT AUTHENTICITY SCORE (0-100, higher = more authentic)
+    LEAST(100, GREATEST(0,
+      -- High message uniqueness
+      CASE WHEN rmp.unique_messages >= (rmp.total_messages_7d * 0.9) THEN 30
+           ELSE rmp.unique_messages / rmp.total_messages_7d * 30 END +
+
+      -- Good length variance
+      CASE WHEN rmp.caption_length_variance >= 20 THEN 20 ELSE COALESCE(rmp.caption_length_variance, 0) END +
+
+      -- Casual language usage
+      CASE WHEN rmp.casual_language_count >= (rmp.total_messages_7d * 0.3) THEN 20
+           ELSE rmp.casual_language_count / rmp.total_messages_7d * 66 END +
+
+      -- Low formal language
+      CASE WHEN rmp.formal_language_count <= (rmp.total_messages_7d * 0.1) THEN 15
+           ELSE GREATEST(0, 15 - rmp.formal_language_count * 2) END +
+
+      -- Natural emoji usage
+      CASE WHEN rmp.avg_emojis_per_message BETWEEN 1 AND 4 THEN 15
+           ELSE GREATEST(0, 15 - ABS(rmp.avg_emojis_per_message - 2.5) * 3) END
+    )) as content_authenticity_score,
+
+    -- PRICING AUTHENTICITY SCORE (0-100, higher = more authentic)
+    LEAST(100, GREATEST(0,
+      -- Good price variety
+      CASE WHEN rmp.unique_price_points >= 5 THEN 25 ELSE rmp.unique_price_points * 5 END +
+
+      -- Good price variance
+      CASE WHEN rmp.price_variance >= 15 THEN 25 ELSE COALESCE(rmp.price_variance * 1.6, 0) END +
+
+      -- Not too many round numbers
+      CASE WHEN rmp.round_number_prices <= (rmp.total_messages_7d * 0.4) THEN 25
+           ELSE GREATEST(0, 25 - (rmp.round_number_prices / rmp.total_messages_7d * 100 - 40) * 2) END +
+
+      -- Reasonable pricing frequency
+      CASE WHEN rmp.total_messages_7d BETWEEN 30 AND 100 THEN 25 ELSE 15 END
+    )) as pricing_authenticity_score,
+
+    -- TIME-ENERGY AUTHENTICITY SCORE (0-100, higher = more authentic)
+    LEAST(100, GREATEST(0,
+      -- Morning content matches morning times
+      CASE WHEN rmp.morning_energy_matches >= 2 THEN 35 ELSE rmp.morning_energy_matches * 17 END +
+
+      -- Evening content matches evening times
+      CASE WHEN rmp.evening_energy_matches >= 2 THEN 35 ELSE rmp.evening_energy_matches * 17 END +
+
+      -- Late night content matches late times
+      CASE WHEN rmp.late_night_energy_matches >= 1 THEN 30 ELSE rmp.late_night_energy_matches * 30 END
+    )) as time_energy_authenticity_score
+
+  FROM recent_messaging_patterns rmp
+),
+
+-- Final risk assessment and recommendations
+pattern_risk_assessment AS (
+  SELECT
+    aa.*,
+
+    -- OVERALL AUTHENTICITY SCORE
+    (aa.timing_authenticity_score * 0.3 +
+     aa.content_authenticity_score * 0.35 +
+     aa.pricing_authenticity_score * 0.2 +
+     aa.time_energy_authenticity_score * 0.15) as overall_authenticity_score,
+
+    -- PATTERN RISK LEVEL
+    CASE
+      WHEN aa.exact_time_repetitions >= 5 OR aa.unique_minutes_used <= 5 THEN 'CRITICAL'
+      WHEN aa.spacing_variance <= 10 OR aa.unique_messages <= (aa.total_messages_7d * 0.6) THEN 'HIGH'
+      WHEN aa.round_number_prices >= (aa.total_messages_7d * 0.7) OR aa.casual_language_count = 0 THEN 'MEDIUM'
+      WHEN aa.unique_hours_used <= 4 OR aa.caption_length_variance <= 10 THEN 'LOW'
+      ELSE 'MINIMAL'
+    END as pattern_risk_level,
+
+    -- SPECIFIC ALERTS
+    ARRAY(
+      SELECT alert FROM UNNEST([
+        CASE WHEN aa.exact_time_repetitions > 0 THEN 'EXACT_TIME_REPETITION' END,
+        CASE WHEN aa.unique_minutes_used <= 10 THEN 'LIMITED_TIME_VARIANCE' END,
+        CASE WHEN aa.spacing_variance <= 15 THEN 'ROBOTIC_SPACING' END,
+        CASE WHEN aa.unique_messages <= (aa.total_messages_7d * 0.7) THEN 'HIGH_MESSAGE_REPETITION' END,
+        CASE WHEN aa.casual_language_count = 0 THEN 'NO_CASUAL_LANGUAGE' END,
+        CASE WHEN aa.formal_language_count >= (aa.total_messages_7d * 0.2) THEN 'TOO_FORMAL' END,
+        CASE WHEN aa.round_number_prices >= (aa.total_messages_7d * 0.6) THEN 'EXCESSIVE_ROUND_PRICES' END,
+        CASE WHEN aa.morning_energy_matches = 0 AND aa.evening_energy_matches = 0 THEN 'NO_TIME_ENERGY_MATCHING' END
+      ]) as alert
+      WHERE alert IS NOT NULL
+    ) as authenticity_alerts,
+
+    -- IMPROVEMENT RECOMMENDATIONS
+    CASE aa.pattern_risk_level
+      WHEN 'CRITICAL' THEN 'IMMEDIATE ACTION: Vary send times by 30+ minutes, use unique captions, add casual language'
+      WHEN 'HIGH' THEN 'URGENT: Increase time variance, reduce message repetition, improve content authenticity'
+      WHEN 'MEDIUM' THEN 'IMPORTANT: Add more casual language, vary pricing, improve time-energy matching'
+      WHEN 'LOW' THEN 'MINOR: Expand hour range, increase caption length variety'
+      ELSE 'GOOD: Continue current authentic patterns'
+    END as improvement_recommendations
+
+  FROM authenticity_analysis aa
+)
+
+SELECT
+  username_std,
+  page_handle,
+  analysis_date,
+
+  -- Authenticity scores
+  overall_authenticity_score,
+  timing_authenticity_score,
+  content_authenticity_score,
+  pricing_authenticity_score,
+  time_energy_authenticity_score,
+
+  -- Risk assessment
+  pattern_risk_level,
+  authenticity_alerts,
+  improvement_recommendations,
+
+  -- Detailed metrics for investigation
+  total_messages_7d,
+  avg_daily_messages,
+  unique_minutes_used,
+  exact_time_repetitions,
+  spacing_variance,
+  unique_messages,
+  message_repetitions,
+  casual_language_count,
+  formal_language_count,
+  round_number_prices,
+  morning_energy_matches,
+  evening_energy_matches,
+  late_night_energy_matches,
+
+  -- Meta
+  CURRENT_TIMESTAMP() as created_at,
+  'authenticity_monitor_v1' as analysis_version
+
+FROM pattern_risk_assessment
+WHERE overall_authenticity_score IS NOT NULL
+ORDER BY pattern_risk_level DESC, overall_authenticity_score ASC

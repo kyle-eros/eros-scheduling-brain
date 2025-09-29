@@ -43,7 +43,18 @@ venv.bak/
 # Temporary files
 tmp/
 temp/
+
 # Temporary build files
 *.sql
 .df-credentials.json
 *_query.sql
+
+# Data files (may contain sensitive information)
+data/
+*.csv
+
+# Backup files
+backups/
+
+# Test output files
+test_output/

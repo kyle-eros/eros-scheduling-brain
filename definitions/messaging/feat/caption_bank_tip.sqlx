@@ -1,0 +1,229 @@
+config {
+  type: "table",
+  schema: "eros_messaging_feat",
+  partitionBy: "created_date",
+  clusterBy: ["tip_type", "effort_level", "reward_type"],
+  description: "Specialized caption bank for tip campaigns with choice-based engagement and scarcity tactics",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  tags: ["messaging_feat", "caption_bank", "tips"],
+  dependencies: []
+}
+
+SELECT * FROM UNNEST([
+  -- EFFORT VS TIP CAMPAIGNS (Give choice between engagement and payment)
+  STRUCT(
+    'tip_effort_001' as caption_id,
+    'effort_vs_tip' as tip_type,
+    'medium' as effort_level,
+    'video_reward' as reward_type,
+    'Like 100 posts for a FREE solo oil video 🎉 If you are to lazy to do the home work, you can cheat & tip $5 for the video 😜' as caption_text,
+    89 as authenticity_score,
+    'playful_choice' as tone,
+    ['like_100_posts', 'free_video', 'lazy_cheat', 'tip_5'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  STRUCT(
+    'tip_effort_002' as caption_id,
+    'effort_vs_tip' as tip_type,
+    'high' as effort_level,
+    'photo_set' as reward_type,
+    'Comment on 50 posts saying "goddess" for exclusive photo set 📸 OR tip $8 to skip the work and get it instantly 💸' as caption_text,
+    86 as authenticity_score,
+    'effort_or_pay' as tone,
+    ['comment_50_posts', 'goddess', 'photo_set', 'tip_8_skip'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  STRUCT(
+    'tip_effort_003' as caption_id,
+    'effort_vs_tip' as tip_type,
+    'low' as effort_level,
+    'custom_content' as reward_type,
+    'Double tap 25 posts & you get a custom pic 💕 too tired? tip $3 and I\'ll send it anyway 😘' as caption_text,
+    92 as authenticity_score,
+    'easy_choice' as tone,
+    ['double_tap_25', 'custom_pic', 'too_tired', 'tip_3'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  -- SCARCITY-BASED TIP CAMPAIGNS
+  STRUCT(
+    'tip_scarcity_001' as caption_id,
+    'scarcity' as tip_type,
+    'instant' as effort_level,
+    'special_gift' as reward_type,
+    'First 10 people to send me a tip get a special gift 😘😛💦' as caption_text,
+    84 as authenticity_score,
+    'limited_opportunity' as tone,
+    ['first_10_people', 'send_tip', 'special_gift'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  STRUCT(
+    'tip_scarcity_002' as caption_id,
+    'scarcity' as tip_type,
+    'instant' as effort_level,
+    'custom_video' as reward_type,
+    'Only making 5 custom videos today 🎬 first tips get priority… who wants one?' as caption_text,
+    87 as authenticity_score,
+    'limited_slots' as tone,
+    ['only_5_videos', 'first_tips_priority', 'who_wants'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  STRUCT(
+    'tip_scarcity_003' as caption_id,
+    'scarcity' as tip_type,
+    'instant' as effort_level,
+    'mystery_reward' as reward_type,
+    'FLASH SALE: first 15 tips of ANY amount get mystery reward 🎁✨ no spoilers… trust me though 😈' as caption_text,
+    82 as authenticity_score,
+    'flash_mystery' as tone,
+    ['flash_sale', 'first_15_tips', 'any_amount', 'mystery_reward', 'trust_me'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  -- SIMPLE TIP CAMPAIGNS (For newer accounts)
+  STRUCT(
+    'tip_simple_001' as caption_id,
+    'simple' as tip_type,
+    'instant' as effort_level,
+    'surprise' as reward_type,
+    'Tip for a surprise 🤤' as caption_text,
+    95 as authenticity_score,
+    'simple_effective' as tone,
+    ['tip_for_surprise'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  STRUCT(
+    'tip_simple_002' as caption_id,
+    'simple' as tip_type,
+    'instant' as effort_level,
+    'thank_you_gift' as reward_type,
+    'Send me anything and get thanked properly 💋' as caption_text,
+    91 as authenticity_score,
+    'grateful_simple' as tone,
+    ['send_anything', 'thanked_properly'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  STRUCT(
+    'tip_simple_003' as caption_id,
+    'simple' as tip_type,
+    'instant' as effort_level,
+    'good_vibes' as reward_type,
+    'Feeling generous? I\'ll make your day better 🌟' as caption_text,
+    88 as authenticity_score,
+    'generous_positive' as tone,
+    ['feeling_generous', 'make_day_better'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  -- INTERACTIVE TIP CAMPAIGNS
+  STRUCT(
+    'tip_interactive_001' as caption_id,
+    'interactive' as tip_type,
+    'medium' as effort_level,
+    'personalized_content' as reward_type,
+    'Tip with your fantasy and I\'ll rate it 1-10 💭 plus send something related if it\'s above 7 😏' as caption_text,
+    85 as authenticity_score,
+    'interactive_rating' as tone,
+    ['tip_with_fantasy', 'rate_1_to_10', 'above_7'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  STRUCT(
+    'tip_interactive_002' as caption_id,
+    'interactive' as tip_type,
+    'low' as effort_level,
+    'emoji_game' as reward_type,
+    'Tip me with 3 emojis and I\'ll guess your mood… if I\'m right you get a bonus 🎯' as caption_text,
+    90 as authenticity_score,
+    'emoji_guessing' as tone,
+    ['tip_3_emojis', 'guess_mood', 'if_right_bonus'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  -- APPRECIATION TIP CAMPAIGNS
+  STRUCT(
+    'tip_appreciation_001' as caption_id,
+    'appreciation' as tip_type,
+    'instant' as effort_level,
+    'extra_content' as reward_type,
+    'Having a rough day… tips always cheer me up and I send extra love back 💕' as caption_text,
+    93 as authenticity_score,
+    'vulnerable_appreciation' as tone,
+    ['rough_day', 'cheer_me_up', 'extra_love_back'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  STRUCT(
+    'tip_appreciation_002' as caption_id,
+    'appreciation' as tip_type,
+    'instant' as effort_level,
+    'gratitude_content' as reward_type,
+    'You guys supporting my content means everything 🥺 tips help me create more… and I always show appreciation 💖' as caption_text,
+    91 as authenticity_score,
+    'grateful_meaningful' as tone,
+    ['supporting_content', 'means_everything', 'help_create_more', 'show_appreciation'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  -- WEEKEND/SPECIAL OCCASION CAMPAIGNS
+  STRUCT(
+    'tip_weekend_001' as caption_id,
+    'weekend_special' as tip_type,
+    'instant' as effort_level,
+    'weekend_treat' as reward_type,
+    'WEEKEND VIBES 🎉 tip me for your weekend treat… I\'ve got some special content ready 😘' as caption_text,
+    86 as authenticity_score,
+    'weekend_celebration' as tone,
+    ['weekend_vibes', 'weekend_treat', 'special_content_ready'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  ),
+
+  STRUCT(
+    'tip_special_001' as caption_id,
+    'special_occasion' as tip_type,
+    'instant' as effort_level,
+    'celebration_content' as reward_type,
+    'Celebrating a good week 🥳 tip to join the party… everyone gets something fun!' as caption_text,
+    84 as authenticity_score,
+    'celebration_inclusive' as tone,
+    ['celebrating_good_week', 'join_party', 'everyone_gets_fun'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
+    CURRENT_DATE() as created_date
+  )
+
+]) AS tip_captions

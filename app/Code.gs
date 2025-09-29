@@ -5,7 +5,12 @@ const DEFAULTS = {
   TZ: 'America/Denver',
   VIEWS: {
     WEEK_SLOTS: 'eros_core.vw_week_slots_7d_rbac',
-    DAILY_RECOMMENDATIONS: 'eros_messaging_mart.daily_recommendations',
+    DAILY_RECOMMENDATIONS: 'eros_messaging_mart.enhanced_daily_recommendations',
+    CAPTION_DRIP: 'eros_messaging_feat.caption_bank_drip',
+    CAPTION_RENEWAL: 'eros_messaging_feat.caption_bank_renewal',
+    CAPTION_TIP: 'eros_messaging_feat.caption_bank_tip',
+    AUTHENTICITY_MONITOR: 'eros_messaging_feat.authenticity_monitor',
+    TIER_ASSIGNMENTS: 'eros_messaging_feat.creator_tier_assignments',
     CAPTION_RANK: 'mart.caption_rank_next24_v3_tbl',
     BRIEF: 'sheets.v_daily_brief_user_flat',
     ALERTS: 'mart.v_weekly_feasibility_alerts'
@@ -457,4 +462,300 @@ ${cfg.PROJECT}.${cfg.VIEWS.CAPTION_RANK}
     console.error('qa error:', e);
     return 'Query failed. Try again.';
   }
+}
+
+/** ====== ENHANCED SCHEDULING FUNCTIONS ====== */
+
+/** Load enhanced daily recommendations with mandatory drip bumps and renewals */
+function loadEnhancedDayBoard(){
+  try {
+    const cfg = getCfg_();
+    const activeEmail = _email();
+    const today = _fmtDate(new Date(), cfg);
+
+    const sql = `
+      SELECT
+        username_std,
+        page_handle,
+        FORMAT_TIMESTAMP('%H:%M', recommended_send_ts) as scheduled_time,
+        message_type,
+        message_subtype,
+        slot_description,
+        recommendation_rank,
+        ROUND(recommendation_score * 100, 1) as score_percent,
+        timing_confidence,
+        price_tier,
+        suggested_price,
+        fatigue_safety_score,
+        is_mandatory,
+        opportunity_quality,
+        recommendation_reason,
+        time_energy_required,
+        caption_guidance,
+        spacing_ok
+      FROM \`${cfg.PROJECT}.${cfg.VIEWS.DAILY_RECOMMENDATIONS}\`
+      WHERE recommendation_date = '${today}'
+        AND username_std IN (
+          SELECT string_field_1
+          FROM \`${cfg.PROJECT}.eros_source.scheduler_assignments_final\`
+          WHERE string_field_0 = '${activeEmail}'
+        )
+      ORDER BY username_std, recommendation_rank
+    `;
+
+    const result = _bq(sql, cfg);
+    const rows = _rows(result);
+
+    // Write to Day sheet
+    const ss = SpreadsheetApp.getActive();
+    const daySheet = ss.getSheetByName(cfg.SHEETS.DAY);
+
+    if (!daySheet) {
+      SpreadsheetApp.getUi().alert('Day sheet not found. Please create it first.');
+      return;
+    }
+
+    // Clear existing content
+    daySheet.clear();
+
+    // Headers
+    const headers = [
+      'Creator', 'Page Handle', 'Time', 'Type', 'Subtype', 'Description',
+      'Rank', 'Score%', 'Confidence', 'Price Tier', 'Price', 'Fatigue',
+      'Mandatory', 'Quality', 'Reason', 'Energy', 'Caption Guidance', 'Spacing OK', 'Status'
+    ];
+    daySheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+    // Format headers
+    daySheet.getRange(1, 1, 1, headers.length)
+      .setBackground('#4285f4')
+      .setFontColor('white')
+      .setFontWeight('bold');
+
+    if (rows.length > 0) {
+      const data = rows.map(row => [
+        row.username_std,
+        row.page_handle,
+        row.scheduled_time,
+        row.message_type,
+        row.message_subtype || '',
+        row.slot_description,
+        row.recommendation_rank,
+        row.score_percent,
+        row.timing_confidence,
+        row.price_tier,
+        row.suggested_price || '',
+        row.fatigue_safety_score,
+        row.is_mandatory ? 'YES' : 'NO',
+        row.opportunity_quality,
+        row.recommendation_reason,
+        row.time_energy_required,
+        row.caption_guidance,
+        row.spacing_ok ? 'OK' : 'CHECK',
+        'PENDING'  // Status column for scheduler updates
+      ]);
+
+      daySheet.getRange(2, 1, data.length, headers.length).setValues(data);
+
+      // Apply conditional formatting
+      const range = daySheet.getRange(2, 1, data.length, headers.length);
+
+      // Color code by message type
+      data.forEach((row, index) => {
+        const rowRange = daySheet.getRange(index + 2, 1, 1, headers.length);
+
+        if (row[3] === 'drip_bump') {
+          rowRange.setBackground('#e8f5e8');  // Light green for mandatory drip
+        } else if (row[3] === 'renewal_campaign') {
+          rowRange.setBackground('#fff3e0');  // Light orange for renewals
+        } else if (row[3] === 'ppv') {
+          rowRange.setBackground('#f3e5f5');  // Light purple for PPVs
+        } else if (row[3] === 'tip_campaign') {
+          rowRange.setBackground('#e1f5fe');  // Light blue for tips
+        }
+
+        // Highlight mandatory items
+        if (row[12] === 'YES') {
+          rowRange.setBorder(true, true, true, true, true, true, '#ff0000', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+        }
+      });
+    }
+
+    daySheet.autoResizeColumns(1, headers.length);
+    SpreadsheetApp.getActive().toast(`Loaded ${rows.length} enhanced recommendations for ${today}`);
+
+  } catch (e) {
+    console.error('loadEnhancedDayBoard error:', e);
+    SpreadsheetApp.getUi().alert('Error loading enhanced day board: ' + e.toString());
+  }
+}
+
+/** Get authentic captions based on message type and time energy */
+function getAuthenticCaptions(messageType, timeEnergy, creator = '') {
+  try {
+    const cfg = getCfg_();
+    let tableName = '';
+    let typeField = '';
+
+    // Determine which caption bank to query
+    switch (messageType) {
+      case 'drip_bump':
+        tableName = cfg.VIEWS.CAPTION_DRIP;
+        typeField = 'drip_type';
+        break;
+      case 'renewal_campaign':
+        tableName = cfg.VIEWS.CAPTION_RENEWAL;
+        typeField = 'renewal_type';
+        break;
+      case 'tip_campaign':
+        tableName = cfg.VIEWS.CAPTION_TIP;
+        typeField = 'tip_type';
+        break;
+      default:
+        return 'Unknown message type';
+    }
+
+    const sql = `
+      SELECT
+        caption_id,
+        caption_text,
+        authenticity_score,
+        tone,
+        tags,
+        times_used,
+        last_used_date
+      FROM \`${cfg.PROJECT}.${tableName}\`
+      WHERE time_energy = '${timeEnergy}'
+        AND (last_used_date IS NULL OR last_used_date < DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY))
+      ORDER BY authenticity_score DESC, times_used ASC
+      LIMIT 10
+    `;
+
+    const result = _bq(sql, cfg);
+    const rows = _rows(result);
+
+    if (rows.length === 0) {
+      return 'No captions found for this combination';
+    }
+
+    return rows.map((row, index) =>
+      `${index + 1}. [Score: ${row.authenticity_score}] ${row.caption_text}`
+    ).join('\n\n');
+
+  } catch (e) {
+    console.error('getAuthenticCaptions error:', e);
+    return 'Error loading captions: ' + e.toString();
+  }
+}
+
+/** Check authenticity status for a creator */
+function checkAuthenticityStatus(creator) {
+  try {
+    const cfg = getCfg_();
+
+    const sql = `
+      SELECT
+        overall_authenticity_score,
+        pattern_risk_level,
+        authenticity_alerts,
+        improvement_recommendations,
+        analysis_date
+      FROM \`${cfg.PROJECT}.${cfg.VIEWS.AUTHENTICITY_MONITOR}\`
+      WHERE LOWER(username_std) = LOWER('${creator}')
+        AND analysis_date = CURRENT_DATE()
+    `;
+
+    const result = _bq(sql, cfg);
+    const rows = _rows(result);
+
+    if (rows.length === 0) {
+      return 'No authenticity data found for this creator';
+    }
+
+    const row = rows[0];
+    return `
+Authenticity Status for ${creator}:
+Overall Score: ${row.overall_authenticity_score}/100
+Risk Level: ${row.pattern_risk_level}
+Alerts: ${row.authenticity_alerts || 'None'}
+Recommendations: ${row.improvement_recommendations}
+Analysis Date: ${row.analysis_date}
+    `;
+
+  } catch (e) {
+    console.error('checkAuthenticityStatus error:', e);
+    return 'Error checking authenticity: ' + e.toString();
+  }
+}
+
+/** Get tier information for a creator */
+function getTierInfo(creator) {
+  try {
+    const cfg = getCfg_();
+
+    const sql = `
+      SELECT
+        full_tier_assignment,
+        tier_description,
+        base_daily_quota,
+        min_daily_ppvs,
+        max_daily_ppvs,
+        mandatory_drip_bumps,
+        mandatory_renewals,
+        tier_confidence,
+        performance_risk
+      FROM \`${cfg.PROJECT}.${cfg.VIEWS.TIER_ASSIGNMENTS}\`
+      WHERE LOWER(username_std) = LOWER('${creator}')
+        AND assignment_date = CURRENT_DATE()
+    `;
+
+    const result = _bq(sql, cfg);
+    const rows = _rows(result);
+
+    if (rows.length === 0) {
+      return 'No tier assignment found for this creator';
+    }
+
+    const row = rows[0];
+    return `
+Tier Assignment for ${creator}:
+Tier: ${row.full_tier_assignment}
+Description: ${row.tier_description}
+Daily Quota: ${row.base_daily_quota} messages
+PPV Range: ${row.min_daily_ppvs}-${row.max_daily_ppvs}
+Mandatory: ${row.mandatory_drip_bumps} drips + ${row.mandatory_renewals} renewals
+Confidence: ${row.tier_confidence}
+Risk Level: ${row.performance_risk}
+    `;
+
+  } catch (e) {
+    console.error('getTierInfo error:', e);
+    return 'Error getting tier info: ' + e.toString();
+  }
+}
+
+/** Enhanced menu system */
+function onOpen(){
+  const cfg = getCfg_();
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu('🚀 Enhanced Scheduler Hub')
+    .addItem('📅 Load My Week','loadMyWeek')
+    .addItem('✅ Load Enhanced Day Board','loadEnhancedDayBoard')
+    .addSeparator()
+    .addSubMenu(ui.createMenu('🧠 Smart Captions')
+      .addItem('Get Drip Captions','getDripCaptions')
+      .addItem('Get Renewal Captions','getRenewalCaptions')
+      .addItem('Get Tip Captions','getTipCaptions'))
+    .addSeparator()
+    .addSubMenu(ui.createMenu('📊 Analytics')
+      .addItem('Check Creator Authenticity','checkCreatorAuthenticity')
+      .addItem('View Tier Assignment','viewTierAssignment'))
+    .addSeparator()
+    .addItem('↔ Randomize Minutes (±15)','randomizeMinutes')
+    .addItem('📤 Submit Ready/Sent','submitPlan')
+    .addItem('❓ Ask EROS (sidebar)','openAskSidebar')
+    .addSeparator()
+    .addItem('🔧 Test BigQuery Connection','testBigQueryConnection')
+    .addToUi();
+  ensureTabs_(cfg);
 }

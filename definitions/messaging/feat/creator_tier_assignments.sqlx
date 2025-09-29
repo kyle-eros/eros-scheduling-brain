@@ -120,31 +120,31 @@ final_tier_assignments AS (
   SELECT
     *,
 
-    -- Tier description
+    -- Tier description with new mandatory requirements
     CASE full_tier_assignment
-      WHEN 'A_FREE' THEN 'Launch Free: 6-15 PPVs/day, conversion-focused, lower prices'
-      WHEN 'A_PAID' THEN 'Launch Paid: 3-8 PPVs/day, quality-focused, premium prices'
-      WHEN 'B_FREE' THEN 'Balanced Free: 6-12 PPVs/day, steady conversion strategy'
-      WHEN 'B_PAID' THEN 'Balanced Paid: 4-6 PPVs/day, retention-focused approach'
-      WHEN 'C_FREE' THEN 'Established Free: 8-15 PPVs/day, optimized conversion'
-      WHEN 'C_PAID' THEN 'Established Paid: 5-8 PPVs/day, premium retention'
-      WHEN 'D_FREE' THEN 'Intensive Free: 10-20 PPVs/day, high-volume conversion'
-      WHEN 'D_PAID' THEN 'Intensive Paid: 7-10 PPVs/day, VIP experience focus'
+      WHEN 'A_FREE' THEN 'Launch Free: 8 total daily (6 drip + 2-8 PPVs). Volume-focused conversion.'
+      WHEN 'A_PAID' THEN 'Launch Paid: 9 total daily (6 drip + 3-6 PPVs). Quality retention focus.'
+      WHEN 'B_FREE' THEN 'Balanced Free: 10 total daily (6 drip + 4-8 PPVs). Steady conversion strategy.'
+      WHEN 'B_PAID' THEN 'Balanced Paid: 10 total daily (6 drip + 4-6 PPVs). Retention approach.'
+      WHEN 'C_FREE' THEN 'Established Free: 12 total daily (6 drip + 6-10 PPVs). Optimized conversion.'
+      WHEN 'C_PAID' THEN 'Established Paid: 11 total daily (6 drip + 5-8 PPVs). Premium retention.'
+      WHEN 'D_FREE' THEN 'Intensive Free: 15 total daily (6 drip + 9-14 PPVs). Maximum volume.'
+      WHEN 'D_PAID' THEN 'Intensive Paid: 13 total daily (6 drip + 7-10 PPVs). VIP experience.'
       ELSE 'Unknown tier configuration'
     END as tier_description,
 
-    -- Expected daily message range
+    -- Expected daily message range (based on new tier structure)
     CASE full_tier_assignment
-      WHEN 'A_FREE' THEN STRUCT(6 as min_daily, 15 as max_daily)
-      WHEN 'A_PAID' THEN STRUCT(3 as min_daily, 8 as max_daily)
-      WHEN 'B_FREE' THEN STRUCT(6 as min_daily, 12 as max_daily)
-      WHEN 'B_PAID' THEN STRUCT(4 as min_daily, 6 as max_daily)
-      WHEN 'C_FREE' THEN STRUCT(8 as min_daily, 15 as max_daily)
-      WHEN 'C_PAID' THEN STRUCT(5 as min_daily, 8 as max_daily)
-      WHEN 'D_FREE' THEN STRUCT(10 as min_daily, 20 as max_daily)
-      WHEN 'D_PAID' THEN STRUCT(7 as min_daily, 10 as max_daily)
-      ELSE STRUCT(3 as min_daily, 6 as max_daily)
-    END as daily_message_range
+      WHEN 'A_FREE' THEN STRUCT(8 as base_quota, 2 as min_ppvs, 8 as max_ppvs)
+      WHEN 'A_PAID' THEN STRUCT(9 as base_quota, 3 as min_ppvs, 6 as max_ppvs)
+      WHEN 'B_FREE' THEN STRUCT(10 as base_quota, 4 as min_ppvs, 8 as max_ppvs)
+      WHEN 'B_PAID' THEN STRUCT(10 as base_quota, 4 as min_ppvs, 6 as max_ppvs)
+      WHEN 'C_FREE' THEN STRUCT(12 as base_quota, 6 as min_ppvs, 10 as max_ppvs)
+      WHEN 'C_PAID' THEN STRUCT(11 as base_quota, 5 as min_ppvs, 8 as max_ppvs)
+      WHEN 'D_FREE' THEN STRUCT(15 as base_quota, 9 as min_ppvs, 14 as max_ppvs)
+      WHEN 'D_PAID' THEN STRUCT(13 as base_quota, 7 as min_ppvs, 10 as max_ppvs)
+      ELSE STRUCT(8 as base_quota, 2 as min_ppvs, 6 as max_ppvs)
+    END as daily_quota_range
 
   FROM tier_assignments
 )
@@ -161,8 +161,12 @@ SELECT
   tier_score,
   tier_confidence,
   tier_description,
-  daily_message_range.min_daily as min_daily_messages,
-  daily_message_range.max_daily as max_daily_messages,
+  daily_quota_range.base_quota as base_daily_quota,
+  daily_quota_range.min_ppvs as min_daily_ppvs,
+  daily_quota_range.max_ppvs as max_daily_ppvs,
+  6 as mandatory_drip_bumps,  -- Always 6 for all tiers
+  3 as mandatory_renewals,    -- Always 3 for all tiers
+  1 as mandatory_wall_posts,  -- Always 1 for all tiers
 
   -- Performance metrics
   revenue_pct,
