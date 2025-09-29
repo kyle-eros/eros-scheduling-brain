@@ -4,7 +4,7 @@ config {
   partitionBy: "recommendation_date",
   clusterBy: ["page_handle", "message_type", "recommendation_rank"],
   requirePartitionFilter: true,
-  description: "Enhanced daily scheduling recommendations with mandatory drip bumps, renewals, and AI-optimized PPVs with authentic time-energy matching",
+  description: "Fully AI-optimized daily scheduling recommendations with data-driven drip bumps, renewals, and PPVs using individual creator performance analysis",
   labels: {app: "eros", domain: "messaging", layer: "mart"},
   tags: ["messaging_mart", "enhanced_scheduling"],
   dependencies: ["creator_tier_assignments", "tier_baseline_templates", "caption_bank_drip", "caption_bank_renewal", "caption_bank_tip", "messages_enriched", "creator_heatmap", "fatigue_scores"]
@@ -19,10 +19,12 @@ active_creators_with_tiers AS (
     tbt.renewal_schedule,
     tbt.ppv_windows,
     tbt.base_daily_quota,
-    tbt.mandatory_drip_bumps,
+    tbt.min_drip_bumps,
+    tbt.max_drip_bumps,
     tbt.min_daily_ppvs,
     tbt.max_daily_ppvs,
-    tbt.mandatory_renewals,
+    tbt.min_renewals,
+    tbt.max_renewals,
     tbt.mandatory_wall_posts,
     tbt.max_tip_campaigns_per_week,
     tbt.max_link_drops_per_day,
@@ -35,8 +37,8 @@ active_creators_with_tiers AS (
     AND cta.performance_risk != 'HIGH_RISK'  -- Exclude high-risk creators
 ),
 
--- MANDATORY DRIP BUMP RECOMMENDATIONS (Non-negotiable - always 6 per day)
-drip_recommendations AS (
+-- AI-OPTIMIZED DRIP BUMP RECOMMENDATIONS (Data-driven counts based on engagement)
+drip_candidate_slots AS (
   SELECT
     ac.username_std,
     ac.page_handle,
@@ -58,14 +60,14 @@ drip_recommendations AS (
     drip.type as drip_type,
     drip.label as slot_description,
 
-    -- Rank drip bumps by time order (1-6)
+    -- Rank drip bumps by AI score (dynamic count)
     ROW_NUMBER() OVER (
-      PARTITION BY ac.username_std
-      ORDER BY drip.hour
+      PARTITION BY username_std
+      ORDER BY drip_ai_score DESC, drip.hour
     ) as recommendation_rank,
 
-    -- Drip bumps are mandatory - high confidence
-    0.95 as recommendation_score,
+    -- AI-scored drip bump confidence
+    drip_ai_score as recommendation_score,
     'HIGH' as timing_confidence,
     'MANDATORY' as price_tier,
     0.0 as suggested_price,  -- Drip bumps are free content
@@ -98,10 +100,48 @@ drip_recommendations AS (
 
   FROM active_creators_with_tiers ac
   CROSS JOIN UNNEST(ac.drip_schedule) as drip
+  LEFT JOIN ${ref("creator_heatmap")} hm_drip
+    ON ac.username_std = hm_drip.username_std
+    AND drip.hour = hm_drip.local_hour
+    AND FORMAT_DATE('%A', CURRENT_DATE()) = hm_drip.local_day_of_week
 ),
 
--- MANDATORY RENEWAL RECOMMENDATIONS (Always 3 per day)
-renewal_recommendations AS (
+-- AI-OPTIMIZED DRIP BUMP SELECTION (Choose best performing slots)
+drip_recommendations AS (
+  SELECT
+    *,
+    -- AI scoring for drip bump effectiveness
+    (
+      -- Historical engagement (50%)
+      COALESCE(hm_drip.avg_rpm, 0.3) * 0.5 +
+
+      -- Time-energy matching (30%)
+      CASE
+        WHEN time_energy_required = 'morning' AND drip.hour BETWEEN 6 AND 11 THEN 0.3
+        WHEN time_energy_required = 'afternoon' AND drip.hour BETWEEN 12 AND 17 THEN 0.3
+        WHEN time_energy_required = 'evening' AND drip.hour BETWEEN 18 AND 23 THEN 0.3
+        WHEN time_energy_required = 'late_night' AND drip.hour <= 3 THEN 0.3
+        ELSE 0.1
+      END +
+
+      -- Tier strategy alignment (20%)
+      CASE ac.strategy
+        WHEN 'conversion_aggressive' THEN 0.2
+        WHEN 'conversion_balanced' THEN 0.18
+        ELSE 0.15
+      END
+    ) as drip_ai_score
+
+  FROM drip_candidate_slots dcs
+  LEFT JOIN active_creators_with_tiers ac ON dcs.username_std = ac.username_std
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY username_std
+    ORDER BY drip_ai_score DESC
+  ) <= ac.max_drip_bumps  -- Use AI-optimized count within tier limits
+),
+
+-- AI-OPTIMIZED RENEWAL RECOMMENDATIONS (Data-driven counts based on retention)
+renewal_candidate_slots AS (
   SELECT
     ac.username_std,
     ac.page_handle,
@@ -120,13 +160,17 @@ renewal_recommendations AS (
     renewal.type as renewal_type,
     renewal.label as slot_description,
 
-    -- Rank renewals by time order (7-9 after drip bumps)
+    -- Rank renewals by AI score (dynamic count after drip bumps)
     ROW_NUMBER() OVER (
-      PARTITION BY ac.username_std
-      ORDER BY renewal.hour
-    ) + 6 as recommendation_rank,  -- After 6 drip bumps
+      PARTITION BY username_std
+      ORDER BY renewal_ai_score DESC, renewal.hour
+    ) + (
+      SELECT COUNT(*)
+      FROM drip_recommendations dr
+      WHERE dr.username_std = rcs.username_std
+    ) as recommendation_rank,  -- After AI-optimized drip count
 
-    0.90 as recommendation_score,  -- High priority but slightly less than drip
+    renewal_ai_score as recommendation_score,
     'HIGH' as timing_confidence,
     'CAMPAIGN' as price_tier,
     0.0 as suggested_price,  -- Renewal campaigns are typically free
@@ -152,6 +196,44 @@ renewal_recommendations AS (
 
   FROM active_creators_with_tiers ac
   CROSS JOIN UNNEST(ac.renewal_schedule) as renewal
+  LEFT JOIN ${ref("creator_heatmap")} hm_renewal
+    ON ac.username_std = hm_renewal.username_std
+    AND renewal.hour = hm_renewal.local_hour
+    AND FORMAT_DATE('%A', CURRENT_DATE()) = hm_renewal.local_day_of_week
+),
+
+-- AI-OPTIMIZED RENEWAL SELECTION (Choose best performing renewal times)
+renewal_recommendations AS (
+  SELECT
+    *,
+    -- AI scoring for renewal effectiveness
+    (
+      -- Historical performance (40%)
+      COALESCE(hm_renewal.avg_rpm, 0.2) * 0.4 +
+
+      -- Retention strategy alignment (35%)
+      CASE ac.strategy
+        WHEN 'retention_quality' THEN 0.35
+        WHEN 'retention_vip' THEN 0.35
+        WHEN 'retention_balanced' THEN 0.3
+        ELSE 0.25
+      END +
+
+      -- Timing optimization for renewals (25%)
+      CASE renewal.hour
+        WHEN 8 THEN 0.25   -- Morning motivation
+        WHEN 16 THEN 0.20  -- Afternoon reminder
+        WHEN 0 THEN 0.25   -- Midnight urgency
+        ELSE 0.15
+      END
+    ) as renewal_ai_score
+
+  FROM renewal_candidate_slots rcs
+  LEFT JOIN active_creators_with_tiers ac ON rcs.username_std = ac.username_std
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY username_std
+    ORDER BY renewal_ai_score DESC
+  ) <= ac.max_renewals  -- Use AI-optimized count within tier limits
 ),
 
 -- AI-OPTIMIZED PPV RECOMMENDATIONS (Variable based on tier)
@@ -241,11 +323,19 @@ ppv_recommendations AS (
     'ai_optimized' as ppv_type,
     window_label as slot_description,
 
-    -- Rank PPVs starting after mandatory messages (10+)
+    -- Rank PPVs starting after AI-optimized drip and renewal counts
     ROW_NUMBER() OVER (
       PARTITION BY username_std
       ORDER BY ai_score DESC, historical_rpm DESC
-    ) + 9 as recommendation_rank,  -- After 6 drip + 3 renewal
+    ) + (
+      SELECT COUNT(*)
+      FROM drip_recommendations dr
+      WHERE dr.username_std = pcs.username_std
+    ) + (
+      SELECT COUNT(*)
+      FROM renewal_recommendations rr
+      WHERE rr.username_std = pcs.username_std
+    ) as recommendation_rank,  -- After AI-optimized drip + renewal counts
 
     ai_score as recommendation_score,
     timing_confidence,
@@ -341,9 +431,9 @@ all_recommendations AS (
 final_recommendations AS (
   SELECT
     *,
-    -- Anti-pattern detection flags
+    -- AI-driven opportunity classification
     CASE
-      WHEN recommendation_rank <= 9 THEN 'MANDATORY'
+      WHEN message_type IN ('drip_bump', 'renewal_campaign') THEN 'AI_OPTIMIZED_BASELINE'
       WHEN recommendation_score >= 0.8 THEN 'HIGH_OPPORTUNITY'
       WHEN recommendation_score >= 0.6 THEN 'GOOD_OPPORTUNITY'
       WHEN recommendation_score >= 0.4 THEN 'FAIR_OPPORTUNITY'

@@ -16,12 +16,14 @@ SELECT * FROM UNNEST([
     'A' as base_tier,
     'conversion_aggressive' as strategy,
 
-    -- MANDATORY DAILY REQUIREMENTS (Non-negotiable)
-    8 as base_daily_quota,  -- Total messages per day
-    6 as mandatory_drip_bumps,  -- Required drip bumps (3 morning + 3 evening)
-    2 as min_daily_ppvs,  -- Minimum PPVs on top of drip bumps
-    8 as max_daily_ppvs,  -- Maximum PPVs for this tier
-    3 as mandatory_renewals,  -- Daily renewal campaigns (8AM, 4PM, 12AM)
+    -- AI-OPTIMIZED DAILY GUIDELINES (Data-driven baselines)
+    8 as base_daily_quota,  -- Target total messages per day (AI will optimize)
+    4 as min_drip_bumps,   -- Minimum drip bumps (AI will optimize 4-8)
+    8 as max_drip_bumps,   -- Maximum drip bumps for this tier
+    2 as min_daily_ppvs,   -- Minimum PPVs (AI will optimize based on performance)
+    8 as max_daily_ppvs,   -- Maximum PPVs for this tier
+    1 as min_renewals,     -- Minimum renewal campaigns (AI will optimize 1-5)
+    5 as max_renewals,     -- Maximum renewals for tier strategy
     1 as mandatory_wall_posts,  -- Minimum wall posts per day
 
     -- DRIP BUMP SCHEDULE (Mandatory - cannot be changed)
@@ -72,12 +74,14 @@ SELECT * FROM UNNEST([
     'A' as base_tier,
     'retention_quality' as strategy,
 
-    -- MANDATORY DAILY REQUIREMENTS
-    9 as base_daily_quota,  -- 6 drip + 3 minimum PPVs
-    6 as mandatory_drip_bumps,
-    3 as min_daily_ppvs,
-    6 as max_daily_ppvs,  -- Quality focus - fewer but higher value
-    3 as mandatory_renewals,
+    -- AI-OPTIMIZED DAILY GUIDELINES (Data-driven baselines)
+    9 as base_daily_quota,  -- Target total messages per day (AI will optimize)
+    4 as min_drip_bumps,   -- Minimum drip bumps (AI will optimize 4-7)
+    7 as max_drip_bumps,   -- Maximum for quality-focused tier
+    3 as min_daily_ppvs,   -- Minimum PPVs (AI will optimize based on performance)
+    6 as max_daily_ppvs,   -- Quality focus - fewer but higher value
+    2 as min_renewals,     -- Minimum renewal campaigns (AI will optimize 2-4)
+    4 as max_renewals,     -- Maximum renewals for quality tier
     1 as mandatory_wall_posts,
 
     -- DRIP BUMP SCHEDULE (Same for all tiers)
@@ -127,12 +131,14 @@ SELECT * FROM UNNEST([
     'B' as base_tier,
     'conversion_balanced' as strategy,
 
-    -- MANDATORY DAILY REQUIREMENTS
-    10 as base_daily_quota,  -- 6 drip + 4 minimum PPVs
-    6 as mandatory_drip_bumps,
-    4 as min_daily_ppvs,
-    8 as max_daily_ppvs,
-    3 as mandatory_renewals,
+    -- AI-OPTIMIZED DAILY GUIDELINES (Data-driven baselines)
+    10 as base_daily_quota,  -- Target total messages per day (AI will optimize)
+    5 as min_drip_bumps,   -- Minimum drip bumps (AI will optimize 5-8)
+    8 as max_drip_bumps,   -- Maximum drip bumps for this tier
+    4 as min_daily_ppvs,   -- Minimum PPVs (AI will optimize based on performance)
+    8 as max_daily_ppvs,   -- Maximum PPVs for this tier
+    2 as min_renewals,     -- Minimum renewal campaigns (AI will optimize 2-4)
+    4 as max_renewals,     -- Maximum renewals for balanced tier
     1 as mandatory_wall_posts,
 
     -- DRIP BUMP SCHEDULE
@@ -183,12 +189,12 @@ SELECT * FROM UNNEST([
     'B' as base_tier,
     'retention_balanced' as strategy,
 
-    -- MANDATORY DAILY REQUIREMENTS
+    -- AI-OPTIMIZED DAILY GUIDELINES (Data-driven baselines)
     10 as base_daily_quota,  -- 6 drip + 4 minimum PPVs
-    6 as mandatory_drip_bumps,
+    6 as min_drip_bumps,
     4 as min_daily_ppvs,
     6 as max_daily_ppvs,
-    3 as mandatory_renewals,
+    3 as min_renewals,
     1 as mandatory_wall_posts,
 
     -- DRIP BUMP SCHEDULE
@@ -239,12 +245,12 @@ SELECT * FROM UNNEST([
     'C' as base_tier,
     'conversion_optimized' as strategy,
 
-    -- MANDATORY DAILY REQUIREMENTS
+    -- AI-OPTIMIZED DAILY GUIDELINES (Data-driven baselines)
     12 as base_daily_quota,  -- 6 drip + 6 minimum PPVs
-    6 as mandatory_drip_bumps,
+    6 as min_drip_bumps,
     6 as min_daily_ppvs,
     10 as max_daily_ppvs,
-    3 as mandatory_renewals,
+    3 as min_renewals,
     1 as mandatory_wall_posts,
 
     -- DRIP BUMP SCHEDULE
@@ -297,12 +303,12 @@ SELECT * FROM UNNEST([
     'C' as base_tier,
     'retention_premium' as strategy,
 
-    -- MANDATORY DAILY REQUIREMENTS
+    -- AI-OPTIMIZED DAILY GUIDELINES (Data-driven baselines)
     11 as base_daily_quota,  -- 6 drip + 5 minimum PPVs
-    6 as mandatory_drip_bumps,
+    6 as min_drip_bumps,
     5 as min_daily_ppvs,
     8 as max_daily_ppvs,
-    3 as mandatory_renewals,
+    3 as min_renewals,
     1 as mandatory_wall_posts,
 
     -- DRIP BUMP SCHEDULE
@@ -355,12 +361,12 @@ SELECT * FROM UNNEST([
     'D' as base_tier,
     'conversion_intensive' as strategy,
 
-    -- MANDATORY DAILY REQUIREMENTS
+    -- AI-OPTIMIZED DAILY GUIDELINES (Data-driven baselines)
     15 as base_daily_quota,  -- 6 drip + 9 minimum PPVs
-    6 as mandatory_drip_bumps,
+    6 as min_drip_bumps,
     9 as min_daily_ppvs,
     14 as max_daily_ppvs,  -- Maximum volume for high performers
-    3 as mandatory_renewals,
+    3 as min_renewals,
     1 as mandatory_wall_posts,
 
     -- DRIP BUMP SCHEDULE
@@ -413,12 +419,12 @@ SELECT * FROM UNNEST([
     'D' as base_tier,
     'retention_vip' as strategy,
 
-    -- MANDATORY DAILY REQUIREMENTS
+    -- AI-OPTIMIZED DAILY GUIDELINES (Data-driven baselines)
     13 as base_daily_quota,  -- 6 drip + 7 minimum PPVs
-    6 as mandatory_drip_bumps,
+    6 as min_drip_bumps,
     7 as min_daily_ppvs,
     10 as max_daily_ppvs,
-    3 as mandatory_renewals,
+    3 as min_renewals,
     1 as mandatory_wall_posts,
 
     -- DRIP BUMP SCHEDULE
