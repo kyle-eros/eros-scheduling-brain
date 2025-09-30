@@ -86,19 +86,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE (Same for all tiers)
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY (Higher prices for paid pages)
@@ -108,9 +108,9 @@ SELECT * FROM UNNEST([
 
     -- PPV TIMING WINDOWS (Focus on premium times)
     [
-      STRUCT('Afternoon Premium' as label, '15:30-17:30' as time_range, 'premium' as price_type, [15, 16, 17] as hours),
-      STRUCT('Prime Evening' as label, '20:30-22:30' as time_range, 'premium' as price_type, [20, 21, 22] as hours),
-      STRUCT('Late Night Mid' as label, '00:15-01:30' as time_range, 'mid' as price_type, [0, 1] as hours)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Premium' as label, '15:30-17:30' as base_time, 'ppv_premium' as template_type, 15 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Prime Evening' as label, '20:30-22:30' as base_time, 'ppv_premium' as template_type, 20 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night Mid' as label, '00:15-01:30' as base_time, 'ppv_mid' as template_type, 0 as hour, 0 as randomize_minutes)
     ] as ppv_windows,
 
     -- OPTIONAL COMPONENTS
@@ -143,19 +143,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -165,10 +165,10 @@ SELECT * FROM UNNEST([
 
     -- PPV TIMING WINDOWS
     [
-      STRUCT('Late Morning' as label, '11:30-13:30' as time_range, 'mid' as price_type, [11, 12, 13] as hours),
-      STRUCT('Early Evening' as label, '18:00-19:30' as time_range, 'mid' as price_type, [18, 19] as hours),
-      STRUCT('Prime Premium' as label, '21:30-22:30' as time_range, 'premium' as price_type, [21, 22] as hours),
-      STRUCT('Late Night' as label, '00:15-01:30' as time_range, 'teaser' as price_type, [0, 1] as hours)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Morning' as label, '11:30-13:30' as base_time, 'ppv_mid' as template_type, 11 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Early Evening' as label, '18:00-19:30' as base_time, 'ppv_mid' as template_type, 18 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Prime Premium' as label, '21:30-22:30' as base_time, 'ppv_premium' as template_type, 21 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night' as label, '00:15-01:30' as base_time, 'ppv_teaser' as template_type, 0 as hour, 0 as randomize_minutes)
     ] as ppv_windows,
 
     -- OPTIONAL COMPONENTS
@@ -199,19 +199,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -221,10 +221,10 @@ SELECT * FROM UNNEST([
 
     -- PPV TIMING WINDOWS
     [
-      STRUCT('Late Morning' as label, '11:30-13:30' as time_range, 'mid' as price_type, [11, 12, 13] as hours),
-      STRUCT('Early Evening' as label, '18:00-19:30' as time_range, 'mid' as price_type, [18, 19] as hours),
-      STRUCT('Prime Premium' as label, '21:30-22:30' as time_range, 'premium' as price_type, [21, 22] as hours),
-      STRUCT('Late Night Mid' as label, '00:15-01:30' as time_range, 'mid' as price_type, [0, 1] as hours)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Morning' as label, '11:30-13:30' as base_time, 'ppv_mid' as template_type, 11 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Early Evening' as label, '18:00-19:30' as base_time, 'ppv_mid' as template_type, 18 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Prime Premium' as label, '21:30-22:30' as base_time, 'ppv_premium' as template_type, 21 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night Mid' as label, '00:15-01:30' as base_time, 'ppv_mid' as template_type, 0 as hour, 0 as randomize_minutes)
     ] as ppv_windows,
 
     -- OPTIONAL COMPONENTS
@@ -255,19 +255,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -277,12 +277,12 @@ SELECT * FROM UNNEST([
 
     -- PPV TIMING WINDOWS (More options for established pages)
     [
-      STRUCT('Late Morning' as label, '09:45-11:00' as time_range, 'mid' as price_type, [9, 10, 11] as hours),
-      STRUCT('Early Afternoon' as label, '13:00-14:30' as time_range, 'mid' as price_type, [13, 14] as hours),
-      STRUCT('Drive Time' as label, '17:30-19:00' as time_range, 'mid' as price_type, [17, 18, 19] as hours),
-      STRUCT('Prime Premium' as label, '21:30-22:30' as time_range, 'premium' as price_type, [21, 22] as hours),
-      STRUCT('Late Evening' as label, '23:15-00:15' as time_range, 'mid' as price_type, [23, 0] as hours),
-      STRUCT('Late Premium' as label, '00:15-01:30' as time_range, 'premium' as price_type, [0, 1] as hours)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Morning' as label, '09:45-11:00' as base_time, 'ppv_mid' as template_type, 9 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Early Afternoon' as label, '13:00-14:30' as base_time, 'ppv_mid' as template_type, 13 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Drive Time' as label, '17:30-19:00' as base_time, 'ppv_mid' as template_type, 17 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Prime Premium' as label, '21:30-22:30' as base_time, 'ppv_premium' as template_type, 21 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Evening' as label, '23:15-00:15' as base_time, 'ppv_mid' as template_type, 23 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Premium' as label, '00:15-01:30' as base_time, 'ppv_premium' as template_type, 0 as hour, 0 as randomize_minutes)
     ] as ppv_windows,
 
     -- OPTIONAL COMPONENTS
@@ -313,19 +313,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -335,12 +335,12 @@ SELECT * FROM UNNEST([
 
     -- PPV TIMING WINDOWS
     [
-      STRUCT('Late Morning' as label, '09:45-11:00' as time_range, 'mid' as price_type, [9, 10, 11] as hours),
-      STRUCT('Early Afternoon' as label, '13:00-14:30' as time_range, 'mid' as price_type, [13, 14] as hours),
-      STRUCT('Drive Time' as label, '17:30-19:00' as time_range, 'premium' as price_type, [17, 18, 19] as hours),
-      STRUCT('Prime Premium' as label, '21:30-22:30' as time_range, 'premium' as price_type, [21, 22] as hours),
-      STRUCT('Late Evening' as label, '23:15-00:15' as time_range, 'mid' as price_type, [23, 0] as hours),
-      STRUCT('Late Premium' as label, '00:15-01:30' as time_range, 'premium' as price_type, [0, 1] as hours)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Morning' as label, '09:45-11:00' as base_time, 'ppv_mid' as template_type, 9 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Early Afternoon' as label, '13:00-14:30' as base_time, 'ppv_mid' as template_type, 13 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Drive Time' as label, '17:30-19:00' as base_time, 'ppv_premium' as template_type, 17 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Prime Premium' as label, '21:30-22:30' as base_time, 'ppv_premium' as template_type, 21 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Evening' as label, '23:15-00:15' as base_time, 'ppv_mid' as template_type, 23 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Premium' as label, '00:15-01:30' as base_time, 'ppv_premium' as template_type, 0 as hour, 0 as randomize_minutes)
     ] as ppv_windows,
 
     -- OPTIONAL COMPONENTS
@@ -371,19 +371,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -393,12 +393,12 @@ SELECT * FROM UNNEST([
 
     -- PPV TIMING WINDOWS (Multiple slots for high volume)
     [
-      STRUCT('Late Morning' as label, '09:45-11:00' as time_range, 'mid' as price_type, [9, 10, 11] as hours),
-      STRUCT('Early Afternoon' as label, '13:00-14:30' as time_range, 'mid' as price_type, [13, 14] as hours),
-      STRUCT('Drive Time' as label, '17:30-19:00' as time_range, 'mid' as price_type, [17, 18, 19] as hours),
-      STRUCT('Prime Premium' as label, '21:30-22:30' as time_range, 'premium' as price_type, [21, 22] as hours),
-      STRUCT('Late Evening' as label, '23:15-00:15' as time_range, 'mid' as price_type, [23, 0] as hours),
-      STRUCT('Late Premium' as label, '00:15-01:30' as time_range, 'premium' as price_type, [0, 1] as hours)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Morning' as label, '09:45-11:00' as base_time, 'ppv_mid' as template_type, 9 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Early Afternoon' as label, '13:00-14:30' as base_time, 'ppv_mid' as template_type, 13 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Drive Time' as label, '17:30-19:00' as base_time, 'ppv_mid' as template_type, 17 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Prime Premium' as label, '21:30-22:30' as base_time, 'ppv_premium' as template_type, 21 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Evening' as label, '23:15-00:15' as base_time, 'ppv_mid' as template_type, 23 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Premium' as label, '00:15-01:30' as base_time, 'ppv_premium' as template_type, 0 as hour, 0 as randomize_minutes)
     ] as ppv_windows,
 
     -- OPTIONAL COMPONENTS
@@ -429,19 +429,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY (Highest prices for VIP tier)
@@ -451,12 +451,12 @@ SELECT * FROM UNNEST([
 
     -- PPV TIMING WINDOWS (Premium focus)
     [
-      STRUCT('Late Morning Premium' as label, '09:45-11:00' as time_range, 'premium' as price_type, [9, 10, 11] as hours),
-      STRUCT('Early Afternoon' as label, '13:00-14:30' as time_range, 'mid' as price_type, [13, 14] as hours),
-      STRUCT('Drive Time Premium' as label, '17:30-19:00' as time_range, 'premium' as price_type, [17, 18, 19] as hours),
-      STRUCT('Prime Premium' as label, '21:30-22:30' as time_range, 'premium' as price_type, [21, 22] as hours),
-      STRUCT('Late Evening' as label, '23:15-00:15' as time_range, 'mid' as price_type, [23, 0] as hours),
-      STRUCT('Late Premium' as label, '00:15-01:30' as time_range, 'premium' as price_type, [0, 1] as hours)
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Morning Premium' as label, '09:45-11:00' as base_time, 'ppv_premium' as template_type, 9 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Early Afternoon' as label, '13:00-14:30' as base_time, 'ppv_mid' as template_type, 13 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Drive Time Premium' as label, '17:30-19:00' as base_time, 'ppv_premium' as template_type, 17 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Prime Premium' as label, '21:30-22:30' as base_time, 'ppv_premium' as template_type, 21 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Evening' as label, '23:15-00:15' as base_time, 'ppv_mid' as template_type, 23 as hour, 0 as randomize_minutes),
+      STRUCT('UNKNOWN' as tier_id, 'Unknown Tier' as tier_name, 'UNKNOWN' as page_type, 'Late Premium' as label, '00:15-01:30' as base_time, 'ppv_premium' as template_type, 0 as hour, 0 as randomize_minutes)
     ] as ppv_windows,
 
     -- OPTIONAL COMPONENTS
