@@ -1,24 +1,21 @@
 config {
   type: "assertion",
   schema: "eros_assertions",
-  name: "mass_messages_partition_check",
-  description: "Ensures mass_messages table has recent data (last 2 days)",
-  tags: ["quality", "mass_messages", "freshness"]
+  description: "mass_messages: partitions present (>=1 row) for the last 14 days",
+  tags: ["data_quality","partition"]
 }
 
-/*
- * PARTITION PRESENCE CHECK FOR MASS_MESSAGES
- *
- * This assertion fails if there are no rows in the last 2 days,
- * which helps detect data pipeline failures or missing partitions
- */
-
--- Fail if there are no rows in the last 2 days
-SELECT 1
-FROM UNNEST([1]) AS _
-WHERE NOT EXISTS (
-  SELECT 1
+WITH days AS (
+  SELECT d
+  FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 13 DAY), CURRENT_DATE())) d
+),
+observed AS (
+  SELECT sending_date AS d
   FROM ${ref("mass_messages")}
-  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)
-  LIMIT 1
+  WHERE sending_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 13 DAY) AND CURRENT_DATE()
+  GROUP BY d
 )
+SELECT days.d AS missing_partition_date
+FROM days
+LEFT JOIN observed USING (d)
+WHERE observed.d IS NULL

@@ -1,14 +1,13 @@
 config {
   type: "assertion",
   schema: "eros_assertions",
-  description: "SLA: send_log has data in the last 24h",
-  tags: ["data_quality","freshness","SLA"]
+  description: "send_log: max(action_date) within last 24h",
+  tags: ["data_quality","freshness"]
 }
-
-SELECT 'no_recent_send_log' AS reason
-WHERE NOT EXISTS (
-  SELECT 1
+WITH s AS (
+  SELECT MAX(action_date) AS max_dt
   FROM ${ref("send_log")}
-  WHERE action_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
-  LIMIT 1
 )
+SELECT *
+FROM s
+WHERE COALESCE(max_dt, DATE '1900-01-01') < DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)

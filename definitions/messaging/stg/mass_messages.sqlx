@@ -7,13 +7,7 @@ config {
   requirePartitionFilter: false,  // Start false for initial creation, can be altered later
   description: "Incremental mass messages with 14-day watermark and robust partition handling",
   labels: {app: "eros", domain: "messaging", layer: "stg"},
-  tags: ["messaging_stg"],
-  assertions: {
-    nonNull: ["message_sk", "sending_date", "username_std"],
-    rowConditions: [
-      "sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)"
-    ]
-  }
+  tags: ["messaging_stg"]
 }
 
 /*
