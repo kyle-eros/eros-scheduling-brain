@@ -1,15 +1,14 @@
 config {
   type: "assertion",
   schema: "eros_assertions",
-  description: "SLA: mass_messages has data in the last 24h",
-  tags: ["data_quality","freshness","SLA"]
+  description: "mass_messages: max(sending_date) within last 24h",
+  tags: ["data_quality","freshness"]
 }
-
--- Return a row to FAIL if no recent data exists
-SELECT 'no_recent_mass_messages' AS reason
-WHERE NOT EXISTS (
-  SELECT 1
+WITH s AS (
+  SELECT MAX(sending_date) AS max_dt
   FROM ${ref("mass_messages")}
-  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
-  LIMIT 1
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
 )
+SELECT *
+FROM s
+WHERE COALESCE(max_dt, DATE '1900-01-01') < DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
