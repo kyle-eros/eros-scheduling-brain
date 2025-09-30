@@ -68,6 +68,7 @@ theme_scoring AS (
       WHEN 'JOI / Instruction' THEN 0.9
       WHEN 'Solo Touch' THEN 0.85
       WHEN 'Toy Play' THEN 0.8
+      WHEN 'Toy Play (Hands)' THEN 0.8
       WHEN 'B/G Action' THEN 0.95
       WHEN 'Bundle / Mega Pack' THEN 0.7
       WHEN 'Urgent / Last Chance' THEN 0.6
