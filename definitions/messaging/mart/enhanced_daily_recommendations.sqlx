@@ -411,4 +411,3 @@ SELECT
   CURRENT_TIMESTAMP() AS created_at
 FROM final
 WHERE is_mandatory OR recommendation_rank <= daily_limit
-ORDER BY username_std, recommended_send_ts
