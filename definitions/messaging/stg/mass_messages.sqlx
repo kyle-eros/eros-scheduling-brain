@@ -4,7 +4,7 @@ config {
   uniqueKey: ["message_sk"],
   partitionBy: "sending_date",
   clusterBy: ["username_std"],
-  requirePartitionFilter: true,  // Enforced for cost control
+  requirePartitionFilter: false,  // Start false for initial creation, can be altered later
   description: "Incremental mass messages with 14-day watermark and robust partition handling",
   labels: {app: "eros", domain: "messaging", layer: "stg"},
   tags: ["messaging_stg"],
@@ -12,31 +12,6 @@ config {
     uniqueKey: ["message_sk"],
     nonNull: ["message_sk", "sending_date", "username_std"]
   }
-}
-
--- Pre-operations: Create empty table structure if it doesn't exist
--- This prevents partition filter errors during initial table creation
-pre_operations {
-  CREATE TABLE IF NOT EXISTS ${self()} (
-    message_sk STRING NOT NULL,
-    username_std STRING NOT NULL,
-    sending_ts TIMESTAMP,
-    sending_date DATE NOT NULL,
-    price FLOAT64,
-    sent_count INT64,
-    viewed_count INT64,
-    purchased_count INT64,
-    earnings_total FLOAT64,
-    message_text STRING,
-    source_file STRING,
-    loaded_at TIMESTAMP NOT NULL
-  )
-  PARTITION BY sending_date
-  CLUSTER BY username_std
-  OPTIONS(
-    description="Incremental mass messages staging table with partition enforcement",
-    labels=[("app", "eros"), ("layer", "stg")]
-  )
 }
 
 /*
@@ -127,19 +102,23 @@ messages_final AS (
 )
 
 SELECT * FROM messages_final
-WHERE sending_date >= DATE '2024-01-01'  -- Historical cutoff date
+WHERE
+  -- ALWAYS include partition filter for performance and cost control
+  sending_date >= DATE('2024-01-01')  -- Historical cutoff
+  AND sending_date <= CURRENT_DATE()  -- No future dates
 
 ${ when(incremental(), `
-  -- Incremental filter: Process recent data and catch late arrivals
+  -- Additional incremental filters for recent data
   AND sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
   AND (
     -- New records based on timestamp watermark
-    sending_ts > (
-      SELECT COALESCE(MAX(sending_ts), TIMESTAMP('2024-01-01'))
-      FROM ${self()}
-      WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)  -- Partition filter for efficiency
+    sending_ts > COALESCE(
+      (SELECT MAX(sending_ts)
+       FROM ${self()}
+       WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)),
+      TIMESTAMP('2024-01-01')
     )
-    -- Or records that were recently loaded (catch late arrivals)
+    -- Or recently loaded records (catch late arrivals)
     OR loaded_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
   )
 `) }
