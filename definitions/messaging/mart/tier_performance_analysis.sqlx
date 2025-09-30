@@ -240,4 +240,3 @@ LEFT JOIN adjustment_effectiveness ae
   ON tea.tier_id = ae.tier_id
   AND tea.page_type = ae.page_type
 WHERE tea.pages_in_tier > 0  -- Only include tiers with actual pages
-ORDER BY tea.total_revenue DESC, tea.avg_revenue_per_message DESC

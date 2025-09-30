@@ -1,13 +1,15 @@
 config {
   type: "table",
   schema: "eros_messaging_mart",
-  partitionBy: "slot_dt_local",
-  clusterBy: ["username_page", "hod"],
-  requirePartitionFilter: true,
   description: "Caption ranking system for next 24h with ML scoring",
   labels: {app: "eros", domain: "messaging", layer: "mart"},
   tags: ["messaging_mart", "caption_ranking"],
-  dependencies: ["captions", "caption_theme_signals", "mass_messages"]
+  dependencies: ["captions", "caption_theme_signals", "mass_messages"],
+  bigquery: {
+    partitionBy: "slot_dt_local",
+    clusterBy: ["username_page", "hod"],
+    requirePartitionFilter: true
+  }
 }
 
 WITH time_slots AS (
