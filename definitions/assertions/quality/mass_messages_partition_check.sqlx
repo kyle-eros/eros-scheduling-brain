@@ -1,0 +1,23 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  name: "mass_messages_partition_check",
+  description: "Ensures mass_messages table has recent data (last 2 days)",
+  tags: ["quality", "mass_messages", "freshness"]
+}
+
+/*
+ * PARTITION PRESENCE CHECK FOR MASS_MESSAGES
+ *
+ * This assertion fails if there are no rows in the last 2 days,
+ * which helps detect data pipeline failures or missing partitions
+ */
+
+-- Fail if there are no rows in the last 2 days
+SELECT 1
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM ${ref("mass_messages")}
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)
+  LIMIT 1
+)

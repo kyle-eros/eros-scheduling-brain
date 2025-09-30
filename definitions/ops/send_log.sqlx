@@ -4,14 +4,10 @@ config {
   name: "send_log",
   partitionBy: "action_date",
   clusterBy: ["scheduler_code", "username_std"],
-  requirePartitionFilter: true,
+  requirePartitionFilter: false,
   description: "Activity log for scheduler actions and message sending",
   labels: {app: "eros", domain: "ops", layer: "logging"},
   tags: ["ops", "logging", "scheduler"]
-}
-
-pre_operations {
-  DROP TABLE IF EXISTS ${self()}
 }
 
 -- This creates the ops logging table structure
@@ -34,3 +30,7 @@ SELECT
   'caption_selected' as action,
   'sheets_hub_v1' as source
 LIMIT 0  -- This ensures no actual data is inserted, just creates the schema
+
+post_operations {
+  ALTER TABLE ${self()} SET OPTIONS (require_partition_filter = TRUE);
+}
