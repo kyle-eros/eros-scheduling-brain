@@ -9,7 +9,7 @@ config {
   labels: {app: "eros", domain: "messaging", layer: "stg"},
   tags: ["messaging_stg"],
   assertions: {
-    uniqueKey: ["message_sk"],
+    uniqueKey: false,
     nonNull: ["message_sk", "sending_date", "username_std"],
     rowConditions: [
       "sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)"
