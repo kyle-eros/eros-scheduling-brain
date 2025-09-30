@@ -1,0 +1,12 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "messages_enriched: critical fields not null (14d window)",
+  tags: ["data_quality","not_null"]
+}
+
+SELECT *
+FROM \${ref("messages_enriched")}
+WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+  AND (username_std IS NULL OR sending_date IS NULL)
+LIMIT 100

@@ -1,0 +1,15 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "messages_enriched: allowed page_type values (optional; enable once column verified)",
+  tags: ["data_quality","accepted_values"],
+  disabled: true
+}
+
+-- Enable after confirming the column name (e.g., page_type or content_type).
+-- Allowed set below is an example; edit to match your taxonomy before enabling.
+SELECT me.*
+FROM \${ref("messages_enriched")} me
+WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+  AND NOT LOWER(CAST(me.page_type AS STRING)) IN ('post','story','reels','carousel','live','short')
+LIMIT 100

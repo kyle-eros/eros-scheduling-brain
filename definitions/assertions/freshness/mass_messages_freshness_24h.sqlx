@@ -1,0 +1,15 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "SLA: mass_messages has data in the last 24h",
+  tags: ["data_quality","freshness","SLA"]
+}
+
+-- Return a row to FAIL if no recent data exists
+SELECT 'no_recent_mass_messages' AS reason
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM ${ref("mass_messages")}
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  LIMIT 1
+)

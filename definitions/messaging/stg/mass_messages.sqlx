@@ -2,6 +2,7 @@ config {
   type: "incremental",
   schema: "eros_messaging_stg",
   uniqueKey: ["message_sk"],
+  updatePartitionFilter: "sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)",
   partitionBy: "sending_date",
   clusterBy: ["username_std"],
   requirePartitionFilter: false,  // Start false for initial creation, can be altered later
@@ -9,16 +10,11 @@ config {
   labels: {app: "eros", domain: "messaging", layer: "stg"},
   tags: ["messaging_stg"],
   assertions: {
-    uniqueKey: false,
     nonNull: ["message_sk", "sending_date", "username_std"],
     rowConditions: [
       "sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)"
     ]
   }
-}
-
-post_operations {
-  ALTER TABLE ${self()} SET OPTIONS (require_partition_filter = TRUE);
 }
 
 /*
@@ -134,3 +130,7 @@ QUALIFY ROW_NUMBER() OVER (
   PARTITION BY message_sk
   ORDER BY loaded_at DESC
 ) = 1
+
+post_operations {
+  ALTER TABLE ${self()} SET OPTIONS (require_partition_filter = TRUE);
+}
