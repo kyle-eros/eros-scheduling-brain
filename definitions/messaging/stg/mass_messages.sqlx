@@ -9,7 +9,7 @@ config {
   labels: {app: "eros", domain: "messaging", layer: "stg"},
   tags: ["messaging_stg"],
   assertions: {
-    uniqueKey: []
+    uniqueKey: false
   }
 }
 

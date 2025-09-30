@@ -10,71 +10,83 @@ config {
 }
 
 WITH
--- Analyze recent messaging patterns for each creator
-recent_messaging_patterns AS (
+-- First compute spacing intervals in a separate CTE
+message_spacing AS (
   SELECT
     me.username_std,
     me.sending_date,
+    me.sending_ts,
+    me.message_text,
+    me.price,
+    TIMESTAMP_DIFF(me.sending_ts, LAG(me.sending_ts) OVER (PARTITION BY me.username_std ORDER BY me.sending_ts), MINUTE) as spacing_minutes
+  FROM ${ref("messages_enriched")} me
+  WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+),
+
+-- Analyze recent messaging patterns for each creator
+recent_messaging_patterns AS (
+  SELECT
+    ms.username_std,
+    ms.sending_date,
     CURRENT_DATE() as analysis_date,
 
     -- TIMING PATTERN ANALYSIS
-    COUNT(DISTINCT me.sending_date) as active_days_7d,
+    COUNT(DISTINCT ms.sending_date) as active_days_7d,
     COUNT(*) as total_messages_7d,
 
     -- Time patterns that indicate automation
-    COUNT(DISTINCT EXTRACT(MINUTE FROM me.sending_ts)) as unique_minutes_used,
-    COUNT(DISTINCT EXTRACT(HOUR FROM me.sending_ts)) as unique_hours_used,
+    COUNT(DISTINCT EXTRACT(MINUTE FROM ms.sending_ts)) as unique_minutes_used,
+    COUNT(DISTINCT EXTRACT(HOUR FROM ms.sending_ts)) as unique_hours_used,
 
     -- Detect exact time repetition (major red flag)
-    COUNT(*) - COUNT(DISTINCT FORMAT_TIMESTAMP('%H:%M', me.sending_ts)) as exact_time_repetitions,
+    COUNT(*) - COUNT(DISTINCT FORMAT_TIMESTAMP('%H:%M', ms.sending_ts)) as exact_time_repetitions,
 
-    -- Spacing pattern analysis
-    STDDEV(TIMESTAMP_DIFF(me.sending_ts, LAG(me.sending_ts) OVER (PARTITION BY me.username_std ORDER BY me.sending_ts), MINUTE)) as spacing_variance,
-    AVG(TIMESTAMP_DIFF(me.sending_ts, LAG(me.sending_ts) OVER (PARTITION BY me.username_std ORDER BY me.sending_ts), MINUTE)) as avg_spacing_minutes,
+    -- Spacing pattern analysis (now using pre-computed spacing)
+    STDDEV(ms.spacing_minutes) as spacing_variance,
+    AVG(ms.spacing_minutes) as avg_spacing_minutes,
 
     -- CONTENT PATTERN ANALYSIS
-    COUNT(DISTINCT me.message_text) as unique_messages,
-    COUNT(*) - COUNT(DISTINCT me.message_text) as message_repetitions,
+    COUNT(DISTINCT ms.message_text) as unique_messages,
+    COUNT(*) - COUNT(DISTINCT ms.message_text) as message_repetitions,
 
     -- Caption length and structure patterns
-    AVG(LENGTH(me.message_text)) as avg_caption_length,
-    STDDEV(LENGTH(me.message_text)) as caption_length_variance,
+    AVG(LENGTH(ms.message_text)) as avg_caption_length,
+    STDDEV(LENGTH(ms.message_text)) as caption_length_variance,
 
     -- Emoji and punctuation patterns (authentic vs scripted)
-    AVG(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(me.message_text, r'[😀-🿿]'))) as avg_emojis_per_message,
-    AVG(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(me.message_text, r'[.!?]'))) as avg_punctuation_per_message,
+    AVG(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(ms.message_text, r'[😀-🿿]'))) as avg_emojis_per_message,
+    AVG(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(ms.message_text, r'[.!?]'))) as avg_punctuation_per_message,
 
     -- Language authenticity indicators
-    SUM(CASE WHEN REGEXP_CONTAINS(me.message_text, r'\b(lol|omg|wtf|tbh|imo|rn|ur|u|gonna|wanna)\b') THEN 1 ELSE 0 END) as casual_language_count,
-    SUM(CASE WHEN REGEXP_CONTAINS(me.message_text, r'\b(purchase|acquire|obtain|purchase|transaction)\b') THEN 1 ELSE 0 END) as formal_language_count,
+    SUM(CASE WHEN REGEXP_CONTAINS(ms.message_text, r'\b(lol|omg|wtf|tbh|imo|rn|ur|u|gonna|wanna)\b') THEN 1 ELSE 0 END) as casual_language_count,
+    SUM(CASE WHEN REGEXP_CONTAINS(ms.message_text, r'\b(purchase|acquire|obtain|purchase|transaction)\b') THEN 1 ELSE 0 END) as formal_language_count,
 
     -- PRICING PATTERN ANALYSIS
-    COUNT(DISTINCT me.price) as unique_price_points,
-    STDDEV(me.price) as price_variance,
-    SUM(CASE WHEN MOD(me.price, 5) = 0 THEN 1 ELSE 0 END) as round_number_prices,  -- Over-use of round numbers
+    COUNT(DISTINCT ms.price) as unique_price_points,
+    STDDEV(ms.price) as price_variance,
+    SUM(CASE WHEN MOD(ms.price, 5) = 0 THEN 1 ELSE 0 END) as round_number_prices,  -- Over-use of round numbers
 
     -- TIME-ENERGY MATCHING ANALYSIS
     SUM(CASE
-      WHEN EXTRACT(HOUR FROM me.sending_ts) BETWEEN 6 AND 11
-           AND REGEXP_CONTAINS(LOWER(me.message_text), r'\b(morning|sleep|woke|wake|bed|tired)\b') THEN 1
+      WHEN EXTRACT(HOUR FROM ms.sending_ts) BETWEEN 6 AND 11
+           AND REGEXP_CONTAINS(LOWER(ms.message_text), r'\b(morning|sleep|woke|wake|bed|tired)\b') THEN 1
       ELSE 0
     END) as morning_energy_matches,
 
     SUM(CASE
-      WHEN EXTRACT(HOUR FROM me.sending_ts) BETWEEN 20 AND 23
-           AND REGEXP_CONTAINS(LOWER(me.message_text), r'\b(shower|evening|night|sexy|bed)\b') THEN 1
+      WHEN EXTRACT(HOUR FROM ms.sending_ts) BETWEEN 20 AND 23
+           AND REGEXP_CONTAINS(LOWER(ms.message_text), r'\b(shower|evening|night|sexy|bed)\b') THEN 1
       ELSE 0
     END) as evening_energy_matches,
 
     SUM(CASE
-      WHEN EXTRACT(HOUR FROM me.sending_ts) >= 0 AND EXTRACT(HOUR FROM me.sending_ts) < 3
-           AND REGEXP_CONTAINS(LOWER(me.message_text), r'\b(cant sleep|horny|wet|touching|late)\b') THEN 1
+      WHEN EXTRACT(HOUR FROM ms.sending_ts) >= 0 AND EXTRACT(HOUR FROM ms.sending_ts) < 3
+           AND REGEXP_CONTAINS(LOWER(ms.message_text), r'\b(cant sleep|horny|wet|touching|late)\b') THEN 1
       ELSE 0
     END) as late_night_energy_matches
 
-  FROM ${ref("messages_enriched")} me
-  WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
-  GROUP BY me.username_std, me.sending_date
+  FROM message_spacing ms
+  GROUP BY ms.username_std, ms.sending_date
 ),
 
 -- Calculate daily averages using window functions separately

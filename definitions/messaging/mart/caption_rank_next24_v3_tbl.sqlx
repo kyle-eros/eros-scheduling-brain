@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: "eros_messaging_mart",
-  partitionBy: "slot_dt_local",
+  partitionBy: "DATE(slot_ts_local)",
   clusterBy: ["username_page", "hod"],
   requirePartitionFilter: true,
   description: "Caption ranking system for next 24h with ML scoring",
@@ -13,6 +13,7 @@ config {
 WITH time_slots AS (
   SELECT
     slot_ts,
+    TIMESTAMP(slot_ts, 'America/New_York') as slot_ts_local,
     DATE(slot_ts, 'America/New_York') as slot_dt_local,
     EXTRACT(HOUR FROM slot_ts AT TIME ZONE 'America/New_York') as hod
   FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(
@@ -87,16 +88,16 @@ theme_scoring AS (
 caption_candidates AS (
   SELECT
     cp.username_page,
+    ts.slot_ts_local,
     ts.slot_dt_local,
     ts.hod,
-    ts.caption_id,
-    ts.caption_text,
-    ts.theme_score,
-    ts.explicitness_bonus
+    theme.caption_id,
+    theme.caption_text,
+    theme.theme_score,
+    theme.explicitness_bonus
   FROM creator_pages cp
-  CROSS JOIN time_slots ts_outer
-  CROSS JOIN theme_scoring ts
-  WHERE ts_outer.slot_dt_local = ts.slot_dt_local AND ts_outer.hod = ts.hod
+  CROSS JOIN time_slots ts
+  CROSS JOIN theme_scoring theme
 ),
 
 -- Apply performance data and calculate scores
@@ -148,6 +149,7 @@ ranked_captions AS (
 
 SELECT
   username_page,
+  slot_ts_local,
   slot_dt_local,
   hod,
   caption_id,
