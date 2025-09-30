@@ -18,10 +18,10 @@ WITH next_7_days AS (
 scheduler_creator_mapping AS (
   SELECT
     sa.scheduler_code,
-    sa.creator_username as creator_id
+    sa.username_std as creator_id
   FROM ${ref("scheduler_assignments")} sa
   WHERE sa.scheduler_code IS NOT NULL
-    AND sa.creator_username IS NOT NULL
+    AND sa.username_std IS NOT NULL
 ),
 
 extended_recommendations AS (

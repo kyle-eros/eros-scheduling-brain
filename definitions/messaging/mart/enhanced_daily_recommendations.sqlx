@@ -57,7 +57,7 @@ drip_slots AS (
     ac.min_drip_bumps,
     ac.max_drip_bumps,
     drip.label AS slot_label,
-    drip.type AS slot_type,
+    drip.template_type AS slot_type,
     drip.hour AS slot_hour,
     COALESCE(drip.randomize_minutes, ac.randomize_offset_minutes, 0) AS randomize_minutes,
     TIMESTAMP_ADD(
@@ -147,7 +147,7 @@ renewal_slots AS (
     ac.min_renewals,
     ac.max_renewals,
     renewal.label AS slot_label,
-    renewal.type AS slot_type,
+    renewal.template_type AS slot_type,
     renewal.hour AS slot_hour,
     TIMESTAMP(CONCAT(CAST(CURRENT_DATE() AS STRING), ' ', renewal.base_time)) AS recommended_send_ts
   FROM active_creators ac
