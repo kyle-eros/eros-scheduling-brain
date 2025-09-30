@@ -10,10 +10,10 @@ WITH days AS (
   FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 13 DAY), CURRENT_DATE())) d
 ),
 observed AS (
-  SELECT DATE(sending_date) AS d
+  SELECT sending_date AS d
   FROM ${ref("mass_messages")}
   WHERE sending_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 13 DAY) AND CURRENT_DATE()
-  GROUP BY 1
+  GROUP BY d
 )
 SELECT days.d AS missing_partition_date
 FROM days

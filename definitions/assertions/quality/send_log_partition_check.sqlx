@@ -13,7 +13,7 @@ observed AS (
   SELECT action_date AS d
   FROM ${ref("send_log")}
   WHERE action_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 6 DAY) AND CURRENT_DATE()
-  GROUP BY action_date
+  GROUP BY d
 )
 SELECT days.d AS missing_partition_date
 FROM days
