@@ -1,0 +1,13 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "messages_enriched: allowed day-of-week values (14d window)",
+  tags: ["data_quality","accepted_values"]
+}
+
+SELECT me.*
+FROM ${ref("messages_enriched")} me
+WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+  AND LOWER(me.local_day_of_week) NOT IN (
+    'monday','tuesday','wednesday','thursday','friday','saturday','sunday'
+  )

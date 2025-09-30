@@ -7,7 +7,7 @@ config {
 
 WITH d AS (
   SELECT message_sk
-  FROM \${ref("mass_messages")}
+  FROM ${ref("mass_messages")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
 )
 SELECT message_sk, COUNT(*) AS dup_cnt

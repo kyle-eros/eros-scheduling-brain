@@ -64,3 +64,7 @@ SELECT
   r.pattern_risk_level,
   CURRENT_DATE() AS analysis_date
 FROM risk r
+
+post_operations {
+  ALTER TABLE ${self()} SET OPTIONS (require_partition_filter = TRUE);
+}

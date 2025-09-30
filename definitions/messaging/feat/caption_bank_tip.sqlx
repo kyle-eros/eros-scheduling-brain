@@ -227,3 +227,7 @@ SELECT * FROM UNNEST([
   )
 
 ]) AS tip_captions
+
+post_operations {
+  ALTER TABLE ${self()} SET OPTIONS (require_partition_filter = TRUE);
+}

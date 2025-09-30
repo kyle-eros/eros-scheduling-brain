@@ -164,6 +164,9 @@ SELECT
   daily_quota_range.base_quota as base_daily_quota,
   daily_quota_range.min_ppvs as min_daily_ppvs,
   daily_quota_range.max_ppvs as max_daily_ppvs,
+  -- Derived: total daily message bounds (6 mandatory drips + PPVs)
+  6 + COALESCE(daily_quota_range.min_ppvs, 0) as min_daily_messages,
+  6 + COALESCE(daily_quota_range.max_ppvs, 0) as max_daily_messages,
   6 as mandatory_drip_bumps,  -- Always 6 for all tiers
   3 as mandatory_renewals,    -- Always 3 for all tiers
   1 as mandatory_wall_posts,  -- Always 1 for all tiers

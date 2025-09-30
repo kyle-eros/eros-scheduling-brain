@@ -1,0 +1,17 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "creator_tier_assignments: critical fields present + valid ranges (today)",
+  tags: ["data_quality","not_null"]
+}
+
+SELECT *
+FROM ${ref("creator_tier_assignments")}
+WHERE assignment_date = CURRENT_DATE()
+  AND (
+    username_std IS NULL OR
+    full_tier_assignment IS NULL OR
+    min_daily_messages IS NULL OR
+    max_daily_messages IS NULL OR
+    min_daily_messages > max_daily_messages
+  )

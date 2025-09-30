@@ -8,7 +8,7 @@ config {
 SELECT 'no_recent_send_log' AS reason
 WHERE NOT EXISTS (
   SELECT 1
-  FROM \${ref("send_log")}
+  FROM ${ref("send_log")}
   WHERE action_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
   LIMIT 1
 )

@@ -1,0 +1,12 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "messages_enriched: unique message_sk in last 14d",
+  tags: ["data_quality","uniqueness"]
+}
+
+SELECT message_sk, COUNT(*) as dup_count
+FROM ${ref("messages_enriched")}
+WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+GROUP BY message_sk
+HAVING COUNT(*) > 1

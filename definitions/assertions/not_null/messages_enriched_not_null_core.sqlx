@@ -6,7 +6,7 @@ config {
 }
 
 SELECT *
-FROM \${ref("messages_enriched")}
+FROM ${ref("messages_enriched")}
 WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
   AND (username_std IS NULL OR sending_date IS NULL)
 LIMIT 100

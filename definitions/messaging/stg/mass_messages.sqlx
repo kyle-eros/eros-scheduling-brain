@@ -2,7 +2,6 @@ config {
   type: "incremental",
   schema: "eros_messaging_stg",
   uniqueKey: ["message_sk"],
-  updatePartitionFilter: "sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)",
   partitionBy: "sending_date",
   clusterBy: ["username_std"],
   requirePartitionFilter: false,  // Start false for initial creation, can be altered later

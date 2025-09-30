@@ -1,14 +1,24 @@
 config {
   type: "assertion",
   schema: "eros_assertions",
-  description: "tier_baseline_templates: randomize_minutes is within sane bounds (optional; enable once field verified)",
-  tags: ["data_quality","accepted_values"],
-  disabled: true
+  description: "tier_baseline_templates: randomize_minutes within 0..1440",
+  tags: ["data_quality","accepted_values"]
 }
 
--- Enable after confirming exact field path. If randomize_minutes is in an array of STRUCTs,
--- add UNNEST(...) and project tpl.randomize_minutes.
-SELECT *
-FROM \${ref("tier_baseline_templates")}
-WHERE NOT (randomize_minutes BETWEEN 0 AND 1440)
-LIMIT 100
+WITH drip_mins AS (
+  SELECT t.tier_id, ds.randomize_minutes AS rm
+  FROM ${ref("tier_baseline_templates")} t, UNNEST(t.drip_schedule) ds
+  WHERE ds.randomize_minutes IS NOT NULL
+),
+renewal_mins AS (
+  SELECT t.tier_id, rs.randomize_minutes AS rm
+  FROM ${ref("tier_baseline_templates")} t, UNNEST(t.renewal_schedule) rs
+  WHERE rs.randomize_minutes IS NOT NULL
+)
+SELECT tier_id, rm
+FROM drip_mins
+WHERE NOT (rm BETWEEN 0 AND 1440)
+UNION ALL
+SELECT tier_id, rm
+FROM renewal_mins
+WHERE NOT (rm BETWEEN 0 AND 1440)
