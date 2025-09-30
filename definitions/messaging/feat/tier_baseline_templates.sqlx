@@ -28,19 +28,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE (Mandatory - cannot be changed)
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE (Mandatory)
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -50,10 +50,10 @@ SELECT * FROM UNNEST([
 
     -- PPV TIMING WINDOWS (Flexible - AI will optimize within these)
     [
-      STRUCT('Morning PPV' as label, '11:00-13:00' as time_range, 'mid' as price_type, [11, 12, 13] as hours),
-      STRUCT('Afternoon PPV' as label, '15:00-17:00' as time_range, 'mid' as price_type, [15, 16, 17] as hours),
-      STRUCT('Prime Evening' as label, '21:00-22:00' as time_range, 'premium' as price_type, [21, 22] as hours),
-      STRUCT('Late Night' as label, '00:30-01:30' as time_range, 'teaser' as price_type, [0, 1] as hours)
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Morning PPV' as label, '11:00-13:00' as base_time, 'ppv_mid' as template_type, 11 as hour, 0 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Afternoon PPV' as label, '15:00-17:00' as base_time, 'ppv_mid' as template_type, 15 as hour, 0 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Prime Evening' as label, '21:00-22:00' as base_time, 'ppv_premium' as template_type, 21 as hour, 0 as randomize_minutes),
+      STRUCT('A_FREE' as tier_id, 'Launch Free' as tier_name, 'FREE' as page_type, 'Late Night' as label, '00:30-01:30' as base_time, 'ppv_teaser' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as ppv_windows,
 
     -- OPTIONAL COMPONENTS (AI will add based on performance)

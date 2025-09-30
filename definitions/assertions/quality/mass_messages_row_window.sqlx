@@ -1,13 +1,15 @@
 config {
   type: "assertion",
   schema: "eros_assertions",
-  name: "mass_messages_row_window",
-  description: "Ensures all data is within the expected 14-day window",
-  tags: ["quality", "mass_messages"]
+  name: "mass_messages_row_window"
 }
 
--- Check for data outside the expected window
-SELECT 1
-FROM ${ref("mass_messages")}
-WHERE sending_date < DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
-LIMIT 1
+-- Fail if any row is older than 14 days
+SELECT 1 AS failing
+FROM UNNEST([1]) AS _
+WHERE EXISTS (
+  SELECT 1
+  FROM ${ref("mass_messages")}
+  WHERE sending_date < DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+  LIMIT 1
+)
