@@ -28,19 +28,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE (Mandatory - cannot be changed)
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE (Mandatory)
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -86,19 +86,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE (Same for all tiers)
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY (Higher prices for paid pages)
@@ -143,19 +143,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -199,19 +199,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -255,19 +255,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -313,19 +313,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -371,19 +371,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY
@@ -429,19 +429,19 @@ SELECT * FROM UNNEST([
 
     -- DRIP BUMP SCHEDULE
     [
-      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as type, 7 as hour, 45 as randomize_minutes),
-      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as type, 10 as hour, 45 as randomize_minutes),
-      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as type, 14 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as type, 20 as hour, 45 as randomize_minutes),
-      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as type, 23 as hour, 45 as randomize_minutes),
-      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as type, 2 as hour, 45 as randomize_minutes)
+      STRUCT('Morning Drip 1' as label, '07:00' as base_time, 'drip_morning' as template_type, 7 as hour, 45 as randomize_minutes),
+      STRUCT('Morning Drip 2' as label, '10:00' as base_time, 'drip_morning' as template_type, 10 as hour, 45 as randomize_minutes),
+      STRUCT('Afternoon Drip' as label, '14:00' as base_time, 'drip_afternoon' as template_type, 14 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 1' as label, '20:00' as base_time, 'drip_evening' as template_type, 20 as hour, 45 as randomize_minutes),
+      STRUCT('Evening Drip 2' as label, '23:00' as base_time, 'drip_evening' as template_type, 23 as hour, 45 as randomize_minutes),
+      STRUCT('Late Night Drip' as label, '02:00' as base_time, 'drip_late' as template_type, 2 as hour, 45 as randomize_minutes)
     ] as drip_schedule,
 
     -- RENEWAL CAMPAIGN SCHEDULE
     [
-      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as type, 8 as hour, 30 as randomize_minutes),
-      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as type, 16 as hour, 30 as randomize_minutes),
-      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as type, 0 as hour, 30 as randomize_minutes)
+      STRUCT('Morning Renewal' as label, '08:00' as base_time, 'renewal_morning' as template_type, 8 as hour, 30 as randomize_minutes),
+      STRUCT('Afternoon Renewal' as label, '16:00' as base_time, 'renewal_afternoon' as template_type, 16 as hour, 30 as randomize_minutes),
+      STRUCT('Midnight Renewal' as label, '00:00' as base_time, 'renewal_midnight' as template_type, 0 as hour, 30 as randomize_minutes)
     ] as renewal_schedule,
 
     -- PPV PRICING STRATEGY (Highest prices for VIP tier)

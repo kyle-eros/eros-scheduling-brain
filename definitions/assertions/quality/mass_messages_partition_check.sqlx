@@ -15,6 +15,7 @@ config {
 
 -- Fail if there are no rows in the last 2 days
 SELECT 1
+FROM UNNEST([1]) AS _
 WHERE NOT EXISTS (
   SELECT 1
   FROM ${ref("mass_messages")}

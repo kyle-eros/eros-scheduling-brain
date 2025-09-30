@@ -52,7 +52,7 @@ recent_messaging_patterns AS (
     -- PRICING PATTERN ANALYSIS
     COUNT(DISTINCT me.price) as unique_price_points,
     STDDEV(me.price) as price_variance,
-    SUM(CASE WHEN me.price % 5 = 0 THEN 1 ELSE 0 END) as round_number_prices,  -- Over-use of round numbers
+    SUM(CASE WHEN MOD(me.price, 5) = 0 THEN 1 ELSE 0 END) as round_number_prices,  -- Over-use of round numbers
 
     -- TIME-ENERGY MATCHING ANALYSIS
     SUM(CASE

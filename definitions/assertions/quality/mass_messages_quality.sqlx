@@ -6,82 +6,51 @@ config {
   tags: ["quality", "mass_messages"]
 }
 
-/*
- * DATA QUALITY ASSERTIONS FOR MASS_MESSAGES
- *
- * These assertions run after each pipeline execution to ensure data integrity
- */
+/* QUALITY CHECKS FOR mass_messages */
 
--- Check 1: No duplicate message_sk values
-WITH duplicate_check AS (
+-- Compose checks as UNION ALL of failure rows
+SELECT * FROM (
+  -- Check 1: duplicate message_sk in the last 14 days
   SELECT
+    'DUPLICATE_MESSAGE_SK' AS failing_row_condition,
     message_sk,
-    COUNT(*) as count
+    COUNT(*) AS dup_count
   FROM ${ref("mass_messages")}
-  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)  -- Partition filter
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
   GROUP BY message_sk
   HAVING COUNT(*) > 1
-)
-SELECT
-  'duplicate_message_sk' as check_name,
-  COUNT(*) as failure_count,
-  STRING_AGG(message_sk, ', ' LIMIT 10) as sample_failures
-FROM duplicate_check
 
-UNION ALL
+  UNION ALL
 
--- Check 2: Verify no NULL values in critical fields
-SELECT
-  'null_critical_fields' as check_name,
-  COUNT(*) as failure_count,
-  'Check message_sk, username_std, sending_date for NULLs' as sample_failures
-FROM ${ref("mass_messages")}
-WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)  -- Partition filter
-  AND (
-    message_sk IS NULL
-    OR username_std IS NULL
-    OR sending_date IS NULL
-    OR sending_ts IS NULL
-  )
+  -- Check 2: NULL keys (should not happen)
+  SELECT
+    'NULL_KEYS' AS failing_row_condition,
+    message_sk,
+    1 AS cnt
+  FROM ${ref("mass_messages")}
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+    AND (message_sk IS NULL OR username_std IS NULL OR sending_date IS NULL)
 
-UNION ALL
+  UNION ALL
 
--- Check 3: Verify data freshness (no stale data)
-SELECT
-  'stale_data' as check_name,
-  CASE
-    WHEN MAX(sending_date) < DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY) THEN 1
-    ELSE 0
-  END as failure_count,
-  CONCAT('Latest date: ', CAST(MAX(sending_date) AS STRING)) as sample_failures
-FROM ${ref("mass_messages")}
-WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)  -- Partition filter
+  -- Check 3: Invalid date ranges
+  SELECT
+    'INVALID_DATES' AS failing_row_condition,
+    message_sk,
+    1 AS cnt
+  FROM ${ref("mass_messages")}
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+    AND (sending_date < DATE '2020-01-01' OR sending_date > DATE '2030-01-01')
 
-UNION ALL
+  UNION ALL
 
--- Check 4: Verify reasonable date ranges
-SELECT
-  'invalid_dates' as check_name,
-  COUNT(*) as failure_count,
-  CONCAT('Found dates outside 2020-2030 range') as sample_failures
-FROM ${ref("mass_messages")}
-WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)  -- Partition filter
-  AND (
-    sending_date < DATE '2020-01-01'
-    OR sending_date > DATE '2030-01-01'
-  )
-
-UNION ALL
-
--- Check 5: Verify price values are reasonable
-SELECT
-  'invalid_prices' as check_name,
-  COUNT(*) as failure_count,
-  CONCAT('Prices should be between 0 and 1000') as sample_failures
-FROM ${ref("mass_messages")}
-WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)  -- Partition filter
-  AND price IS NOT NULL
-  AND (price < 0 OR price > 1000)
-
--- Final assertion: Fail if any check has failures
-WHERE failure_count > 0
+  -- Check 4: Invalid prices
+  SELECT
+    'INVALID_PRICES' AS failing_row_condition,
+    message_sk,
+    1 AS cnt
+  FROM ${ref("mass_messages")}
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+    AND price IS NOT NULL
+    AND (price < 0 OR price > 1000)
+) AS failures

@@ -8,51 +8,99 @@ config {
   dependencies: ["creator_tier_assignments", "messages_enriched"]
 }
 
-WITH weekly_performance AS (
+WITH base_data AS (
   SELECT
-    CONCAT(cta.username_std,
-           CASE WHEN cta.page_type != cta.final_page_type
-           THEN CONCAT('_', LOWER(cta.page_type))
-           ELSE '' END) as page_handle,
     cta.username_std,
     cta.page_type,
+    cta.final_page_type,
     cta.full_tier_assignment,
     cta.base_tier,
+    me.message_sk,
+    me.earnings_total,
+    me.purchased_count,
+    me.sent_count,
+    me.sending_date,
+    DATE_TRUNC(me.sending_date, WEEK) as week_start
+  FROM ${ref("creator_tier_assignments")} cta
+  LEFT JOIN ${ref("messages_enriched")} me
+    ON cta.username_std = me.username_std
+    AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+    AND me.sending_date < CURRENT_DATE()
+  WHERE cta.assignment_date = CURRENT_DATE()
+),
+
+weekly_aggregates AS (
+  SELECT
+    username_std,
+    page_type,
+    week_start,
+    COUNT(message_sk) as messages_count,
+    SUM(earnings_total) as total_earnings,
+    SAFE_DIVIDE(SUM(earnings_total), COUNT(message_sk)) as rpm_week
+  FROM base_data
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+  GROUP BY username_std, page_type, week_start
+),
+
+weekly_with_lag AS (
+  SELECT
+    *,
+    LAG(rpm_week, 1) OVER (
+      PARTITION BY username_std, page_type
+      ORDER BY week_start
+    ) as rpm_previous_week
+  FROM weekly_aggregates
+),
+
+weekly_performance AS (
+  SELECT
+    CONCAT(bd.username_std,
+           CASE WHEN bd.page_type != bd.final_page_type
+           THEN CONCAT('_', LOWER(bd.page_type))
+           ELSE '' END) as page_handle,
+    bd.username_std,
+    bd.page_type,
+    bd.full_tier_assignment,
+    bd.base_tier,
     CURRENT_DATE() as adjustment_date,
 
     -- Performance metrics over last 7 days
-    COUNT(me.message_sk) as messages_sent_7d,
-    SUM(me.earnings_total) as total_revenue_7d,
-    AVG(me.earnings_total) as avg_revenue_per_message,
-    SUM(me.purchased_count) as total_purchases_7d,
-    SUM(me.sent_count) as total_recipients_7d,
-    SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as buy_rate,
+    COUNT(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN bd.message_sk END) as messages_sent_7d,
+    SUM(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN bd.earnings_total ELSE 0 END) as total_revenue_7d,
+    AVG(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN bd.earnings_total END) as avg_revenue_per_message,
+    SUM(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN bd.purchased_count ELSE 0 END) as total_purchases_7d,
+    SUM(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN bd.sent_count ELSE 0 END) as total_recipients_7d,
+    SAFE_DIVIDE(
+      SUM(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN bd.purchased_count ELSE 0 END),
+      SUM(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN bd.sent_count ELSE 0 END)
+    ) as buy_rate,
 
     -- Revenue per message (RPM)
-    SAFE_DIVIDE(SUM(me.earnings_total), COUNT(me.message_sk)) as rpm_current,
+    SAFE_DIVIDE(
+      SUM(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN bd.earnings_total ELSE 0 END),
+      COUNT(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN bd.message_sk END)
+    ) as rpm_current,
 
-    -- Compare to previous 7 days for trend analysis
-    LAG(SAFE_DIVIDE(SUM(me.earnings_total), COUNT(me.message_sk)), 1) OVER (
-      PARTITION BY cta.username_std, cta.page_type
-      ORDER BY DATE_TRUNC(me.sending_date, WEEK)
-    ) as rpm_previous_week,
+    -- Previous week RPM from lag calculation
+    MAX(wl.rpm_previous_week) as rpm_previous_week,
 
     -- Weekend vs weekday performance
-    AVG(CASE WHEN EXTRACT(DAYOFWEEK FROM me.sending_date) IN (1, 7)
-             THEN me.earnings_total ELSE NULL END) as weekend_avg_rpm,
-    AVG(CASE WHEN EXTRACT(DAYOFWEEK FROM me.sending_date) NOT IN (1, 7)
-             THEN me.earnings_total ELSE NULL END) as weekday_avg_rpm,
+    AVG(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+             AND EXTRACT(DAYOFWEEK FROM bd.sending_date) IN (1, 7)
+             THEN bd.earnings_total ELSE NULL END) as weekend_avg_rpm,
+    AVG(CASE WHEN bd.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+             AND EXTRACT(DAYOFWEEK FROM bd.sending_date) NOT IN (1, 7)
+             THEN bd.earnings_total ELSE NULL END) as weekday_avg_rpm,
 
     -- Unsubscribe tracking (placeholder - no message_type field available)
     0 as unsubscribes_7d,
     0.0 as unsub_rate
 
-  FROM ${ref("creator_tier_assignments")} cta
-  LEFT JOIN ${ref("messages_enriched")} me
-    ON cta.username_std = me.username_std
-    AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
-    AND me.sending_date < CURRENT_DATE()
-  WHERE cta.assignment_date = CURRENT_DATE()
+  FROM base_data bd
+  LEFT JOIN weekly_with_lag wl
+    ON bd.username_std = wl.username_std
+    AND bd.page_type = wl.page_type
+    AND wl.week_start = DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY), WEEK)
   GROUP BY 1,2,3,4,5,6
 ),
 
