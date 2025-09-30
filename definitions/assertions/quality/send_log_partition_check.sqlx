@@ -1,0 +1,15 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "send_log: recent partitions exist (7d)",
+  tags: ["data_quality","partitions"]
+}
+
+SELECT 'missing_recent_partition' AS reason
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM `${dataform.projectConfig.defaultProject}.eros_ops`.INFORMATION_SCHEMA.PARTITIONS
+  WHERE table_name = 'send_log'
+    AND SAFE.PARSE_DATE('%Y%m%d', partition_id) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+  LIMIT 1
+)

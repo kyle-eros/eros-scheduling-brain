@@ -1,0 +1,14 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "SLA: send_log has data in the last 24h",
+  tags: ["data_quality","freshness","SLA"]
+}
+
+SELECT 'no_recent_send_log' AS reason
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM \${ref("send_log")}
+  WHERE action_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  LIMIT 1
+)

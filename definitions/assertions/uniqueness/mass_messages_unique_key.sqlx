@@ -1,0 +1,16 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "mass_messages: message_sk unique within 14 days",
+  tags: ["data_quality","uniqueness"]
+}
+
+WITH d AS (
+  SELECT message_sk
+  FROM \${ref("mass_messages")}
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+)
+SELECT message_sk, COUNT(*) AS dup_cnt
+FROM d
+GROUP BY message_sk
+HAVING COUNT(*) > 1

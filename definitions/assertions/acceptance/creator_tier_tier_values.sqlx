@@ -1,0 +1,15 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  description: "creator_tier_assignments: allowed tier values",
+  tags: ["data_quality","accepted_values"]
+}
+
+-- Allowed: 'tier 0'..'tier 3', '0'..'3', 'enterprise', 'vip' (case-insensitive, flexible spacing)
+SELECT c.*
+FROM \${ref("creator_tier_assignments")} c
+WHERE NOT (
+  REGEXP_CONTAINS(LOWER(CAST(c.tier AS STRING)), r'^(tier\s*)?(0|1|2|3)')
+  OR LOWER(CAST(c.tier AS STRING)) IN ('enterprise','vip')
+)
+LIMIT 100
