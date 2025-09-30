@@ -2,7 +2,8 @@ config {
   type: "assertion",
   schema: "eros_assertions",
   description: "send_log: partitions present for last 7 days (data-driven)",
-  tags: ["data_quality","partition"]
+  tags: ["data_quality","partition"],
+  disabled: (dataform.projectConfig.vars && (dataform.projectConfig.vars.enable_partition_slo === true || dataform.projectConfig.vars.enable_partition_slo === "true")) || false
 }
 
 WITH days AS (

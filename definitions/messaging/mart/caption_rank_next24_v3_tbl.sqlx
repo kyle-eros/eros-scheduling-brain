@@ -92,14 +92,13 @@ caption_candidates AS (
     cp.username_page,
     ts.slot_dt_local,
     ts.hod,
-    ts.caption_id,
-    ts.caption_text,
-    ts.theme_score,
-    ts.explicitness_bonus
+    th.caption_id,
+    th.caption_text,
+    th.theme_score,
+    th.explicitness_bonus
   FROM creator_pages cp
-  CROSS JOIN time_slots ts_outer
-  CROSS JOIN theme_scoring ts
-  WHERE ts_outer.slot_dt_local = ts.slot_dt_local AND ts_outer.hod = ts.hod
+  CROSS JOIN time_slots ts
+  CROSS JOIN theme_scoring th
 ),
 
 -- Apply performance data and calculate scores

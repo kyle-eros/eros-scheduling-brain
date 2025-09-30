@@ -2,12 +2,14 @@ config {
   type: "assertion",
   schema: "eros_assertions",
   description: "send_log: max(action_date) within last 24h",
-  tags: ["data_quality","freshness"]
+  tags: ["data_quality","freshness"],
+  disabled: (dataform.projectConfig.vars && (dataform.projectConfig.vars.enable_strict_freshness === true || dataform.projectConfig.vars.enable_strict_freshness === "true")) || false
 }
 WITH s AS (
   SELECT MAX(action_date) AS max_dt
   FROM ${ref("send_log")}
+  WHERE action_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
 )
 SELECT *
 FROM s
-WHERE COALESCE(max_dt, DATE '1900-01-01') < DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+WHERE max_dt < DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)

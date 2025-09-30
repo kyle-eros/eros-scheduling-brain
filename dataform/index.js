@@ -1,0 +1,6 @@
+module.exports = {
+  vars: {
+    enable_strict_freshness: false,
+    enable_partition_slo: false
+  }
+};
