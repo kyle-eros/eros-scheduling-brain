@@ -114,6 +114,8 @@ For deployment assistance:
 - **BigQuery Access**: Ensure service account has BigQuery Admin role
 - **Apps Script Issues**: Verify Google Group membership for schedulers
 
+**Post-Run Verification**: Runner SA must have `bigquery.tables.update` on `eros_messaging_stg` and `eros_ops` for post_operations to succeed (sets `require_partition_filter = TRUE`).
+
 ---
 
 **System Ready for Production Deployment** 🚀

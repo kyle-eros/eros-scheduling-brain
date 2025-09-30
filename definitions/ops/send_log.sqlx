@@ -1,3 +1,5 @@
+-- Partition contract: 'action_date' is DATE and stable; require_partition_filter enforced via post_operations.
+
 config {
   type: "table",
   schema: "eros_ops",

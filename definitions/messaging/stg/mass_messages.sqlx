@@ -14,6 +14,10 @@ config {
   }
 }
 
+post_operations {
+  ALTER TABLE ${self()} SET OPTIONS (require_partition_filter = TRUE);
+}
+
 /*
  * MASS MESSAGES - INCREMENTAL STAGING TABLE
  *
@@ -127,7 +131,3 @@ QUALIFY ROW_NUMBER() OVER (
   PARTITION BY message_sk
   ORDER BY loaded_at DESC
 ) = 1
-
-post_operations {
-  ALTER TABLE ${self()} SET OPTIONS (require_partition_filter = TRUE);
-}
