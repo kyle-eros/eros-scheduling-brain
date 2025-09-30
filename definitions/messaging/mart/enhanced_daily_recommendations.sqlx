@@ -61,7 +61,17 @@ drip_slots AS (
     drip.hour AS slot_hour,
     COALESCE(drip.randomize_minutes, ac.randomize_offset_minutes, 0) AS randomize_minutes,
     TIMESTAMP_ADD(
-      TIMESTAMP(CONCAT(CAST(CURRENT_DATE() AS STRING), ' ', drip.base_time)),
+      TIMESTAMP(
+        DATETIME(
+          CURRENT_DATE('America/New_York'),
+          CASE
+            WHEN REGEXP_CONTAINS(drip.base_time, r'^\d{2}:\d{2}:\d{2}$')
+              THEN PARSE_TIME('%H:%M:%S', drip.base_time)
+            ELSE PARSE_TIME('%H:%M', drip.base_time)
+          END
+        ),
+        'America/New_York'
+      ),
       INTERVAL CAST(
         FLOOR(RAND() * (2 * COALESCE(drip.randomize_minutes, ac.randomize_offset_minutes, 0) + 1))
         - COALESCE(drip.randomize_minutes, ac.randomize_offset_minutes, 0)
@@ -84,7 +94,7 @@ drip_ranked AS (
   FROM drip_slots ds
   LEFT JOIN ${ref("creator_heatmap")} hm
     ON hm.username_std = ds.username_std
-   AND hm.local_day_of_week = FORMAT_DATE('%A', CURRENT_DATE())
+   AND hm.local_day_of_week = FORMAT_DATE('%A', CURRENT_DATE('America/New_York'))
    AND hm.local_hour = ds.slot_hour
 ),
 
@@ -149,7 +159,17 @@ renewal_slots AS (
     renewal.label AS slot_label,
     renewal.template_type AS slot_type,
     renewal.hour AS slot_hour,
-    TIMESTAMP(CONCAT(CAST(CURRENT_DATE() AS STRING), ' ', renewal.base_time)) AS recommended_send_ts
+    TIMESTAMP(
+      DATETIME(
+        CURRENT_DATE('America/New_York'),
+        CASE
+          WHEN REGEXP_CONTAINS(renewal.base_time, r'^\d{2}:\d{2}:\d{2}$')
+            THEN PARSE_TIME('%H:%M:%S', renewal.base_time)
+          ELSE PARSE_TIME('%H:%M', renewal.base_time)
+        END
+      ),
+      'America/New_York'
+    ) AS recommended_send_ts
   FROM active_creators ac
   CROSS JOIN UNNEST(ac.renewal_schedule) AS renewal
 ),
@@ -167,7 +187,7 @@ renewal_ranked AS (
   FROM renewal_slots rs
   LEFT JOIN ${ref("creator_heatmap")} hm
     ON hm.username_std = rs.username_std
-   AND hm.local_day_of_week = FORMAT_DATE('%A', CURRENT_DATE())
+   AND hm.local_day_of_week = FORMAT_DATE('%A', CURRENT_DATE('America/New_York'))
    AND hm.local_hour = rs.slot_hour
 ),
 
@@ -303,7 +323,7 @@ tip_recommendations AS (
     full_tier_assignment,
     CURRENT_DATE() AS recommendation_date,
     TIMESTAMP_ADD(
-      TIMESTAMP(CONCAT(CAST(CURRENT_DATE() AS STRING), ' 15:00')),
+      TIMESTAMP(DATETIME(CURRENT_DATE('America/New_York'), TIME '15:00:00'), 'America/New_York'),
       INTERVAL CAST(FLOOR(RAND() * 120) AS INT64) MINUTE
     ) AS recommended_send_ts,
     'tip_campaign' AS message_type,
