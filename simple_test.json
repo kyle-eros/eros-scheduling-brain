@@ -479,7 +479,7 @@
                 "name": "messages_enriched",
                 "database": "of-scheduler-proj"
             },
-            "query": "\n\nWITH timezone_context AS (\n  SELECT\n    m.*,\n    DATETIME(m.sending_ts, COALESCE(tz.timezone_iana, 'UTC')) AS local_sending_dt\n  FROM  m\n  LEFT JOIN `of-scheduler-proj.eros_core_dim.dim_creator_timezone` tz \n    ON m.username_std = tz.username_std\n),\n\nenriched_base AS (\n  SELECT \n    tc.*,\n    EXTRACT(HOUR FROM tc.local_sending_dt) AS local_hour,\n    FORMAT_DATE('%A', DATE(tc.local_sending_dt)) AS local_day_of_week,\n    EXTRACT(DAYOFWEEK FROM DATE(tc.local_sending_dt)) IN (1, 7) AS is_weekend,\n\n    -- Performance metrics (PROBLEMS 2,5: PRICING & QUALITY)\n    COALESCE(SAFE_DIVIDE(tc.purchased_count, tc.sent_count), 0) AS purchase_rate,\n    COALESCE(SAFE_DIVIDE(tc.earnings_total, tc.sent_count), 0) AS rpm,\n    COALESCE(SAFE_DIVIDE(tc.viewed_count, tc.sent_count), 0) AS view_rate\n  FROM timezone_context tc\n)\n\nSELECT * FROM enriched_base\nWHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)\n",
+            "query": "\n\nWITH timezone_context AS (\n  SELECT\n    m.*,\n    DATETIME(m.sending_ts, COALESCE(tz.timezone_iana, 'UTC')) AS local_sending_dt\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages` m\n  LEFT JOIN `of-scheduler-proj.eros_core_dim.dim_creator_timezone` tz \n    ON m.username_std = tz.username_std\n),\n\nenriched_base AS (\n  SELECT \n    tc.*,\n    EXTRACT(HOUR FROM tc.local_sending_dt) AS local_hour,\n    FORMAT_DATE('%A', DATE(tc.local_sending_dt)) AS local_day_of_week,\n    EXTRACT(DAYOFWEEK FROM DATE(tc.local_sending_dt)) IN (1, 7) AS is_weekend,\n\n    -- Performance metrics (PROBLEMS 2,5: PRICING & QUALITY)\n    COALESCE(SAFE_DIVIDE(tc.purchased_count, tc.sent_count), 0) AS purchase_rate,\n    COALESCE(SAFE_DIVIDE(tc.earnings_total, tc.sent_count), 0) AS rpm,\n    COALESCE(SAFE_DIVIDE(tc.viewed_count, tc.sent_count), 0) AS view_rate\n  FROM timezone_context tc\n)\n\nSELECT * FROM enriched_base\nWHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)\n",
             "disabled": false,
             "fileName": "definitions/messaging/feat/messages_enriched.sqlx",
             "bigquery": {
@@ -506,6 +506,11 @@
                 }
             },
             "dependencyTargets": [
+                {
+                    "schema": "eros_messaging_stg",
+                    "name": "mass_messages",
+                    "database": "of-scheduler-proj"
+                },
                 {
                     "schema": "eros_core_dim",
                     "name": "dim_creator_timezone",
@@ -617,11 +622,11 @@
                 "name": "caption_rank_next24_v3_tbl",
                 "database": "of-scheduler-proj"
             },
-            "query": "\n\nWITH time_slots AS (\n  SELECT\n    slot_ts,\n    TIMESTAMP(slot_ts, 'America/New_York') as slot_ts_local,\n    DATE(slot_ts, 'America/New_York') as slot_dt_local,\n    EXTRACT(HOUR FROM slot_ts AT TIME ZONE 'America/New_York') as hod\n  FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(\n    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR),\n    TIMESTAMP_ADD(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR),\n    INTERVAL 1 HOUR\n  )) as slot_ts\n),\n\nactive_creators AS (\n  SELECT DISTINCT username_std\n  FROM \n  WHERE sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)\n),\n\ncreator_pages AS (\n  SELECT\n    username_std,\n    CONCAT(username_std, '__main') as username_page\n  FROM active_creators\n),\n\n-- Historical performance by caption and timing\ncaption_performance AS (\n  SELECT\n    CONCAT(m.username_std, '__main') as username_page,\n    EXTRACT(HOUR FROM m.sending_ts AT TIME ZONE 'America/New_York') as hod,\n    c.caption_sk as caption_id,\n    c.caption_text,\n    AVG(m.earnings_total) as avg_revenue,\n    COUNT(*) as usage_count,\n    MAX(m.sending_ts) as last_used_at,\n    AVG(CASE WHEN m.earnings_total > 0 THEN m.earnings_total / GREATEST(m.price, 1) ELSE 0 END) as avg_roi\n  FROM  m\n  JOIN `of-scheduler-proj.eros_messaging_stg.captions` c ON LOWER(REGEXP_REPLACE(m.message_text, r'\\s+', ' ')) = LOWER(REGEXP_REPLACE(c.caption_text, r'\\s+', ' '))\n  WHERE m.sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY)\n    AND c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n  GROUP BY username_page, hod, caption_id, caption_text\n  HAVING usage_count >= 1\n),\n\n-- Theme-based scoring\ntheme_scoring AS (\n  SELECT\n    c.caption_sk as caption_id,\n    c.caption_text,\n    cts.primary_theme,\n    cts.explicitness_level,\n    cts.explicitness_score,\n    CASE cts.primary_theme\n      WHEN 'JOI / Instruction' THEN 0.9\n      WHEN 'Solo Touch' THEN 0.85\n      WHEN 'Toy Play (Hands)' THEN 0.8\n      WHEN 'B/G Action' THEN 0.95\n      WHEN 'Bundle / Mega Pack' THEN 0.7\n      WHEN 'Urgent / Last Chance' THEN 0.6\n      ELSE 0.5\n    END as theme_score,\n    CASE cts.explicitness_level\n      WHEN 'Hardcore' THEN 0.9\n      WHEN 'Explicit' THEN 0.8\n      WHEN 'Semi-Explicit' THEN 0.7\n      WHEN 'Playful' THEN 0.6\n      ELSE 0.5\n    END as explicitness_bonus\n  FROM `of-scheduler-proj.eros_messaging_stg.captions` c\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.caption_theme_signals` cts ON c.caption_sk = cts.caption_sk\n  WHERE c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n),\n\n-- All combinations of creators, time slots, and captions\ncaption_candidates AS (\n  SELECT\n    cp.username_page,\n    ts.slot_ts_local,\n    ts.slot_dt_local,\n    ts.hod,\n    theme.caption_id,\n    theme.caption_text,\n    theme.theme_score,\n    theme.explicitness_bonus\n  FROM creator_pages cp\n  CROSS JOIN time_slots ts\n  CROSS JOIN theme_scoring theme\n),\n\n-- Apply performance data and calculate scores\nscored_captions AS (\n  SELECT\n    cc.*,\n    COALESCE(cp.avg_revenue, 10.0) as historical_revenue,\n    COALESCE(cp.avg_roi, 2.0) as historical_roi,\n    COALESCE(cp.usage_count, 0) as usage_count,\n\n    -- Revenue per send expectation\n    (COALESCE(cp.avg_revenue, 10.0) * 0.4 +\n     cc.theme_score * 20 +\n     cc.explicitness_bonus * 15) as rps_eb_price,\n\n    -- Style bonus\n    CASE\n      WHEN COALESCE(cp.usage_count, 0) > 5 THEN 5.0  -- Proven performer\n      WHEN COALESCE(cp.usage_count, 0) > 2 THEN 2.0  -- Some history\n      ELSE 0.0  -- New caption\n    END as style_score,\n\n    -- Special event bonus (seasonal, trending)\n    CASE\n      WHEN LOWER(cc.caption_text) LIKE '%bundle%' THEN 3.0\n      WHEN LOWER(cc.caption_text) LIKE '%special%' THEN 2.0\n      WHEN LOWER(cc.caption_text) LIKE '%limited%' THEN 1.5\n      ELSE 0.0\n    END as se_bonus\n\n  FROM caption_candidates cc\n  LEFT JOIN caption_performance cp\n    ON cc.username_page = cp.username_page\n    AND cc.hod = cp.hod\n    AND cc.caption_id = cp.caption_id\n),\n\nranked_captions AS (\n  SELECT\n    *,\n    ROW_NUMBER() OVER (\n      PARTITION BY username_page, slot_dt_local, hod\n      ORDER BY (rps_eb_price + COALESCE(style_score, 0) + COALESCE(se_bonus, 0)) DESC,\n               usage_count DESC,\n               caption_id\n    ) as rn\n  FROM scored_captions\n)\n\nSELECT\n  username_page,\n  slot_ts_local,\n  slot_dt_local,\n  hod,\n  caption_id,\n  caption_text,\n  rps_eb_price,\n  style_score,\n  se_bonus,\n  historical_revenue,\n  historical_roi,\n  usage_count,\n  rn\nFROM ranked_captions\nWHERE rn <= 20  -- Top 20 captions per creator per hour\n  AND slot_dt_local >= CURRENT_DATE('America/New_York')\n  AND slot_dt_local <= DATE_ADD(CURRENT_DATE('America/New_York'), INTERVAL 1 DAY)",
+            "query": "\n\nWITH time_slots AS (\n  SELECT\n    slot_ts,\n    DATE(slot_ts, 'America/New_York') as slot_dt_local,\n    EXTRACT(HOUR FROM slot_ts AT TIME ZONE 'America/New_York') as hod\n  FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(\n    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR),\n    TIMESTAMP_ADD(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR),\n    INTERVAL 1 HOUR\n  )) as slot_ts\n),\n\nactive_creators AS (\n  SELECT DISTINCT username_std\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)\n),\n\ncreator_pages AS (\n  SELECT\n    username_std,\n    CONCAT(username_std, '__main') as username_page\n  FROM active_creators\n),\n\n-- Historical performance by caption and timing\ncaption_performance AS (\n  SELECT\n    CONCAT(m.username_std, '__main') as username_page,\n    EXTRACT(HOUR FROM m.sending_ts AT TIME ZONE 'America/New_York') as hod,\n    c.caption_sk as caption_id,\n    c.caption_text,\n    AVG(m.earnings_total) as avg_revenue,\n    COUNT(*) as usage_count,\n    MAX(m.sending_ts) as last_used_at,\n    AVG(CASE WHEN m.earnings_total > 0 THEN m.earnings_total / GREATEST(m.price, 1) ELSE 0 END) as avg_roi\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages` m\n  JOIN `of-scheduler-proj.eros_messaging_stg.captions` c ON LOWER(REGEXP_REPLACE(m.message_text, r'\\s+', ' ')) = LOWER(REGEXP_REPLACE(c.caption_text, r'\\s+', ' '))\n  WHERE m.sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY)\n    AND c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n  GROUP BY username_page, hod, caption_id, caption_text\n  HAVING usage_count >= 1\n),\n\n-- Theme-based scoring\ntheme_scoring AS (\n  SELECT\n    c.caption_sk as caption_id,\n    c.caption_text,\n    cts.primary_theme,\n    cts.explicitness_level,\n    cts.explicitness_score,\n    CASE cts.primary_theme\n      WHEN 'JOI / Instruction' THEN 0.9\n      WHEN 'Solo Touch' THEN 0.85\n      WHEN 'Toy Play (Hands)' THEN 0.8\n      WHEN 'B/G Action' THEN 0.95\n      WHEN 'Bundle / Mega Pack' THEN 0.7\n      WHEN 'Urgent / Last Chance' THEN 0.6\n      ELSE 0.5\n    END as theme_score,\n    CASE cts.explicitness_level\n      WHEN 'Hardcore' THEN 0.9\n      WHEN 'Explicit' THEN 0.8\n      WHEN 'Semi-Explicit' THEN 0.7\n      WHEN 'Playful' THEN 0.6\n      ELSE 0.5\n    END as explicitness_bonus\n  FROM `of-scheduler-proj.eros_messaging_stg.captions` c\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.caption_theme_signals` cts ON c.caption_sk = cts.caption_sk\n  WHERE c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n),\n\n-- All combinations of creators, time slots, and captions\ncaption_candidates AS (\n  SELECT\n    cp.username_page,\n    ts.slot_dt_local,\n    ts.hod,\n    theme.caption_id,\n    theme.caption_text,\n    theme.theme_score,\n    theme.explicitness_bonus\n  FROM creator_pages cp\n  CROSS JOIN time_slots ts\n  CROSS JOIN theme_scoring theme\n),\n\n-- Apply performance data and calculate scores\nscored_captions AS (\n  SELECT\n    cc.*,\n    COALESCE(cp.avg_revenue, 10.0) as historical_revenue,\n    COALESCE(cp.avg_roi, 2.0) as historical_roi,\n    COALESCE(cp.usage_count, 0) as usage_count,\n\n    -- Revenue per send expectation\n    (COALESCE(cp.avg_revenue, 10.0) * 0.4 +\n     cc.theme_score * 20 +\n     cc.explicitness_bonus * 15) as rps_eb_price,\n\n    -- Style bonus\n    CASE\n      WHEN COALESCE(cp.usage_count, 0) > 5 THEN 5.0  -- Proven performer\n      WHEN COALESCE(cp.usage_count, 0) > 2 THEN 2.0  -- Some history\n      ELSE 0.0  -- New caption\n    END as style_score,\n\n    -- Special event bonus (seasonal, trending)\n    CASE\n      WHEN LOWER(cc.caption_text) LIKE '%bundle%' THEN 3.0\n      WHEN LOWER(cc.caption_text) LIKE '%special%' THEN 2.0\n      WHEN LOWER(cc.caption_text) LIKE '%limited%' THEN 1.5\n      ELSE 0.0\n    END as se_bonus\n\n  FROM caption_candidates cc\n  LEFT JOIN caption_performance cp\n    ON cc.username_page = cp.username_page\n    AND cc.hod = cp.hod\n    AND cc.caption_id = cp.caption_id\n),\n\nranked_captions AS (\n  SELECT\n    *,\n    ROW_NUMBER() OVER (\n      PARTITION BY username_page, slot_dt_local, hod\n      ORDER BY (rps_eb_price + COALESCE(style_score, 0) + COALESCE(se_bonus, 0)) DESC,\n               usage_count DESC,\n               caption_id\n    ) as rn\n  FROM scored_captions\n)\n\nSELECT\n  username_page,\n  slot_dt_local,\n  hod,\n  caption_id,\n  caption_text,\n  rps_eb_price,\n  style_score,\n  se_bonus,\n  historical_revenue,\n  historical_roi,\n  usage_count,\n  rn\nFROM ranked_captions\nWHERE rn <= 20  -- Top 20 captions per creator per hour\n  AND slot_dt_local >= CURRENT_DATE('America/New_York')\n  AND slot_dt_local <= DATE_ADD(CURRENT_DATE('America/New_York'), INTERVAL 1 DAY)",
             "disabled": false,
             "fileName": "definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx",
             "bigquery": {
-                "partitionBy": "DATE(slot_ts_local)",
+                "partitionBy": "slot_dt_local",
                 "clusterBy": [
                     "username_page",
                     "hod"
@@ -654,6 +659,11 @@
                 {
                     "schema": "eros_messaging_feat",
                     "name": "caption_theme_signals",
+                    "database": "of-scheduler-proj"
+                },
+                {
+                    "schema": "eros_messaging_stg",
+                    "name": "mass_messages",
                     "database": "of-scheduler-proj"
                 }
             ],
@@ -987,6 +997,70 @@
                 "database": "of-scheduler-proj"
             },
             "enumType": "TABLE"
+        },
+        {
+            "type": "incremental",
+            "target": {
+                "schema": "eros_messaging_stg",
+                "name": "mass_messages",
+                "database": "of-scheduler-proj"
+            },
+            "query": "\n\n\n\n/*\n * MASS MESSAGES - INCREMENTAL STAGING TABLE\n *\n * Purpose: Consolidates historical and daily mass message data with incremental updates\n *\n * Partitioning Strategy:\n * - Partitioned by sending_date for cost-efficient queries\n * - Requires partition filter to prevent expensive full table scans\n * - Uses 14-day watermark to capture late-arriving data\n *\n * Incremental Logic:\n * - Primary watermark: sending_ts (timestamp precision)\n * - Lookback window: 14 days to catch delayed records\n * - Deduplication: QUALIFY with ROW_NUMBER to ensure unique message_sk\n *\n * Data Quality:\n * - Enforces non-null constraints on key fields\n * - Validates unique message_sk\n * - Monitors for data freshness\n */\n\nWITH\nhistorical_source AS (\n  SELECT\n    CAST(message_id AS STRING) as message_id,\n    CAST(sender AS STRING) as sender,\n    CAST(sending_time AS STRING) as sending_time,\n    CAST(price AS STRING) as price,\n    SAFE_CAST(sent AS INT64) as sent,\n    SAFE_CAST(viewed AS INT64) as viewed,\n    SAFE_CAST(purchased AS INT64) as purchased,\n    CAST(earnings AS STRING) as earnings,\n    message as message_text,\n    'historical' as source_file\n  FROM `of-scheduler-proj.eros_source.facts_messages_all`\n  WHERE sending_time IS NOT NULL AND TRIM(sending_time) != ''\n),\n\ndaily_source AS (\n  SELECT\n    CAST(message_id AS STRING) as message_id,\n    CAST(sender AS STRING) as sender,\n    CAST(sending_time AS STRING) as sending_time,\n    CAST(price AS STRING) as price,\n    SAFE_CAST(sent AS INT64) as sent,\n    SAFE_CAST(viewed AS INT64) as viewed,\n    SAFE_CAST(purchased AS INT64) as purchased,\n    CAST(earnings AS STRING) as earnings,\n    message as message_text,\n    'daily' as source_file\n  FROM `of-scheduler-proj.eros_source.mass_message_daily_final`\n  WHERE sending_time IS NOT NULL AND TRIM(sending_time) != ''\n),\n\nmessages_unioned AS (\n  SELECT * FROM historical_source\n  UNION ALL\n  SELECT * FROM daily_source\n),\n\nmessages_cleaned AS (\n  SELECT\n    FARM_FINGERPRINT(TO_JSON_STRING(STRUCT('MASS_MESSAGES' AS col_0, CAST(message_id AS STRING) AS col_1, source_file AS col_2))) as message_sk,\n    LOWER(REGEXP_REPLACE(TRIM(sender), r'[^a-z0-9_]', '_')) as username_std,\n    COALESCE(\n      SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', sending_time),\n      SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sending_time)\n    ) as sending_ts,\n    SAFE_CAST(NULLIF(REGEXP_REPLACE(price, r'[^0-9.-]', ''), '') AS FLOAT64) as price,\n    sent as sent_count,\n    viewed as viewed_count,\n    purchased as purchased_count, \n    SAFE_CAST(NULLIF(REGEXP_REPLACE(earnings, r'[^0-9.-]', ''), '') AS FLOAT64) as earnings_total,\n    message_text,\n    source_file,\n    CURRENT_TIMESTAMP() as loaded_at\n  FROM messages_unioned\n),\n\nmessages_final AS (\n  SELECT\n    *,\n    DATE(sending_ts) as sending_date\n  FROM messages_cleaned\n  WHERE sending_ts IS NOT NULL\n)\n\nSELECT * FROM messages_final\nWHERE\n  -- ALWAYS include partition filter for performance and cost control\n  sending_date >= DATE('2024-01-01')  -- Historical cutoff\n  AND sending_date <= CURRENT_DATE()  -- No future dates\n\n\n\nQUALIFY ROW_NUMBER() OVER (\n  PARTITION BY message_sk\n  ORDER BY loaded_at DESC\n) = 1",
+            "disabled": false,
+            "protected": false,
+            "postOps": [
+                "\n  ALTER TABLE `of-scheduler-proj.eros_messaging_stg.mass_messages` SET OPTIONS (require_partition_filter = TRUE);\n"
+            ],
+            "fileName": "definitions/messaging/stg/mass_messages.sqlx",
+            "bigquery": {
+                "partitionBy": "sending_date",
+                "clusterBy": [
+                    "username_std"
+                ],
+                "labels": {
+                    "app": "eros",
+                    "domain": "messaging",
+                    "layer": "stg"
+                }
+            },
+            "tags": [
+                "messaging_stg"
+            ],
+            "actionDescriptor": {
+                "description": "Incremental mass messages with 14-day watermark and robust partition handling",
+                "bigqueryLabels": {
+                    "app": "eros",
+                    "domain": "messaging",
+                    "layer": "stg"
+                }
+            },
+            "incrementalQuery": "\n\n\n\n/*\n * MASS MESSAGES - INCREMENTAL STAGING TABLE\n *\n * Purpose: Consolidates historical and daily mass message data with incremental updates\n *\n * Partitioning Strategy:\n * - Partitioned by sending_date for cost-efficient queries\n * - Requires partition filter to prevent expensive full table scans\n * - Uses 14-day watermark to capture late-arriving data\n *\n * Incremental Logic:\n * - Primary watermark: sending_ts (timestamp precision)\n * - Lookback window: 14 days to catch delayed records\n * - Deduplication: QUALIFY with ROW_NUMBER to ensure unique message_sk\n *\n * Data Quality:\n * - Enforces non-null constraints on key fields\n * - Validates unique message_sk\n * - Monitors for data freshness\n */\n\nWITH\nhistorical_source AS (\n  SELECT\n    CAST(message_id AS STRING) as message_id,\n    CAST(sender AS STRING) as sender,\n    CAST(sending_time AS STRING) as sending_time,\n    CAST(price AS STRING) as price,\n    SAFE_CAST(sent AS INT64) as sent,\n    SAFE_CAST(viewed AS INT64) as viewed,\n    SAFE_CAST(purchased AS INT64) as purchased,\n    CAST(earnings AS STRING) as earnings,\n    message as message_text,\n    'historical' as source_file\n  FROM `of-scheduler-proj.eros_source.facts_messages_all`\n  WHERE sending_time IS NOT NULL AND TRIM(sending_time) != ''\n),\n\ndaily_source AS (\n  SELECT\n    CAST(message_id AS STRING) as message_id,\n    CAST(sender AS STRING) as sender,\n    CAST(sending_time AS STRING) as sending_time,\n    CAST(price AS STRING) as price,\n    SAFE_CAST(sent AS INT64) as sent,\n    SAFE_CAST(viewed AS INT64) as viewed,\n    SAFE_CAST(purchased AS INT64) as purchased,\n    CAST(earnings AS STRING) as earnings,\n    message as message_text,\n    'daily' as source_file\n  FROM `of-scheduler-proj.eros_source.mass_message_daily_final`\n  WHERE sending_time IS NOT NULL AND TRIM(sending_time) != ''\n),\n\nmessages_unioned AS (\n  SELECT * FROM historical_source\n  UNION ALL\n  SELECT * FROM daily_source\n),\n\nmessages_cleaned AS (\n  SELECT\n    FARM_FINGERPRINT(TO_JSON_STRING(STRUCT('MASS_MESSAGES' AS col_0, CAST(message_id AS STRING) AS col_1, source_file AS col_2))) as message_sk,\n    LOWER(REGEXP_REPLACE(TRIM(sender), r'[^a-z0-9_]', '_')) as username_std,\n    COALESCE(\n      SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', sending_time),\n      SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sending_time)\n    ) as sending_ts,\n    SAFE_CAST(NULLIF(REGEXP_REPLACE(price, r'[^0-9.-]', ''), '') AS FLOAT64) as price,\n    sent as sent_count,\n    viewed as viewed_count,\n    purchased as purchased_count, \n    SAFE_CAST(NULLIF(REGEXP_REPLACE(earnings, r'[^0-9.-]', ''), '') AS FLOAT64) as earnings_total,\n    message_text,\n    source_file,\n    CURRENT_TIMESTAMP() as loaded_at\n  FROM messages_unioned\n),\n\nmessages_final AS (\n  SELECT\n    *,\n    DATE(sending_ts) as sending_date\n  FROM messages_cleaned\n  WHERE sending_ts IS NOT NULL\n)\n\nSELECT * FROM messages_final\nWHERE\n  -- ALWAYS include partition filter for performance and cost control\n  sending_date >= DATE('2024-01-01')  -- Historical cutoff\n  AND sending_date <= CURRENT_DATE()  -- No future dates\n\n\n  -- Additional incremental filters for recent data\n  AND sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n  AND (\n    -- New records based on timestamp watermark\n    sending_ts > COALESCE(\n      (SELECT MAX(sending_ts)\n       FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n       WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)),\n      TIMESTAMP('2024-01-01')\n    )\n    -- Or recently loaded records (catch late arrivals)\n    OR loaded_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)\n  )\n\n\nQUALIFY ROW_NUMBER() OVER (\n  PARTITION BY message_sk\n  ORDER BY loaded_at DESC\n) = 1",
+            "dependencyTargets": [
+                {
+                    "schema": "eros_source",
+                    "name": "facts_messages_all",
+                    "database": "of-scheduler-proj"
+                },
+                {
+                    "schema": "eros_source",
+                    "name": "mass_message_daily_final",
+                    "database": "of-scheduler-proj"
+                }
+            ],
+            "incrementalPostOps": [
+                "\n  ALTER TABLE `of-scheduler-proj.eros_messaging_stg.mass_messages` SET OPTIONS (require_partition_filter = TRUE);\n"
+            ],
+            "uniqueKey": [
+                "message_sk"
+            ],
+            "hermeticity": "NON_HERMETIC",
+            "canonicalTarget": {
+                "schema": "eros_messaging_stg",
+                "name": "mass_messages",
+                "database": "of-scheduler-proj"
+            },
+            "enumType": "INCREMENTAL",
+            "onSchemaChange": "IGNORE"
         },
         {
             "type": "table",
@@ -1339,7 +1413,7 @@
             }
         },
         {
-            "query": "\n\nSELECT\n  MAX(sending_ts) as latest_message_ts,\n  TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(sending_ts), HOUR) as hours_lag\nFROM \nWHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)\nHAVING hours_lag > 24",
+            "query": "\n\nSELECT\n  MAX(sending_ts) as latest_message_ts,\n  TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(sending_ts), HOUR) as hours_lag\nFROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\nWHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)\nHAVING hours_lag > 24",
             "fileName": "definitions/assertions/freshness/mass_messages_freshness.sqlx",
             "target": {
                 "schema": "eros_assertions",
@@ -1353,6 +1427,13 @@
             "actionDescriptor": {
                 "description": "Mass messages must be fresh within 24 hours"
             },
+            "dependencyTargets": [
+                {
+                    "schema": "eros_messaging_stg",
+                    "name": "mass_messages",
+                    "database": "of-scheduler-proj"
+                }
+            ],
             "canonicalTarget": {
                 "schema": "eros_assertions",
                 "name": "mass_messages_freshness",
@@ -1360,7 +1441,7 @@
             }
         },
         {
-            "query": "\n\n/*\n * PARTITION PRESENCE CHECK FOR MASS_MESSAGES\n *\n * This assertion fails if there are no rows in the last 2 days,\n * which helps detect data pipeline failures or missing partitions\n */\n\n-- Fail if there are no rows in the last 2 days\nSELECT 1 AS failing  -- Named column for VIEW\nFROM UNNEST([1]) AS _\nWHERE NOT EXISTS (\n  SELECT 1\n  FROM \n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)\n  LIMIT 1\n)",
+            "query": "\n\n/*\n * PARTITION PRESENCE CHECK FOR MASS_MESSAGES\n *\n * This assertion fails if there are no rows in the last 2 days,\n * which helps detect data pipeline failures or missing partitions\n */\n\n-- Fail if there are no rows in the last 2 days\nSELECT 1 AS failing  -- Named column for VIEW\nFROM UNNEST([1]) AS _\nWHERE NOT EXISTS (\n  SELECT 1\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)\n  LIMIT 1\n)",
             "fileName": "definitions/assertions/quality/mass_messages_partition_check.sqlx",
             "target": {
                 "schema": "eros_assertions",
@@ -1375,6 +1456,13 @@
             "actionDescriptor": {
                 "description": "Ensures mass_messages table has recent data (last 2 days)"
             },
+            "dependencyTargets": [
+                {
+                    "schema": "eros_messaging_stg",
+                    "name": "mass_messages",
+                    "database": "of-scheduler-proj"
+                }
+            ],
             "canonicalTarget": {
                 "schema": "eros_assertions",
                 "name": "mass_messages_partition_check",
@@ -1382,7 +1470,7 @@
             }
         },
         {
-            "query": "\n\n/* QUALITY CHECKS FOR mass_messages */\n\n-- Compose checks as UNION ALL of failure rows\nSELECT * FROM (\n  -- Check 1: duplicate message_sk in the last 14 days\n  SELECT\n    'DUPLICATE_MESSAGE_SK' AS failing_row_condition,\n    message_sk,\n    COUNT(*) AS dup_count\n  FROM \n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n  GROUP BY message_sk\n  HAVING COUNT(*) > 1\n\n  UNION ALL\n\n  -- Check 2: NULL keys (should not happen)\n  SELECT\n    'NULL_KEYS' AS failing_row_condition,\n    message_sk,\n    1 AS cnt\n  FROM \n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND (message_sk IS NULL OR username_std IS NULL OR sending_date IS NULL)\n\n  UNION ALL\n\n  -- Check 3: Invalid date ranges\n  SELECT\n    'INVALID_DATES' AS failing_row_condition,\n    message_sk,\n    1 AS cnt\n  FROM \n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND (sending_date < DATE '2020-01-01' OR sending_date > DATE '2030-01-01')\n\n  UNION ALL\n\n  -- Check 4: Invalid prices\n  SELECT\n    'INVALID_PRICES' AS failing_row_condition,\n    message_sk,\n    1 AS cnt\n  FROM \n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND price IS NOT NULL\n    AND (price < 0 OR price > 1000)\n) AS failures",
+            "query": "\n\n/* QUALITY CHECKS FOR mass_messages */\n\n-- Compose checks as UNION ALL of failure rows\nSELECT * FROM (\n  -- Check 1: duplicate message_sk in the last 14 days\n  SELECT\n    'DUPLICATE_MESSAGE_SK' AS failing_row_condition,\n    message_sk,\n    COUNT(*) AS dup_count\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n  GROUP BY message_sk\n  HAVING COUNT(*) > 1\n\n  UNION ALL\n\n  -- Check 2: NULL keys (should not happen)\n  SELECT\n    'NULL_KEYS' AS failing_row_condition,\n    message_sk,\n    1 AS cnt\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND (message_sk IS NULL OR username_std IS NULL OR sending_date IS NULL)\n\n  UNION ALL\n\n  -- Check 3: Invalid date ranges\n  SELECT\n    'INVALID_DATES' AS failing_row_condition,\n    message_sk,\n    1 AS cnt\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND (sending_date < DATE '2020-01-01' OR sending_date > DATE '2030-01-01')\n\n  UNION ALL\n\n  -- Check 4: Invalid prices\n  SELECT\n    'INVALID_PRICES' AS failing_row_condition,\n    message_sk,\n    1 AS cnt\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND price IS NOT NULL\n    AND (price < 0 OR price > 1000)\n) AS failures",
             "fileName": "definitions/assertions/quality/mass_messages_quality.sqlx",
             "target": {
                 "schema": "eros_assertions",
@@ -1396,6 +1484,13 @@
             "actionDescriptor": {
                 "description": "Data quality checks for mass_messages table"
             },
+            "dependencyTargets": [
+                {
+                    "schema": "eros_messaging_stg",
+                    "name": "mass_messages",
+                    "database": "of-scheduler-proj"
+                }
+            ],
             "canonicalTarget": {
                 "schema": "eros_assertions",
                 "name": "mass_messages_quality",
@@ -1403,13 +1498,20 @@
             }
         },
         {
-            "query": "\n\n-- Fail if any row is older than 14 days\nSELECT 1 AS failing\nFROM UNNEST([1]) AS _\nWHERE EXISTS (\n  SELECT 1\n  FROM \n  WHERE sending_date < DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n  LIMIT 1\n)",
+            "query": "\n\n-- Fail if any row is older than 14 days\nSELECT 1 AS failing\nFROM UNNEST([1]) AS _\nWHERE EXISTS (\n  SELECT 1\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date < DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n  LIMIT 1\n)",
             "fileName": "definitions/assertions/quality/mass_messages_row_window.sqlx",
             "target": {
                 "schema": "eros_assertions",
                 "name": "mass_messages_row_window",
                 "database": "of-scheduler-proj"
             },
+            "dependencyTargets": [
+                {
+                    "schema": "eros_messaging_stg",
+                    "name": "mass_messages",
+                    "database": "of-scheduler-proj"
+                }
+            ],
             "canonicalTarget": {
                 "schema": "eros_assertions",
                 "name": "mass_messages_row_window",
@@ -1417,13 +1519,20 @@
             }
         },
         {
-            "query": "\n\n-- Fail if duplicate message_sk exists in the last 14 days\nSELECT message_sk\nFROM \nWHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\nGROUP BY message_sk\nHAVING COUNT(*) > 1",
+            "query": "\n\n-- Fail if duplicate message_sk exists in the last 14 days\nSELECT message_sk\nFROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\nWHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\nGROUP BY message_sk\nHAVING COUNT(*) > 1",
             "fileName": "definitions/assertions/quality/mass_messages_unique_key.sqlx",
             "target": {
                 "schema": "eros_assertions",
                 "name": "mass_messages_unique_key",
                 "database": "of-scheduler-proj"
             },
+            "dependencyTargets": [
+                {
+                    "schema": "eros_messaging_stg",
+                    "name": "mass_messages",
+                    "database": "of-scheduler-proj"
+                }
+            ],
             "canonicalTarget": {
                 "schema": "eros_assertions",
                 "name": "mass_messages_unique_key",
@@ -1441,213 +1550,7 @@
         },
         "defaultLocation": "US"
     },
-    "graphErrors": {
-        "compilationErrors": [
-            {
-                "fileName": "definitions/messaging/stg/mass_messages.sqlx",
-                "message": "Unexpected empty value for \"uniqueKey\". See https://dataform-co.github.io/dataform/docs/configs-reference#dataform-ActionConfig-IncrementalTableConfig for allowed properties.",
-                "stack": "ReferenceError: Unexpected empty value for \"uniqueKey\". See https://dataform-co.github.io/dataform/docs/configs-reference#dataform-ActionConfig-IncrementalTableConfig for allowed properties.\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:976\n    at Array.forEach (<anonymous>)\n    at t (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:868)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:1454\n    at Array.forEach (<anonymous>)\n    at t (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:868)\n    at t.verifyObjectMatchesProto (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:1464)\n    at f.verifyConfig (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:24344)\n    at new f (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:16823)\n    at t.Session.sqlxAction (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:75371)"
-            },
-            {
-                "fileName": "definitions/messaging/feat/messages_enriched.sqlx",
-                "message": "Could not resolve \"mass_messages\"",
-                "stack": "Error: Could not resolve \"mass_messages\"\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at d.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47977)\n    at d.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47843)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/messaging/feat/messages_enriched.sqlx:35:10)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:75760\n    at d.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:48696)\n    at f.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:44801)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx",
-                "message": "Could not resolve \"mass_messages\"",
-                "stack": "Error: Could not resolve \"mass_messages\"\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at d.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47977)\n    at d.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47843)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx:46:10)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:75760\n    at d.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:48696)\n    at f.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:44801)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx",
-                "message": "Could not resolve \"mass_messages\"",
-                "stack": "Error: Could not resolve \"mass_messages\"\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at d.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47977)\n    at d.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47843)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx:68:10)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:75760\n    at d.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:48696)\n    at f.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:44801)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/assertions/freshness/mass_messages_freshness.sqlx",
-                "message": "Could not resolve \"mass_messages\"",
-                "stack": "Error: Could not resolve \"mass_messages\"\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)\n    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/freshness/mass_messages_freshness.sqlx:29:8)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124\n    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)\n    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_partition_check.sqlx",
-                "message": "Could not resolve {\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}",
-                "stack": "Error: Could not resolve {\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)\n    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_partition_check.sqlx:39:10)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124\n    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)\n    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_quality.sqlx",
-                "message": "Could not resolve \"mass_messages\"",
-                "stack": "Error: Could not resolve \"mass_messages\"\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)\n    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_quality.sqlx:36:10)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124\n    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)\n    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_quality.sqlx",
-                "message": "Could not resolve \"mass_messages\"",
-                "stack": "Error: Could not resolve \"mass_messages\"\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)\n    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_quality.sqlx:48:10)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124\n    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)\n    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_quality.sqlx",
-                "message": "Could not resolve \"mass_messages\"",
-                "stack": "Error: Could not resolve \"mass_messages\"\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)\n    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_quality.sqlx:59:10)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124\n    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)\n    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_quality.sqlx",
-                "message": "Could not resolve \"mass_messages\"",
-                "stack": "Error: Could not resolve \"mass_messages\"\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)\n    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_quality.sqlx:70:10)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124\n    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)\n    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_row_window.sqlx",
-                "message": "Could not resolve {\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}",
-                "stack": "Error: Could not resolve {\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)\n    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_row_window.sqlx:30:10)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124\n    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)\n    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_unique_key.sqlx",
-                "message": "Could not resolve {\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}",
-                "stack": "Error: Could not resolve {\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}\n    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)\n    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)\n    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)\n    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_unique_key.sqlx:27:8)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124\n    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)\n    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585\n    at Array.forEach (<anonymous>)\n    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)"
-            },
-            {
-                "fileName": "definitions/messaging/feat/messages_enriched.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_feat.messages_enriched\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_feat.messages_enriched\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_messaging_feat.messages_enriched",
-                "actionTarget": {
-                    "schema": "eros_messaging_feat",
-                    "name": "messages_enriched",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/messaging/feat/messages_enriched.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_feat.messages_enriched\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_feat.messages_enriched\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_messaging_feat.messages_enriched",
-                "actionTarget": {
-                    "schema": "eros_messaging_feat",
-                    "name": "messages_enriched",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl",
-                "actionTarget": {
-                    "schema": "eros_messaging_mart",
-                    "name": "caption_rank_next24_v3_tbl",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl",
-                "actionTarget": {
-                    "schema": "eros_messaging_mart",
-                    "name": "caption_rank_next24_v3_tbl",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl\" depends on \"{\"name\":\"mass_messages\",\"includeDependentAssertions\":false}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl",
-                "actionTarget": {
-                    "schema": "eros_messaging_mart",
-                    "name": "caption_rank_next24_v3_tbl",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/assertions/freshness/mass_messages_freshness.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_freshness\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_freshness\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_assertions.mass_messages_freshness",
-                "actionTarget": {
-                    "schema": "eros_assertions",
-                    "name": "mass_messages_freshness",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_partition_check.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_partition_check\" depends on \"{\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_partition_check\" depends on \"{\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_assertions.mass_messages_partition_check",
-                "actionTarget": {
-                    "schema": "eros_assertions",
-                    "name": "mass_messages_partition_check",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_quality.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_quality\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_quality\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_assertions.mass_messages_quality",
-                "actionTarget": {
-                    "schema": "eros_assertions",
-                    "name": "mass_messages_quality",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_quality.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_quality\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_quality\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_assertions.mass_messages_quality",
-                "actionTarget": {
-                    "schema": "eros_assertions",
-                    "name": "mass_messages_quality",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_quality.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_quality\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_quality\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_assertions.mass_messages_quality",
-                "actionTarget": {
-                    "schema": "eros_assertions",
-                    "name": "mass_messages_quality",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_quality.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_quality\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_quality\" depends on \"{\"name\":\"mass_messages\"}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_assertions.mass_messages_quality",
-                "actionTarget": {
-                    "schema": "eros_assertions",
-                    "name": "mass_messages_quality",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_row_window.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_row_window\" depends on \"{\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_row_window\" depends on \"{\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_assertions.mass_messages_row_window",
-                "actionTarget": {
-                    "schema": "eros_assertions",
-                    "name": "mass_messages_row_window",
-                    "database": "of-scheduler-proj"
-                }
-            },
-            {
-                "fileName": "definitions/assertions/quality/mass_messages_unique_key.sqlx",
-                "message": "Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_unique_key\" depends on \"{\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}\" which does not exist",
-                "stack": "Error: Missing dependency detected: Action \"of-scheduler-proj.eros_assertions.mass_messages_unique_key\" depends on \"{\"schema\":\"eros_messaging_stg\",\"name\":\"mass_messages\"}\" which does not exist\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967\n    at Array.forEach (<anonymous>)\n    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)\n    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)\n    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)\n    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96\n    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)\n    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)\n    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)\n    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)",
-                "actionName": "of-scheduler-proj.eros_assertions.mass_messages_unique_key",
-                "actionTarget": {
-                    "schema": "eros_assertions",
-                    "name": "mass_messages_unique_key",
-                    "database": "of-scheduler-proj"
-                }
-            }
-        ]
-    },
+    "graphErrors": {},
     "declarations": [
         {
             "target": {
@@ -1882,6 +1785,11 @@
             "database": "of-scheduler-proj"
         },
         {
+            "schema": "eros_messaging_stg",
+            "name": "mass_messages",
+            "database": "of-scheduler-proj"
+        },
+        {
             "schema": "eros_ops_feat",
             "name": "fatigue_scores",
             "database": "of-scheduler-proj"
@@ -1959,280 +1867,3 @@
     ]
 }
 
-
-  [91mCompilation errors:[0m
-  [36mdefinitions/messaging/stg/mass_messages.sqlx[0m: [91mReferenceError: Unexpected empty value for "uniqueKey". See https://dataform-co.github.io/dataform/docs/configs-reference#dataform-ActionConfig-IncrementalTableConfig for allowed properties.
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:976
-    at Array.forEach (<anonymous>)
-    at t (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:868)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:1454
-    at Array.forEach (<anonymous>)
-    at t (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:868)
-    at t.verifyObjectMatchesProto (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:1464)
-    at f.verifyConfig (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:24344)
-    at new f (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:16823)
-    at t.Session.sqlxAction (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:75371)[0m
-  [36mdefinitions/messaging/feat/messages_enriched.sqlx[0m: [91mError: Could not resolve "mass_messages"
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at d.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47977)
-    at d.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47843)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/messaging/feat/messages_enriched.sqlx:35:10)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:75760
-    at d.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:48696)
-    at f.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:44801)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx[0m: [91mError: Could not resolve "mass_messages"
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at d.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47977)
-    at d.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47843)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx:46:10)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:75760
-    at d.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:48696)
-    at f.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:44801)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx[0m: [91mError: Could not resolve "mass_messages"
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at d.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47977)
-    at d.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:47843)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx:68:10)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:75760
-    at d.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:48696)
-    at f.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:44801)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/assertions/freshness/mass_messages_freshness.sqlx[0m: [91mError: Could not resolve "mass_messages"
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)
-    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/freshness/mass_messages_freshness.sqlx:29:8)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124
-    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)
-    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/assertions/quality/mass_messages_partition_check.sqlx[0m: [91mError: Could not resolve {"schema":"eros_messaging_stg","name":"mass_messages"}
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)
-    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_partition_check.sqlx:39:10)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124
-    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)
-    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/assertions/quality/mass_messages_quality.sqlx[0m: [91mError: Could not resolve "mass_messages"
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)
-    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_quality.sqlx:36:10)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124
-    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)
-    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/assertions/quality/mass_messages_quality.sqlx[0m: [91mError: Could not resolve "mass_messages"
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)
-    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_quality.sqlx:48:10)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124
-    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)
-    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/assertions/quality/mass_messages_quality.sqlx[0m: [91mError: Could not resolve "mass_messages"
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)
-    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_quality.sqlx:59:10)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124
-    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)
-    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/assertions/quality/mass_messages_quality.sqlx[0m: [91mError: Could not resolve "mass_messages"
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)
-    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_quality.sqlx:70:10)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124
-    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)
-    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/assertions/quality/mass_messages_row_window.sqlx[0m: [91mError: Could not resolve {"schema":"eros_messaging_stg","name":"mass_messages"}
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)
-    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_row_window.sqlx:30:10)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124
-    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)
-    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/assertions/quality/mass_messages_unique_key.sqlx[0m: [91mError: Could not resolve {"schema":"eros_messaging_stg","name":"mass_messages"}
-    at t.Session.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:77508)
-    at u.resolve (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5844)
-    at u.ref (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:5702)
-    at Object.sqlContextable (/home/runner/work/eros-data-pipe/eros-data-pipe/definitions/assertions/quality/mass_messages_unique_key.sqlx:27:8)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:76124
-    at u.apply (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:6343)
-    at c.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:4749)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81585
-    at Array.forEach (<anonymous>)
-    at t.Session.compileGraphChunk (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81558)[0m
-  [36mdefinitions/messaging/feat/messages_enriched.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_messaging_feat.messages_enriched" depends on "{"name":"mass_messages","includeDependentAssertions":false}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/messaging/feat/messages_enriched.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_messaging_feat.messages_enriched" depends on "{"name":"mass_messages","includeDependentAssertions":false}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl" depends on "{"name":"mass_messages","includeDependentAssertions":false}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl" depends on "{"name":"mass_messages","includeDependentAssertions":false}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/messaging/mart/caption_rank_next24_v3_tbl.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl" depends on "{"name":"mass_messages","includeDependentAssertions":false}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/assertions/freshness/mass_messages_freshness.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_assertions.mass_messages_freshness" depends on "{"name":"mass_messages"}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/assertions/quality/mass_messages_partition_check.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_assertions.mass_messages_partition_check" depends on "{"schema":"eros_messaging_stg","name":"mass_messages"}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/assertions/quality/mass_messages_quality.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_assertions.mass_messages_quality" depends on "{"name":"mass_messages"}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/assertions/quality/mass_messages_quality.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_assertions.mass_messages_quality" depends on "{"name":"mass_messages"}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/assertions/quality/mass_messages_quality.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_assertions.mass_messages_quality" depends on "{"name":"mass_messages"}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/assertions/quality/mass_messages_quality.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_assertions.mass_messages_quality" depends on "{"name":"mass_messages"}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/assertions/quality/mass_messages_row_window.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_assertions.mass_messages_row_window" depends on "{"schema":"eros_messaging_stg","name":"mass_messages"}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m
-  [36mdefinitions/assertions/quality/mass_messages_unique_key.sqlx[0m: [91mError: Missing dependency detected: Action "of-scheduler-proj.eros_assertions.mass_messages_unique_key" depends on "{"schema":"eros_messaging_stg","name":"mass_messages"}" which does not exist
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81967
-    at Array.forEach (<anonymous>)
-    at t.Session.fullyQualifyDependencies (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:81773)
-    at t.Session.compile (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:80337)
-    at t.main (/home/runner/work/eros-data-pipe/eros-data-pipe/node_modules/@dataform/core/bundle.js:15:71633)
-    at /home/runner/work/eros-data-pipe/eros-data-pipe/index.js:1:96
-    at VM2 Wrapper.apply (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/bridge.js:485:11)
-    at NodeVM.run (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/vm2/lib/nodevm.js:497:23)
-    at compile (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23910:23)
-    at process.<anonymous> (/home/runner/.npm/_npx/f4bd3348a47c857c/node_modules/@dataform/cli/worker_bundle.js:23915:36)[0m

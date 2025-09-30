@@ -7,10 +7,7 @@ config {
   requirePartitionFilter: false,  // Start false for initial creation, can be altered later
   description: "Incremental mass messages with 14-day watermark and robust partition handling",
   labels: {app: "eros", domain: "messaging", layer: "stg"},
-  tags: ["messaging_stg"],
-  assertions: {
-    uniqueKey: false
-  }
+  tags: ["messaging_stg"]
 }
 
 post_operations {
