@@ -48,6 +48,7 @@ temp/
 *.sql
 .df-credentials.json
 *_query.sql
+compile_output.json
 
 # Data files (may contain sensitive information)
 data/
