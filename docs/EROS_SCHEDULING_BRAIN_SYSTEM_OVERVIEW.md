@@ -236,7 +236,7 @@ END as opportunity_quality
 
 **Built-in Assertions:**
 - **📊 Freshness Checks**: `mass_messages_freshness.sqlx` - Ensures data is < 24hrs old
-- **🔑 Uniqueness Tests**: `message_sk_unique.sqlx` - Prevents duplicate records
+- **🔑 Uniqueness Tests**: Built into `mass_messages_quality.sqlx` - Prevents duplicate records
 - **✅ Value Validation**: `price_tier_values.sqlx` - Ensures valid pricing categories
 
 ### **⚡ Performance Optimizations**
