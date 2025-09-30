@@ -2,7 +2,7 @@
 ## Dataform BigQuery Pipeline - Complete Error Resolution
 
 ═══════════════════════════════════════════════════════════════════════
-## ERRORS IDENTIFIED (from downloaded-logs-20250930-104855.json)
+## ERRORS IDENTIFIED (from downloaded-logs-20250930-104855.json + 111613.json)
 ═══════════════════════════════════════════════════════════════════════
 
 ### ERROR #1: tier_performance_analysis - ORDER BY Blocking Partitioning
@@ -13,6 +13,11 @@
 ### ERROR #2: caption_rank_next24_v3_tbl - Partition Spec Mismatch
 **Error:** "Cannot replace a table with a different partitioning spec"
 **Root Cause:** Existing unpartitioned table, can't be replaced with partitioned version
+**Severity:** CRITICAL - Table creation fails completely
+
+### ERROR #3: daily_recommendations - ORDER BY Blocking Partitioning
+**Error:** "Result of ORDER BY queries cannot be partitioned by field 'recommendation_date'"
+**Root Cause:** Same as ERROR #1 - CTAS query ended with ORDER BY
 **Severity:** CRITICAL - Table creation fails completely
 
 ═══════════════════════════════════════════════════════════════════════
@@ -88,16 +93,41 @@ DROP TABLE IF EXISTS `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_
 2. Can't change partition specs on existing tables - must drop first
 3. Manual drop executed via `bq query` before dataform run
 
+───────────────────────────────────────────────────────────────────────
+
+### FIX #3: daily_recommendations.sqlx
+**Action:** Removed ORDER BY clause from final SELECT in CTAS
+**Location:** Line 277 (removed: ORDER BY page_handle, recommendation_score DESC)
+
+**BEFORE:**
+```sql
+FROM ranked_recommendations
+WHERE recommendation_rank <= daily_limit
+  AND recommendation_score > 0.3
+ORDER BY page_handle, recommendation_score DESC  ← REMOVED
+```
+
+**AFTER:**
+```sql
+FROM ranked_recommendations
+WHERE recommendation_rank <= daily_limit
+  AND recommendation_score > 0.3  ← Clean end, no ORDER BY
+```
+
+**Why:** Same issue as tier_performance_analysis - BigQuery cannot create 
+partitioned tables from queries with ORDER BY at the end.
+
 ═══════════════════════════════════════════════════════════════════════
 ## VALIDATION RESULTS ✓
 ═══════════════════════════════════════════════════════════════════════
 
 ✓ No ORDER BY in tier_performance_analysis final SELECT (confirmed)
+✓ No ORDER BY in daily_recommendations final SELECT (confirmed)
 ✓ ORDER BY in RANK() window functions preserved (correct)
 ✓ Table caption_rank_next24_v3_tbl manually dropped (confirmed)
 ✓ BigQuery partition specs properly configured (confirmed)
 ✓ Dataform compilation: 43 actions compiled successfully (confirmed)
-✓ Changes committed to git (commit 04349aa)
+✓ Changes committed to git (commits 04349aa, 207bbac, ff8c4f7)
 
 ═══════════════════════════════════════════════════════════════════════
 ## EXECUTION PLAN
@@ -175,10 +205,11 @@ ORDER BY clustering_ordinal_position;
 ═══════════════════════════════════════════════════════════════════════
 
 ✓ tier_performance_analysis: Creates successfully with PARTITION BY analysis_date
+✓ daily_recommendations: Creates successfully with PARTITION BY recommendation_date  
 ✓ caption_rank_next24_v3_tbl: Creates with PARTITION BY slot_dt_local, CLUSTER BY username_page, hod
 ✓ All 43 dataform actions compile without errors
 ✓ Full pipeline executes end-to-end with 0 errors
-✓ Both mart tables have proper partitioning and clustering
+✓ All mart tables have proper partitioning and clustering
 ✓ Partition filters enforced (require_partition_filter=true)
 
 ═══════════════════════════════════════════════════════════════════════
@@ -220,28 +251,33 @@ ORDER BY clustering_ordinal_position;
    - Added: Proper partitionBy, clusterBy, requirePartitionFilter syntax
    - Impact: Correct BigQuery partition specification
 
+3. `definitions/messaging/mart/daily_recommendations.sqlx`
+   - Removed: ORDER BY clause from final SELECT (line 277)
+   - Impact: Allows partitioned table creation
+
 ═══════════════════════════════════════════════════════════════════════
 ## GIT COMMIT
 ═══════════════════════════════════════════════════════════════════════
 
-**Commit:** 04349aa
+**Latest Commit:** ff8c4f7
 **Branch:** main
-**Files Changed:** 2
-**Lines Changed:** +7, -6
+**Total Files Changed:** 3
+**Total Lines Changed:** +8, -9
 
-**Commit Message:**
+**Commit History:**
+1. 04349aa - Fixed tier_performance_analysis and caption_rank_next24_v3_tbl
+2. 207bbac - Added master fix plan documentation
+3. ff8c4f7 - Fixed daily_recommendations ORDER BY issue
+
+**Latest Commit Message:**
 ```
-Fix BigQuery partition errors in mart tables
+Fix daily_recommendations: Remove ORDER BY blocking partitioning
 
-- tier_performance_analysis: Remove ORDER BY from CTAS (blocks partitioning)
-- caption_rank_next24_v3_tbl: Update config for proper BigQuery partitioning
-- Manual DROP TABLE executed before dataform run to handle partition spec change
+- Remove ORDER BY page_handle, recommendation_score DESC from final SELECT
+- Same issue as tier_performance_analysis
+- Allows PARTITION BY recommendation_date to work correctly
 
-Fixes:
-- 'Result of ORDER BY queries cannot be partitioned' error
-- 'Cannot replace table with different partitioning spec' error
-
-All 43 actions now compile successfully.
+Fixes: 'Result of ORDER BY queries cannot be partitioned by field recommendation_date'
 ```
 
 ═══════════════════════════════════════════════════════════════════════
