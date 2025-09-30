@@ -3,8 +3,9 @@ config {
   schema: "eros_assertions",
   description: "messages_enriched: max(sending_date) within last 24h",
   tags: ["data_quality","freshness"],
-  disabled: (dataform.projectConfig.vars && (dataform.projectConfig.vars.enable_strict_freshness === true || dataform.projectConfig.vars.enable_strict_freshness === "true")) || false
+  disabled: !(dataform.projectConfig.vars && (dataform.projectConfig.vars.enable_strict_freshness === true || dataform.projectConfig.vars.enable_strict_freshness === "true"))
 }
+
 WITH s AS (
   SELECT MAX(sending_date) AS max_dt
   FROM ${ref("messages_enriched")}

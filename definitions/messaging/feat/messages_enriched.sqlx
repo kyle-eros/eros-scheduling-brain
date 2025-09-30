@@ -34,4 +34,4 @@ enriched_base AS (
 )
 
 SELECT * FROM enriched_base
-WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)

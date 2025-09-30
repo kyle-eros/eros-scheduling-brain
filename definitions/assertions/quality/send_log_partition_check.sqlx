@@ -3,7 +3,7 @@ config {
   schema: "eros_assertions",
   description: "send_log: partitions present for last 7 days (data-driven)",
   tags: ["data_quality","partition"],
-  disabled: (dataform.projectConfig.vars && (dataform.projectConfig.vars.enable_partition_slo === true || dataform.projectConfig.vars.enable_partition_slo === "true")) || false
+  disabled: !(dataform.projectConfig.vars && (dataform.projectConfig.vars.enable_partition_slo === true || dataform.projectConfig.vars.enable_partition_slo === "true"))
 }
 
 WITH days AS (
@@ -11,10 +11,10 @@ WITH days AS (
   FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 6 DAY), CURRENT_DATE())) d
 ),
 observed AS (
-  SELECT action_date AS d
+  SELECT DATE(action_date) AS d
   FROM ${ref("send_log")}
   WHERE action_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 6 DAY) AND CURRENT_DATE()
-  GROUP BY d
+  GROUP BY 1
 )
 SELECT days.d AS missing_partition_date
 FROM days
