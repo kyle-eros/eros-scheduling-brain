@@ -274,4 +274,3 @@ SELECT
 FROM ranked_recommendations
 WHERE recommendation_rank <= daily_limit  -- Respect tier-adjusted daily limits
   AND recommendation_score > 0.3  -- Minimum quality threshold
-ORDER BY page_handle, recommendation_score DESC
