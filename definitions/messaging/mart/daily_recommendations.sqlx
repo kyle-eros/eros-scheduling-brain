@@ -97,8 +97,8 @@ valid_slots AS (
     tc.*,
     -- Check if slot hour falls within tier-defined windows
     EXISTS(
-      SELECT 1 FROM UNNEST(tc.ppv_windows) AS window
-      WHERE tc.slot_hour IN UNNEST(window.hours)
+      SELECT 1 FROM UNNEST(tc.ppv_windows) AS win
+      WHERE tc.slot_hour IN UNNEST(win.hours)
     ) as in_tier_window,
 
     -- Apply tier-specific spacing rules
@@ -123,16 +123,16 @@ scored_slots AS (
         -- Determine price tier based on slot hour and tier template
         CASE
           WHEN EXISTS(
-            SELECT 1 FROM UNNEST(vs.ppv_windows) AS window
-            WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'premium'
+            SELECT 1 FROM UNNEST(vs.ppv_windows) AS win
+            WHERE vs.slot_hour IN UNNEST(win.hours) AND win.price_type = 'premium'
           ) THEN 'PREMIUM'
           WHEN EXISTS(
-            SELECT 1 FROM UNNEST(vs.ppv_windows) AS window
-            WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'mid'
+            SELECT 1 FROM UNNEST(vs.ppv_windows) AS win
+            WHERE vs.slot_hour IN UNNEST(win.hours) AND win.price_type = 'mid'
           ) THEN 'MID'
           WHEN EXISTS(
-            SELECT 1 FROM UNNEST(vs.ppv_windows) AS window
-            WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'alternate'
+            SELECT 1 FROM UNNEST(vs.ppv_windows) AS win
+            WHERE vs.slot_hour IN UNNEST(win.hours) AND win.price_type = 'alternate'
           ) THEN 'ALTERNATE'
           ELSE 'MID'
         END
@@ -142,16 +142,16 @@ scored_slots AS (
     -- Tier-aware price calculation
     CASE
       WHEN vs.in_tier_window AND EXISTS(
-        SELECT 1 FROM UNNEST(vs.ppv_windows) AS window
-        WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'premium'
+        SELECT 1 FROM UNNEST(vs.ppv_windows) AS win
+        WHERE vs.slot_hour IN UNNEST(win.hours) AND win.price_type = 'premium'
       ) THEN
         GREATEST(
           vs.premium_price_range.min + vs.price_adjustment,
           vs.premium_price_range.min
         )
       WHEN vs.in_tier_window AND EXISTS(
-        SELECT 1 FROM UNNEST(vs.ppv_windows) AS window
-        WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type IN ('mid', 'alternate')
+        SELECT 1 FROM UNNEST(vs.ppv_windows) AS win
+        WHERE vs.slot_hour IN UNNEST(win.hours) AND win.price_type IN ('mid', 'alternate')
       ) THEN
         GREATEST(
           vs.mid_price_range.min + vs.price_adjustment,
@@ -182,8 +182,8 @@ scored_slots AS (
       -- Pricing opportunity (20%)
       CASE
         WHEN vs.in_tier_window AND EXISTS(
-          SELECT 1 FROM UNNEST(vs.ppv_windows) AS window
-          WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'premium'
+          SELECT 1 FROM UNNEST(vs.ppv_windows) AS win
+          WHERE vs.slot_hour IN UNNEST(win.hours) AND win.price_type = 'premium'
         ) THEN 1.0
         WHEN vs.in_tier_window THEN 0.8
         ELSE 0.6

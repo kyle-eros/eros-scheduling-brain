@@ -10,7 +10,13 @@ config {
   dependencies: ["messages_enriched", "creator_tier_assignments", "tier_baseline_templates", "tier_weekly_adjustments"]
 }
 
-WITH tier_performance_metrics AS (
+WITH recent_messages AS (
+  SELECT *
+  FROM ${ref("messages_enriched")}
+  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+),
+
+tier_performance_metrics AS (
   SELECT
     cta.full_tier_assignment as tier_id,
     cta.page_type,
@@ -26,7 +32,7 @@ WITH tier_performance_metrics AS (
     -- Revenue performance
     SUM(me.earnings_total) as total_revenue,
     AVG(me.earnings_total) as avg_revenue_per_message,
-    PERCENTILE_CONT(me.earnings_total, 0.5) OVER (PARTITION BY cta.full_tier_assignment) as median_revenue_per_message,
+    APPROX_QUANTILES(me.earnings_total, 100)[OFFSET(50)] AS median_revenue_per_message,
 
     -- Conversion metrics
     SUM(me.purchased_count) as total_purchases,
@@ -46,13 +52,12 @@ WITH tier_performance_metrics AS (
     SAFE_DIVIDE(COUNT(me.message_sk), COUNT(DISTINCT DATE(me.sending_ts))) as avg_daily_volume
 
   FROM ${ref("creator_tier_assignments")} cta
-  LEFT JOIN ${ref("messages_enriched")} me
+  LEFT JOIN recent_messages me
     ON cta.page_handle = CASE
          WHEN cta.final_page_type = 'BOTH'
          THEN cta.page_handle
          ELSE cta.username_std
        END
-    AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
   WHERE cta.assignment_date = CURRENT_DATE()
   GROUP BY 1,2,3,4,5
 ),
