@@ -1,0 +1,14 @@
+config {
+  type: "assertion",
+  schema: "eros_assertions",
+  name: "mass_messages_unique_key",
+  description: "Ensures message_sk is unique within the recent partition window",
+  tags: ["quality", "mass_messages"]
+}
+
+-- Check for duplicate message_sk values
+SELECT message_sk
+FROM ${ref("mass_messages")}
+WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+GROUP BY message_sk
+HAVING COUNT(*) > 1

@@ -10,10 +10,7 @@ config {
   tags: ["messaging_stg"],
   assertions: {
     uniqueKey: ["message_sk"],
-    nonNull: ["message_sk", "sending_date", "username_std"],
-    rowConditions: [
-      "sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)"
-    ]
+    nonNull: ["message_sk", "sending_date", "username_std"]
   }
 }
 

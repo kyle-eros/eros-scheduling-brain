@@ -14,7 +14,7 @@ config {
  */
 
 -- Fail if there are no rows in the last 2 days
-SELECT 1
+SELECT 1 AS failing  -- Named column for VIEW
 FROM UNNEST([1]) AS _
 WHERE NOT EXISTS (
   SELECT 1

@@ -14,7 +14,7 @@ WITH
 recent_messaging_patterns AS (
   SELECT
     me.username_std,
-    me.page_handle,
+    me.username_std as page_handle,  -- Using username_std as page identifier
     CURRENT_DATE() as analysis_date,
 
     -- TIMING PATTERN ANALYSIS
@@ -76,7 +76,7 @@ recent_messaging_patterns AS (
   FROM ${ref("messages_enriched")} me
   WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
     AND me.sending_date < CURRENT_DATE()
-  GROUP BY me.username_std, me.page_handle
+  GROUP BY me.username_std
 ),
 
 -- Calculate authenticity scores and pattern risk
