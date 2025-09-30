@@ -1,0 +1,1261 @@
+[
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 7,
+        "message": "Access Denied: Table of-scheduler-proj:scheduler.full_weekly_schedule: User does not have permission to query table of-scheduler-proj:scheduler.full_weekly_schedule, or perhaps it does not exist."
+      },
+      "authenticationInfo": {
+        "principalEmail": "NielsenFlores27@gmail.com"
+      },
+      "requestMetadata": {
+        "callerIp": "2001:4450:4f35:4100:1088:8c4a:519:e6ce",
+        "callerSuppliedUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.251 Safari/537.36,gzip(gfe),gzip(gfe)",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "jobservice.insert",
+      "authorizationInfo": [
+        {
+          "resource": "projects/of-scheduler-proj",
+          "permission": "bigquery.jobs.create",
+          "granted": true,
+          "resourceAttributes": {}
+        },
+        {
+          "resource": "projects/of-scheduler-proj/datasets/scheduler",
+          "permission": "bigquery.datasets.get",
+          "granted": false,
+          "resourceAttributes": {}
+        }
+      ],
+      "resourceName": "projects/of-scheduler-proj/jobs",
+      "serviceData": {
+        "@type": "type.googleapis.com/google.cloud.bigquery.logging.v1.AuditData",
+        "jobInsertRequest": {
+          "resource": {
+            "jobName": {
+              "projectId": "of-scheduler-proj",
+              "jobId": "sheets_dataconnector_a64a2c5b-dcad-480a-85c3-faf3e85816f7"
+            }
+          }
+        },
+        "jobInsertResponse": {
+          "resource": {
+            "jobName": {},
+            "jobStatus": {
+              "state": "PENDING",
+              "error": {}
+            },
+            "jobStatistics": {
+              "reservation": "unreserved"
+            }
+          }
+        }
+      }
+    },
+    "insertId": "-e3p8lwei5ll3",
+    "resource": {
+      "type": "bigquery_resource",
+      "labels": {
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:21:21.220208Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2025-09-30T14:21:21.853343828Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 11,
+        "message": "Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "jobservice.jobcompleted",
+      "resourceName": "projects/of-scheduler-proj/jobs/script_job_d812278bdb94c96c453b2312a720ddc2_2",
+      "serviceData": {
+        "@type": "type.googleapis.com/google.cloud.bigquery.logging.v1.AuditData",
+        "jobCompletedEvent": {
+          "eventName": "query_job_completed",
+          "job": {
+            "jobName": {
+              "projectId": "of-scheduler-proj",
+              "jobId": "script_job_d812278bdb94c96c453b2312a720ddc2_2",
+              "location": "US"
+            },
+            "jobConfiguration": {
+              "labels": {
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart",
+                "dataform_workflow_execution_action_id_name": "caption_rank_next24_v3_tbl",
+                "dataform-action-type": "table",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj"
+              },
+              "query": {
+                "query": "CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl`\n    PARTITION BY slot_dt_local\n    CLUSTER BY username_page, hod\n    \n    OPTIONS(description='''Caption ranking system for next 24h with ML scoring''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH time_slots AS (\n  SELECT\n    slot_ts,\n    DATE(slot_ts, 'America/New_York') as slot_dt_local,\n    EXTRACT(HOUR FROM slot_ts AT TIME ZONE 'America/New_York') as hod\n  FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(\n    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR),\n    TIMESTAMP_ADD(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR),\n    INTERVAL 1 HOUR\n  )) as slot_ts\n),\n\nactive_creators AS (\n  SELECT DISTINCT username_std\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)\n),\n\ncreator_pages AS (\n  SELECT\n    username_std,\n    CONCAT(username_std, '__main') as username_page\n  FROM active_creators\n),\n\n-- Historical performance by caption and timing\ncaption_performance AS (\n  SELECT\n    CONCAT(m.username_std, '__main') as username_page,\n    EXTRACT(HOUR FROM m.sending_ts AT TIME ZONE 'America/New_York') as hod,\n    c.caption_sk as caption_id,\n    c.caption_text,\n    AVG(m.earnings_total) as avg_revenue,\n    COUNT(*) as usage_count,\n    MAX(m.sending_ts) as last_used_at,\n    AVG(CASE WHEN m.earnings_total > 0 THEN m.earnings_total / GREATEST(m.price, 1) ELSE 0 END) as avg_roi\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages` m\n  JOIN `of-scheduler-proj.eros_messaging_stg.captions` c ON LOWER(REGEXP_REPLACE(m.message_text, r'\\s+', ' ')) = LOWER(REGEXP_REPLACE(c.caption_text, r'\\s+', ' '))\n  WHERE m.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND m.sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 14 DAY)\n    AND c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n  GROUP BY username_page, hod, caption_id, caption_text\n  HAVING usage_count >= 1\n),\n\n-- Theme-based scoring\ntheme_scoring AS (\n  SELECT\n    c.caption_sk as caption_id,\n    c.caption_text,\n    cts.primary_theme,\n    cts.explicitness_level,\n    cts.explicitness_score,\n    CASE cts.primary_theme\n      WHEN 'JOI / Instruction' THEN 0.9\n      WHEN 'Solo Touch' THEN 0.85\n      WHEN 'Toy Play' THEN 0.8\n      WHEN 'Toy Play (Hands)' THEN 0.8\n      WHEN 'B/G Action' THEN 0.95\n      WHEN 'Bundle / Mega Pack' THEN 0.7\n      WHEN 'Urgent / Last Chance' THEN 0.6\n      ELSE 0.5\n    END as theme_score,\n    CASE cts.explicitness_level\n      WHEN 'Hardcore' THEN 0.9\n      WHEN 'Explicit' THEN 0.8\n      WHEN 'Semi-Explicit' THEN 0.7\n      WHEN 'Playful' THEN 0.6\n      ELSE 0.5\n    END as explicitness_bonus\n  FROM `of-scheduler-proj.eros_messaging_stg.captions` c\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.caption_theme_signals` cts ON c.caption_sk = cts.caption_sk\n  WHERE c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n),\n\n-- All combinations of creators, time slots, and captions\ncaption_candidates AS (\n  SELECT\n    cp.username_page,\n    ts.slot_dt_local,\n    ts.hod,\n    th.caption_id,\n    th.caption_text,\n    th.theme_score,\n    th.explicitness_bonus\n  FROM creator_pages cp\n  CROSS JOIN time_slots ts\n  CROSS JOIN theme_scoring th\n),\n\n-- Apply performance data and calculate scores\nscored_captions AS (\n  SELECT\n    cc.*,\n    COALESCE(cp.avg_revenue, 10.0) as historical_revenue,\n    COALESCE(cp.avg_roi, 2.0) as historical_roi,\n    COALESCE(cp.usage_count, 0) as usage_count,\n\n    -- Revenue per send expectation\n    (COALESCE(cp.avg_revenue, 10.0) * 0.4 +\n     cc.theme_score * 20 +\n     cc.explicitness_bonus * 15) as rps_eb_price,\n\n    -- Style bonus\n    CASE\n      WHEN COALESCE(cp.usage_count, 0) > 5 THEN 5.0  -- Proven performer\n      WHEN COALESCE(cp.usage_count, 0) > 2 THEN 2.0  -- Some history\n      ELSE 0.0  -- New caption\n    END as style_score,\n\n    -- Special event bonus (seasonal, trending)\n    CASE\n      WHEN LOWER(cc.caption_text) LIKE '%bundle%' THEN 3.0\n      WHEN LOWER(cc.caption_text) LIKE '%special%' THEN 2.0\n      WHEN LOWER(cc.caption_text) LIKE '%limited%' THEN 1.5\n      ELSE 0.0\n    END as se_bonus\n\n  FROM caption_candidates cc\n  LEFT JOIN caption_performance cp\n    ON cc.username_page = cp.username_page\n    AND cc.hod = cp.hod\n    AND cc.caption_id = cp.caption_id\n),\n\nranked_captions AS (\n  SELECT\n    *,\n    ROW_NUMBER() OVER (\n      PARTITION BY username_page, slot_dt_local, hod\n      ORDER BY (rps_eb_price + COALESCE(style_score, 0) + COALESCE(se_bonus, 0)) DESC,\n               usage_count DESC,\n               caption_id\n    ) as rn\n  FROM scored_captions\n)\n\nSELECT\n  username_page,\n  slot_dt_local,\n  hod,\n  caption_id,\n  caption_text,\n  rps_eb_price,\n  style_score,\n  se_bonus,\n  historical_revenue,\n  historical_roi,\n  usage_count,\n  rn\nFROM ranked_captions\nWHERE rn <= 20  -- Top 20 captions per creator per hour\n  AND slot_dt_local >= CURRENT_DATE('America/New_York')\n  AND slot_dt_local <= DATE_ADD(CURRENT_DATE('America/New_York'), INTERVAL 1 DAY)\n\n    )",
+                "destinationTable": {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_mart",
+                  "tableId": "caption_rank_next24_v3_tbl"
+                },
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_EMPTY",
+                "defaultDataset": {},
+                "queryPriority": "QUERY_INTERACTIVE",
+                "statementType": "CREATE_TABLE_AS_SELECT"
+              }
+            },
+            "jobStatus": {
+              "state": "DONE",
+              "error": {
+                "code": 11,
+                "message": "Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination"
+              },
+              "additionalErrors": [
+                {
+                  "code": 11,
+                  "message": "Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination"
+                }
+              ]
+            },
+            "jobStatistics": {
+              "createTime": "2025-09-30T14:26:06.026Z",
+              "startTime": "2025-09-30T14:26:06.304Z",
+              "endTime": "2025-09-30T14:26:06.422Z",
+              "referencedTables": [
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_stg",
+                  "tableId": "captions"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "caption_theme_signals"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_stg",
+                  "tableId": "mass_messages"
+                }
+              ],
+              "totalTablesProcessed": 3,
+              "reservation": "unreserved"
+            }
+          }
+        }
+      }
+    },
+    "insertId": "483op5e96fma",
+    "resource": {
+      "type": "bigquery_resource",
+      "labels": {
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:06.448706Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2025-09-30T14:26:07.180247796Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 3,
+        "message": "Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "google.cloud.bigquery.v2.JobService.InsertJob",
+      "authorizationInfo": [
+        {
+          "resource": "projects/of-scheduler-proj",
+          "permission": "bigquery.jobs.create",
+          "granted": true,
+          "resourceAttributes": {}
+        }
+      ],
+      "resourceName": "projects/of-scheduler-proj/jobs/script_job_d812278bdb94c96c453b2312a720ddc2_2",
+      "metadata": {
+        "@type": "type.googleapis.com/google.cloud.audit.BigQueryAuditMetadata",
+        "jobChange": {
+          "after": "DONE",
+          "job": {
+            "jobConfig": {
+              "queryConfig": {
+                "statementType": "CREATE_TABLE_AS_SELECT",
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_EMPTY",
+                "destinationTable": "projects/of-scheduler-proj/datasets/eros_messaging_mart/tables/caption_rank_next24_v3_tbl",
+                "priority": "QUERY_INTERACTIVE",
+                "query": "CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl`\n    PARTITION BY slot_dt_local\n    CLUSTER BY username_page, hod\n    \n    OPTIONS(description='''Caption ranking system for next 24h with ML scoring''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH time_slots AS (\n  SELECT\n    slot_ts,\n    DATE(slot_ts, 'America/New_York') as slot_dt_local,\n    EXTRACT(HOUR FROM slot_ts AT TIME ZONE 'America/New_York') as hod\n  FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(\n    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR),\n    TIMESTAMP_ADD(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR),\n    INTERVAL 1 HOUR\n  )) as slot_ts\n),\n\nactive_creators AS (\n  SELECT DISTINCT username_std\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)\n),\n\ncreator_pages AS (\n  SELECT\n    username_std,\n    CONCAT(username_std, '__main') as username_page\n  FROM active_creators\n),\n\n-- Historical performance by caption and timing\ncaption_performance AS (\n  SELECT\n    CONCAT(m.username_std, '__main') as username_page,\n    EXTRACT(HOUR FROM m.sending_ts AT TIME ZONE 'America/New_York') as hod,\n    c.caption_sk as caption_id,\n    c.caption_text,\n    AVG(m.earnings_total) as avg_revenue,\n    COUNT(*) as usage_count,\n    MAX(m.sending_ts) as last_used_at,\n    AVG(CASE WHEN m.earnings_total > 0 THEN m.earnings_total / GREATEST(m.price, 1) ELSE 0 END) as avg_roi\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages` m\n  JOIN `of-scheduler-proj.eros_messaging_stg.captions` c ON LOWER(REGEXP_REPLACE(m.message_text, r'\\s+', ' ')) = LOWER(REGEXP_REPLACE(c.caption_text, r'\\s+', ' '))\n  WHERE m.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND m.sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 14 DAY)\n    AND c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n  GROUP BY username_page, hod, caption_id, caption_text\n  HAVING usage_count >= 1\n),\n\n-- Theme-based scoring\ntheme_scoring AS (\n  SELECT\n    c.caption_sk as caption_id,\n    c.caption_text,\n    cts.primary_theme,\n    cts.explicitness_level,\n    cts.explicitness_score,\n    CASE cts.primary_theme\n      WHEN 'JOI / Instruction' THEN 0.9\n      WHEN 'Solo Touch' THEN 0.85\n      WHEN 'Toy Play' THEN 0.8\n      WHEN 'Toy Play (Hands)' THEN 0.8\n      WHEN 'B/G Action' THEN 0.95\n      WHEN 'Bundle / Mega Pack' THEN 0.7\n      WHEN 'Urgent / Last Chance' THEN 0.6\n      ELSE 0.5\n    END as theme_score,\n    CASE cts.explicitness_level\n      WHEN 'Hardcore' THEN 0.9\n      WHEN 'Explicit' THEN 0.8\n      WHEN 'Semi-Explicit' THEN 0.7\n      WHEN 'Playful' THEN 0.6\n      ELSE 0.5\n    END as explicitness_bonus\n  FROM `of-scheduler-proj.eros_messaging_stg.captions` c\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.caption_theme_signals` cts ON c.caption_sk = cts.caption_sk\n  WHERE c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n),\n\n-- All combinations of creators, time slots, and captions\ncaption_candidates AS (\n  SELECT\n    cp.username_page,\n    ts.slot_dt_local,\n    ts.hod,\n    th.caption_id,\n    th.caption_text,\n    th.theme_score,\n    th.explicitness_bonus\n  FROM creator_pages cp\n  CROSS JOIN time_slots ts\n  CROSS JOIN theme_scoring th\n),\n\n-- Apply performance data and calculate scores\nscored_captions AS (\n  SELECT\n    cc.*,\n    COALESCE(cp.avg_revenue, 10.0) as historical_revenue,\n    COALESCE(cp.avg_roi, 2.0) as historical_roi,\n    COALESCE(cp.usage_count, 0) as usage_count,\n\n    -- Revenue per send expectation\n    (COALESCE(cp.avg_revenue, 10.0) * 0.4 +\n     cc.theme_score * 20 +\n     cc.explicitness_bonus * 15) as rps_eb_price,\n\n    -- Style bonus\n    CASE\n      WHEN COALESCE(cp.usage_count, 0) > 5 THEN 5.0  -- Proven performer\n      WHEN COALESCE(cp.usage_count, 0) > 2 THEN 2.0  -- Some history\n      ELSE 0.0  -- New caption\n    END as style_score,\n\n    -- Special event bonus (seasonal, trending)\n    CASE\n      WHEN LOWER(cc.caption_text) LIKE '%bundle%' THEN 3.0\n      WHEN LOWER(cc.caption_text) LIKE '%special%' THEN 2.0\n      WHEN LOWER(cc.caption_text) LIKE '%limited%' THEN 1.5\n      ELSE 0.0\n    END as se_bonus\n\n  FROM caption_candidates cc\n  LEFT JOIN caption_performance cp\n    ON cc.username_page = cp.username_page\n    AND cc.hod = cp.hod\n    AND cc.caption_id = cp.caption_id\n),\n\nranked_captions AS (\n  SELECT\n    *,\n    ROW_NUMBER() OVER (\n      PARTITION BY username_page, slot_dt_local, hod\n      ORDER BY (rps_eb_price + COALESCE(style_score, 0) + COALESCE(se_bonus, 0)) DESC,\n               usage_count DESC,\n               caption_id\n    ) as rn\n  FROM scored_captions\n)\n\nSELECT\n  username_page,\n  slot_dt_local,\n  hod,\n  caption_id,\n  caption_text,\n  rps_eb_price,\n  style_score,\n  se_bonus,\n  historical_revenue,\n  historical_roi,\n  usage_count,\n  rn\nFROM ranked_captions\nWHERE rn <= 20  -- Top 20 captions per creator per hour\n  AND slot_dt_local >= CURRENT_DATE('America/New_York')\n  AND slot_dt_local <= DATE_ADD(CURRENT_DATE('America/New_York'), INTERVAL 1 DAY)\n\n    )"
+              },
+              "labels": {
+                "dataform-action-type": "table",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_workflow_execution_action_id_name": "caption_rank_next24_v3_tbl",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart"
+              },
+              "type": "QUERY"
+            },
+            "jobStats": {
+              "parentJobName": "projects/of-scheduler-proj/jobs/dataform-gcp-81b705f6dd7c05041981f124cf0b6d1ca4a53981e9b2ddcd9267fd2848a2107a-0",
+              "endTime": "2025-09-30T14:26:06.422Z",
+              "startTime": "2025-09-30T14:26:06.304Z",
+              "reservation": "unreserved",
+              "queryStats": {
+                "referencedTables": [
+                  "projects/of-scheduler-proj/datasets/eros_messaging_stg/tables/captions",
+                  "projects/of-scheduler-proj/datasets/eros_messaging_feat/tables/caption_theme_signals",
+                  "projects/of-scheduler-proj/datasets/eros_messaging_stg/tables/mass_messages"
+                ]
+              },
+              "createTime": "2025-09-30T14:26:06.026Z"
+            },
+            "jobStatus": {
+              "errorResult": {
+                "message": "Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination",
+                "code": 3
+              },
+              "errors": [
+                {
+                  "message": "Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination",
+                  "code": 3
+                }
+              ],
+              "jobState": "DONE"
+            },
+            "jobName": "projects/of-scheduler-proj/jobs/script_job_d812278bdb94c96c453b2312a720ddc2_2"
+          }
+        }
+      }
+    },
+    "insertId": "483op5e96fmc",
+    "resource": {
+      "type": "bigquery_project",
+      "labels": {
+        "location": "US",
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:06.449860Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "operation": {
+      "id": "1759242366026-of-scheduler-proj:script_job_d812278bdb94c96c453b2312a720ddc2_2",
+      "producer": "bigquery.googleapis.com",
+      "last": true
+    },
+    "receiveTimestamp": "2025-09-30T14:26:07.180247796Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 11,
+        "message": "Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "jobservice.getqueryresults",
+      "authorizationInfo": [
+        {
+          "resource": "projects/of-scheduler-proj",
+          "permission": "bigquery.jobs.create",
+          "granted": true,
+          "resourceAttributes": {}
+        },
+        {
+          "resource": "projects/of-scheduler-proj/datasets/eros_messaging_mart/tables/caption_rank_next24_v3_tbl",
+          "permission": "bigquery.tables.getData",
+          "granted": true,
+          "resourceAttributes": {}
+        }
+      ],
+      "resourceName": "projects/of-scheduler-proj/queries/script_job_d812278bdb94c96c453b2312a720ddc2_2",
+      "serviceData": {
+        "@type": "type.googleapis.com/google.cloud.bigquery.logging.v1.AuditData",
+        "jobGetQueryResultsRequest": {},
+        "jobGetQueryResultsResponse": {
+          "job": {
+            "jobName": {
+              "projectId": "of-scheduler-proj",
+              "jobId": "script_job_d812278bdb94c96c453b2312a720ddc2_2",
+              "location": "US"
+            },
+            "jobConfiguration": {
+              "labels": {
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart",
+                "dataform_workflow_execution_action_id_name": "caption_rank_next24_v3_tbl",
+                "dataform-action-type": "table",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj"
+              },
+              "query": {
+                "query": "CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl`\n    PARTITION BY slot_dt_local\n    CLUSTER BY username_page, hod\n    \n    OPTIONS(description='''Caption ranking system for next 24h with ML scoring''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH time_slots AS (\n  SELECT\n    slot_ts,\n    DATE(slot_ts, 'America/New_York') as slot_dt_local,\n    EXTRACT(HOUR FROM slot_ts AT TIME ZONE 'America/New_York') as hod\n  FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(\n    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR),\n    TIMESTAMP_ADD(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR),\n    INTERVAL 1 HOUR\n  )) as slot_ts\n),\n\nactive_creators AS (\n  SELECT DISTINCT username_std\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)\n),\n\ncreator_pages AS (\n  SELECT\n    username_std,\n    CONCAT(username_std, '__main') as username_page\n  FROM active_creators\n),\n\n-- Historical performance by caption and timing\ncaption_performance AS (\n  SELECT\n    CONCAT(m.username_std, '__main') as username_page,\n    EXTRACT(HOUR FROM m.sending_ts AT TIME ZONE 'America/New_York') as hod,\n    c.caption_sk as caption_id,\n    c.caption_text,\n    AVG(m.earnings_total) as avg_revenue,\n    COUNT(*) as usage_count,\n    MAX(m.sending_ts) as last_used_at,\n    AVG(CASE WHEN m.earnings_total > 0 THEN m.earnings_total / GREATEST(m.price, 1) ELSE 0 END) as avg_roi\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages` m\n  JOIN `of-scheduler-proj.eros_messaging_stg.captions` c ON LOWER(REGEXP_REPLACE(m.message_text, r'\\s+', ' ')) = LOWER(REGEXP_REPLACE(c.caption_text, r'\\s+', ' '))\n  WHERE m.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND m.sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 14 DAY)\n    AND c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n  GROUP BY username_page, hod, caption_id, caption_text\n  HAVING usage_count >= 1\n),\n\n-- Theme-based scoring\ntheme_scoring AS (\n  SELECT\n    c.caption_sk as caption_id,\n    c.caption_text,\n    cts.primary_theme,\n    cts.explicitness_level,\n    cts.explicitness_score,\n    CASE cts.primary_theme\n      WHEN 'JOI / Instruction' THEN 0.9\n      WHEN 'Solo Touch' THEN 0.85\n      WHEN 'Toy Play' THEN 0.8\n      WHEN 'Toy Play (Hands)' THEN 0.8\n      WHEN 'B/G Action' THEN 0.95\n      WHEN 'Bundle / Mega Pack' THEN 0.7\n      WHEN 'Urgent / Last Chance' THEN 0.6\n      ELSE 0.5\n    END as theme_score,\n    CASE cts.explicitness_level\n      WHEN 'Hardcore' THEN 0.9\n      WHEN 'Explicit' THEN 0.8\n      WHEN 'Semi-Explicit' THEN 0.7\n      WHEN 'Playful' THEN 0.6\n      ELSE 0.5\n    END as explicitness_bonus\n  FROM `of-scheduler-proj.eros_messaging_stg.captions` c\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.caption_theme_signals` cts ON c.caption_sk = cts.caption_sk\n  WHERE c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n),\n\n-- All combinations of creators, time slots, and captions\ncaption_candidates AS (\n  SELECT\n    cp.username_page,\n    ts.slot_dt_local,\n    ts.hod,\n    th.caption_id,\n    th.caption_text,\n    th.theme_score,\n    th.explicitness_bonus\n  FROM creator_pages cp\n  CROSS JOIN time_slots ts\n  CROSS JOIN theme_scoring th\n),\n\n-- Apply performance data and calculate scores\nscored_captions AS (\n  SELECT\n    cc.*,\n    COALESCE(cp.avg_revenue, 10.0) as historical_revenue,\n    COALESCE(cp.avg_roi, 2.0) as historical_roi,\n    COALESCE(cp.usage_count, 0) as usage_count,\n\n    -- Revenue per send expectation\n    (COALESCE(cp.avg_revenue, 10.0) * 0.4 +\n     cc.theme_score * 20 +\n     cc.explicitness_bonus * 15) as rps_eb_price,\n\n    -- Style bonus\n    CASE\n      WHEN COALESCE(cp.usage_count, 0) > 5 THEN 5.0  -- Proven performer\n      WHEN COALESCE(cp.usage_count, 0) > 2 THEN 2.0  -- Some history\n      ELSE 0.0  -- New caption\n    END as style_score,\n\n    -- Special event bonus (seasonal, trending)\n    CASE\n      WHEN LOWER(cc.caption_text) LIKE '%bundle%' THEN 3.0\n      WHEN LOWER(cc.caption_text) LIKE '%special%' THEN 2.0\n      WHEN LOWER(cc.caption_text) LIKE '%limited%' THEN 1.5\n      ELSE 0.0\n    END as se_bonus\n\n  FROM caption_candidates cc\n  LEFT JOIN caption_performance cp\n    ON cc.username_page = cp.username_page\n    AND cc.hod = cp.hod\n    AND cc.caption_id = cp.caption_id\n),\n\nranked_captions AS (\n  SELECT\n    *,\n    ROW_NUMBER() OVER (\n      PARTITION BY username_page, slot_dt_local, hod\n      ORDER BY (rps_eb_price + COALESCE(style_score, 0) + COALESCE(se_bonus, 0)) DESC,\n               usage_count DESC,\n               caption_id\n    ) as rn\n  FROM scored_captions\n)\n\nSELECT\n  username_page,\n  slot_dt_local,\n  hod,\n  caption_id,\n  caption_text,\n  rps_eb_price,\n  style_score,\n  se_bonus,\n  historical_revenue,\n  historical_roi,\n  usage_count,\n  rn\nFROM ranked_captions\nWHERE rn <= 20  -- Top 20 captions per creator per hour\n  AND slot_dt_local >= CURRENT_DATE('America/New_York')\n  AND slot_dt_local <= DATE_ADD(CURRENT_DATE('America/New_York'), INTERVAL 1 DAY)\n\n    )",
+                "destinationTable": {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_mart",
+                  "tableId": "caption_rank_next24_v3_tbl"
+                },
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_EMPTY",
+                "defaultDataset": {},
+                "queryPriority": "QUERY_INTERACTIVE",
+                "statementType": "CREATE_TABLE_AS_SELECT"
+              }
+            },
+            "jobStatus": {
+              "state": "DONE",
+              "error": {
+                "code": 11,
+                "message": "Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination"
+              },
+              "additionalErrors": [
+                {
+                  "code": 11,
+                  "message": "Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination"
+                }
+              ]
+            },
+            "jobStatistics": {
+              "createTime": "2025-09-30T14:26:06.026Z",
+              "startTime": "2025-09-30T14:26:06.304Z",
+              "endTime": "2025-09-30T14:26:06.422Z",
+              "referencedTables": [
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_stg",
+                  "tableId": "captions"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "caption_theme_signals"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_stg",
+                  "tableId": "mass_messages"
+                }
+              ],
+              "totalTablesProcessed": 3,
+              "reservation": "unreserved"
+            }
+          }
+        }
+      }
+    },
+    "insertId": "xvqezlf12tyfa",
+    "resource": {
+      "type": "bigquery_resource",
+      "labels": {
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:06.638495Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2025-09-30T14:26:07.526773864Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 11,
+        "message": "Query error: Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination at [24:13]"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "jobservice.jobcompleted",
+      "resourceName": "projects/of-scheduler-proj/jobs/dataform-gcp-81b705f6dd7c05041981f124cf0b6d1ca4a53981e9b2ddcd9267fd2848a2107a-0",
+      "serviceData": {
+        "@type": "type.googleapis.com/google.cloud.bigquery.logging.v1.AuditData",
+        "jobCompletedEvent": {
+          "eventName": "query_job_completed",
+          "job": {
+            "jobName": {
+              "projectId": "of-scheduler-proj",
+              "jobId": "dataform-gcp-81b705f6dd7c05041981f124cf0b6d1ca4a53981e9b2ddcd9267fd2848a2107a-0",
+              "location": "US"
+            },
+            "jobConfiguration": {
+              "labels": {
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart",
+                "dataform_workflow_execution_action_id_name": "caption_rank_next24_v3_tbl",
+                "dataform-action-type": "table",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj"
+              },
+              "query": {
+                "query": "    BEGIN\n  CREATE SCHEMA IF NOT EXISTS `of-scheduler-proj.eros_messaging_mart` OPTIONS(location=\"US\");\nEXCEPTION WHEN ERROR THEN\n  IF NOT CONTAINS_SUBSTR(@@error.message, \"already exists: dataset\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"too many dataset metadata update operations\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"User does not have bigquery.datasets.create permission\")\n  THEN\n    RAISE USING MESSAGE = @@error.message;\n  END IF;\nEND;\n    BEGIN\n      DECLARE dataform_table_type DEFAULT (\n  SELECT ANY_VALUE(table_type)\n  FROM `of-scheduler-proj.eros_messaging_mart.INFORMATION_SCHEMA.TABLES`\n  WHERE table_name = 'caption_rank_next24_v3_tbl'\n);\n          IF dataform_table_type IS NOT NULL THEN\n      IF dataform_table_type = 'VIEW' THEN DROP VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl`;\nELSEIF dataform_table_type = 'MATERIALIZED VIEW' THEN DROP MATERIALIZED VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl`;\nEND IF;\n    END IF;\n      BEGIN\n        \n            CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl`\n    PARTITION BY slot_dt_local\n    CLUSTER BY username_page, hod\n    \n    OPTIONS(description='''Caption ranking system for next 24h with ML scoring''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH time_slots AS (\n  SELECT\n    slot_ts,\n    DATE(slot_ts, 'America/New_York') as slot_dt_local,\n    EXTRACT(HOUR FROM slot_ts AT TIME ZONE 'America/New_York') as hod\n  FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(\n    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR),\n    TIMESTAMP_ADD(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR),\n    INTERVAL 1 HOUR\n  )) as slot_ts\n),\n\nactive_creators AS (\n  SELECT DISTINCT username_std\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)\n),\n\ncreator_pages AS (\n  SELECT\n    username_std,\n    CONCAT(username_std, '__main') as username_page\n  FROM active_creators\n),\n\n-- Historical performance by caption and timing\ncaption_performance AS (\n  SELECT\n    CONCAT(m.username_std, '__main') as username_page,\n    EXTRACT(HOUR FROM m.sending_ts AT TIME ZONE 'America/New_York') as hod,\n    c.caption_sk as caption_id,\n    c.caption_text,\n    AVG(m.earnings_total) as avg_revenue,\n    COUNT(*) as usage_count,\n    MAX(m.sending_ts) as last_used_at,\n    AVG(CASE WHEN m.earnings_total > 0 THEN m.earnings_total / GREATEST(m.price, 1) ELSE 0 END) as avg_roi\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages` m\n  JOIN `of-scheduler-proj.eros_messaging_stg.captions` c ON LOWER(REGEXP_REPLACE(m.message_text, r'\\s+', ' ')) = LOWER(REGEXP_REPLACE(c.caption_text, r'\\s+', ' '))\n  WHERE m.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND m.sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 14 DAY)\n    AND c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n  GROUP BY username_page, hod, caption_id, caption_text\n  HAVING usage_count >= 1\n),\n\n-- Theme-based scoring\ntheme_scoring AS (\n  SELECT\n    c.caption_sk as caption_id,\n    c.caption_text,\n    cts.primary_theme,\n    cts.explicitness_level,\n    cts.explicitness_score,\n    CASE cts.primary_theme\n      WHEN 'JOI / Instruction' THEN 0.9\n      WHEN 'Solo Touch' THEN 0.85\n      WHEN 'Toy Play' THEN 0.8\n      WHEN 'Toy Play (Hands)' THEN 0.8\n      WHEN 'B/G Action' THEN 0.95\n      WHEN 'Bundle / Mega Pack' THEN 0.7\n      WHEN 'Urgent / Last Chance' THEN 0.6\n      ELSE 0.5\n    END as theme_score,\n    CASE cts.explicitness_level\n      WHEN 'Hardcore' THEN 0.9\n      WHEN 'Explicit' THEN 0.8\n      WHEN 'Semi-Explicit' THEN 0.7\n      WHEN 'Playful' THEN 0.6\n      ELSE 0.5\n    END as explicitness_bonus\n  FROM `of-scheduler-proj.eros_messaging_stg.captions` c\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.caption_theme_signals` cts ON c.caption_sk = cts.caption_sk\n  WHERE c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n),\n\n-- All combinations of creators, time slots, and captions\ncaption_candidates AS (\n  SELECT\n    cp.username_page,\n    ts.slot_dt_local,\n    ts.hod,\n    th.caption_id,\n    th.caption_text,\n    th.theme_score,\n    th.explicitness_bonus\n  FROM creator_pages cp\n  CROSS JOIN time_slots ts\n  CROSS JOIN theme_scoring th\n),\n\n-- Apply performance data and calculate scores\nscored_captions AS (\n  SELECT\n    cc.*,\n    COALESCE(cp.avg_revenue, 10.0) as historical_revenue,\n    COALESCE(cp.avg_roi, 2.0) as historical_roi,\n    COALESCE(cp.usage_count, 0) as usage_count,\n\n    -- Revenue per send expectation\n    (COALESCE(cp.avg_revenue, 10.0) * 0.4 +\n     cc.theme_score * 20 +\n     cc.explicitness_bonus * 15) as rps_eb_price,\n\n    -- Style bonus\n    CASE\n      WHEN COALESCE(cp.usage_count, 0) > 5 THEN 5.0  -- Proven performer\n      WHEN COALESCE(cp.usage_count, 0) > 2 THEN 2.0  -- Some history\n      ELSE 0.0  -- New caption\n    END as style_score,\n\n    -- Special event bonus (seasonal, trending)\n    CASE\n      WHEN LOWER(cc.caption_text) LIKE '%bundle%' THEN 3.0\n      WHEN LOWER(cc.caption_text) LIKE '%special%' THEN 2.0\n      WHEN LOWER(cc.caption_text) LIKE '%limited%' THEN 1.5\n      ELSE 0.0\n    END as se_bonus\n\n  FROM caption_candidates cc\n  LEFT JOIN caption_performance cp\n    ON cc.username_page = cp.username_page\n    AND cc.hod = cp.hod\n    AND cc.caption_id = cp.caption_id\n),\n\nranked_captions AS (\n  SELECT\n    *,\n    ROW_NUMBER() OVER (\n      PARTITION BY username_page, slot_dt_local, hod\n      ORDER BY (rps_eb_price + COALESCE(style_score, 0) + COALESCE(se_bonus, 0)) DESC,\n               usage_count DESC,\n               caption_id\n    ) as rn\n  FROM scored_captions\n)\n\nSELECT\n  username_page,\n  slot_dt_local,\n  hod,\n  caption_id,\n  caption_text,\n  rps_eb_price,\n  style_score,\n  se_bonus,\n  historical_revenue,\n  historical_roi,\n  usage_count,\n  rn\nFROM ranked_captions\nWHERE rn <= 20  -- Top 20 captions per creator per hour\n  AND slot_dt_local >= CURRENT_DATE('America/New_York')\n  AND slot_dt_local <= DATE_ADD(CURRENT_DATE('America/New_York'), INTERVAL 1 DAY)\n\n    );\n        \n      END;\n    END;",
+                "destinationTable": {},
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_EMPTY",
+                "defaultDataset": {},
+                "queryPriority": "QUERY_INTERACTIVE",
+                "statementType": "SCRIPT"
+              }
+            },
+            "jobStatus": {
+              "state": "DONE",
+              "error": {
+                "code": 11,
+                "message": "Query error: Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination at [24:13]"
+              }
+            },
+            "jobStatistics": {
+              "createTime": "2025-09-30T14:26:04.832Z",
+              "startTime": "2025-09-30T14:26:04.876Z",
+              "endTime": "2025-09-30T14:26:06.650Z",
+              "totalProcessedBytes": "10485760",
+              "totalBilledBytes": "10485760",
+              "totalSlotMs": "125",
+              "reservation": "unreserved"
+            }
+          }
+        }
+      }
+    },
+    "insertId": "-3aq63eeijoaw",
+    "resource": {
+      "type": "bigquery_resource",
+      "labels": {
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:06.672458Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2025-09-30T14:26:07.270469550Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 3,
+        "message": "Query error: Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination at [24:13]"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "google.cloud.bigquery.v2.JobService.InsertJob",
+      "authorizationInfo": [
+        {
+          "resource": "projects/of-scheduler-proj",
+          "permission": "bigquery.jobs.create",
+          "granted": true,
+          "resourceAttributes": {}
+        }
+      ],
+      "resourceName": "projects/of-scheduler-proj/jobs/dataform-gcp-81b705f6dd7c05041981f124cf0b6d1ca4a53981e9b2ddcd9267fd2848a2107a-0",
+      "metadata": {
+        "@type": "type.googleapis.com/google.cloud.audit.BigQueryAuditMetadata",
+        "jobChange": {
+          "job": {
+            "jobConfig": {
+              "type": "QUERY",
+              "labels": {
+                "dataform-action-type": "table",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_workflow_execution_action_id_name": "caption_rank_next24_v3_tbl",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart"
+              },
+              "queryConfig": {
+                "query": "    BEGIN\n  CREATE SCHEMA IF NOT EXISTS `of-scheduler-proj.eros_messaging_mart` OPTIONS(location=\"US\");\nEXCEPTION WHEN ERROR THEN\n  IF NOT CONTAINS_SUBSTR(@@error.message, \"already exists: dataset\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"too many dataset metadata update operations\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"User does not have bigquery.datasets.create permission\")\n  THEN\n    RAISE USING MESSAGE = @@error.message;\n  END IF;\nEND;\n    BEGIN\n      DECLARE dataform_table_type DEFAULT (\n  SELECT ANY_VALUE(table_type)\n  FROM `of-scheduler-proj.eros_messaging_mart.INFORMATION_SCHEMA.TABLES`\n  WHERE table_name = 'caption_rank_next24_v3_tbl'\n);\n          IF dataform_table_type IS NOT NULL THEN\n      IF dataform_table_type = 'VIEW' THEN DROP VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl`;\nELSEIF dataform_table_type = 'MATERIALIZED VIEW' THEN DROP MATERIALIZED VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl`;\nEND IF;\n    END IF;\n      BEGIN\n        \n            CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.caption_rank_next24_v3_tbl`\n    PARTITION BY slot_dt_local\n    CLUSTER BY username_page, hod\n    \n    OPTIONS(description='''Caption ranking system for next 24h with ML scoring''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH time_slots AS (\n  SELECT\n    slot_ts,\n    DATE(slot_ts, 'America/New_York') as slot_dt_local,\n    EXTRACT(HOUR FROM slot_ts AT TIME ZONE 'America/New_York') as hod\n  FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(\n    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR),\n    TIMESTAMP_ADD(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR),\n    INTERVAL 1 HOUR\n  )) as slot_ts\n),\n\nactive_creators AS (\n  SELECT DISTINCT username_std\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages`\n  WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)\n),\n\ncreator_pages AS (\n  SELECT\n    username_std,\n    CONCAT(username_std, '__main') as username_page\n  FROM active_creators\n),\n\n-- Historical performance by caption and timing\ncaption_performance AS (\n  SELECT\n    CONCAT(m.username_std, '__main') as username_page,\n    EXTRACT(HOUR FROM m.sending_ts AT TIME ZONE 'America/New_York') as hod,\n    c.caption_sk as caption_id,\n    c.caption_text,\n    AVG(m.earnings_total) as avg_revenue,\n    COUNT(*) as usage_count,\n    MAX(m.sending_ts) as last_used_at,\n    AVG(CASE WHEN m.earnings_total > 0 THEN m.earnings_total / GREATEST(m.price, 1) ELSE 0 END) as avg_roi\n  FROM `of-scheduler-proj.eros_messaging_stg.mass_messages` m\n  JOIN `of-scheduler-proj.eros_messaging_stg.captions` c ON LOWER(REGEXP_REPLACE(m.message_text, r'\\s+', ' ')) = LOWER(REGEXP_REPLACE(c.caption_text, r'\\s+', ' '))\n  WHERE m.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)\n    AND m.sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 14 DAY)\n    AND c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n  GROUP BY username_page, hod, caption_id, caption_text\n  HAVING usage_count >= 1\n),\n\n-- Theme-based scoring\ntheme_scoring AS (\n  SELECT\n    c.caption_sk as caption_id,\n    c.caption_text,\n    cts.primary_theme,\n    cts.explicitness_level,\n    cts.explicitness_score,\n    CASE cts.primary_theme\n      WHEN 'JOI / Instruction' THEN 0.9\n      WHEN 'Solo Touch' THEN 0.85\n      WHEN 'Toy Play' THEN 0.8\n      WHEN 'Toy Play (Hands)' THEN 0.8\n      WHEN 'B/G Action' THEN 0.95\n      WHEN 'Bundle / Mega Pack' THEN 0.7\n      WHEN 'Urgent / Last Chance' THEN 0.6\n      ELSE 0.5\n    END as theme_score,\n    CASE cts.explicitness_level\n      WHEN 'Hardcore' THEN 0.9\n      WHEN 'Explicit' THEN 0.8\n      WHEN 'Semi-Explicit' THEN 0.7\n      WHEN 'Playful' THEN 0.6\n      ELSE 0.5\n    END as explicitness_bonus\n  FROM `of-scheduler-proj.eros_messaging_stg.captions` c\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.caption_theme_signals` cts ON c.caption_sk = cts.caption_sk\n  WHERE c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')\n),\n\n-- All combinations of creators, time slots, and captions\ncaption_candidates AS (\n  SELECT\n    cp.username_page,\n    ts.slot_dt_local,\n    ts.hod,\n    th.caption_id,\n    th.caption_text,\n    th.theme_score,\n    th.explicitness_bonus\n  FROM creator_pages cp\n  CROSS JOIN time_slots ts\n  CROSS JOIN theme_scoring th\n),\n\n-- Apply performance data and calculate scores\nscored_captions AS (\n  SELECT\n    cc.*,\n    COALESCE(cp.avg_revenue, 10.0) as historical_revenue,\n    COALESCE(cp.avg_roi, 2.0) as historical_roi,\n    COALESCE(cp.usage_count, 0) as usage_count,\n\n    -- Revenue per send expectation\n    (COALESCE(cp.avg_revenue, 10.0) * 0.4 +\n     cc.theme_score * 20 +\n     cc.explicitness_bonus * 15) as rps_eb_price,\n\n    -- Style bonus\n    CASE\n      WHEN COALESCE(cp.usage_count, 0) > 5 THEN 5.0  -- Proven performer\n      WHEN COALESCE(cp.usage_count, 0) > 2 THEN 2.0  -- Some history\n      ELSE 0.0  -- New caption\n    END as style_score,\n\n    -- Special event bonus (seasonal, trending)\n    CASE\n      WHEN LOWER(cc.caption_text) LIKE '%bundle%' THEN 3.0\n      WHEN LOWER(cc.caption_text) LIKE '%special%' THEN 2.0\n      WHEN LOWER(cc.caption_text) LIKE '%limited%' THEN 1.5\n      ELSE 0.0\n    END as se_bonus\n\n  FROM caption_candidates cc\n  LEFT JOIN caption_performance cp\n    ON cc.username_page = cp.username_page\n    AND cc.hod = cp.hod\n    AND cc.caption_id = cp.caption_id\n),\n\nranked_captions AS (\n  SELECT\n    *,\n    ROW_NUMBER() OVER (\n      PARTITION BY username_page, slot_dt_local, hod\n      ORDER BY (rps_eb_price + COALESCE(style_score, 0) + COALESCE(se_bonus, 0)) DESC,\n               usage_count DESC,\n               caption_id\n    ) as rn\n  FROM scored_captions\n)\n\nSELECT\n  username_page,\n  slot_dt_local,\n  hod,\n  caption_id,\n  caption_text,\n  rps_eb_price,\n  style_score,\n  se_bonus,\n  historical_revenue,\n  historical_roi,\n  usage_count,\n  rn\nFROM ranked_captions\nWHERE rn <= 20  -- Top 20 captions per creator per hour\n  AND slot_dt_local >= CURRENT_DATE('America/New_York')\n  AND slot_dt_local <= DATE_ADD(CURRENT_DATE('America/New_York'), INTERVAL 1 DAY)\n\n    );\n        \n      END;\n    END;",
+                "writeDisposition": "WRITE_EMPTY",
+                "createDisposition": "CREATE_IF_NEEDED",
+                "statementType": "SCRIPT",
+                "priority": "QUERY_INTERACTIVE"
+              }
+            },
+            "jobStats": {
+              "endTime": "2025-09-30T14:26:06.650Z",
+              "startTime": "2025-09-30T14:26:04.876Z",
+              "queryStats": {
+                "totalBilledBytes": "10485760",
+                "totalProcessedBytes": "10485760"
+              },
+              "createTime": "2025-09-30T14:26:04.832Z",
+              "reservation": "unreserved",
+              "totalSlotMs": "125"
+            },
+            "jobStatus": {
+              "errorResult": {
+                "message": "Query error: Cannot query over table 'of-scheduler-proj.eros_messaging_feat.caption_theme_signals' without a filter over column(s) 'tagged_date' that can be used for partition elimination at [24:13]",
+                "code": 3
+              },
+              "jobState": "DONE"
+            },
+            "jobName": "projects/of-scheduler-proj/jobs/dataform-gcp-81b705f6dd7c05041981f124cf0b6d1ca4a53981e9b2ddcd9267fd2848a2107a-0"
+          },
+          "after": "DONE"
+        }
+      }
+    },
+    "insertId": "-3aq63eeijoay",
+    "resource": {
+      "type": "bigquery_project",
+      "labels": {
+        "project_id": "of-scheduler-proj",
+        "location": "US"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:06.672967Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "operation": {
+      "id": "1759242364832-of-scheduler-proj:dataform-gcp-81b705f6dd7c05041981f124cf0b6d1ca4a53981e9b2ddcd9267fd2848a2107a-0",
+      "producer": "bigquery.googleapis.com",
+      "last": true
+    },
+    "receiveTimestamp": "2025-09-30T14:26:07.270469550Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 11,
+        "message": "Name message_id not found inside me at [19:14]"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "jobservice.jobcompleted",
+      "resourceName": "projects/of-scheduler-proj/jobs/script_job_b1c93d46d2fcdbfe47aa66b3a55cb55a_2",
+      "serviceData": {
+        "@type": "type.googleapis.com/google.cloud.bigquery.logging.v1.AuditData",
+        "jobCompletedEvent": {
+          "eventName": "query_job_completed",
+          "job": {
+            "jobName": {
+              "projectId": "of-scheduler-proj",
+              "jobId": "script_job_b1c93d46d2fcdbfe47aa66b3a55cb55a_2",
+              "location": "US"
+            },
+            "jobConfiguration": {
+              "labels": {
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart",
+                "dataform_workflow_execution_action_id_name": "tier_performance_analysis",
+                "dataform-action-type": "table",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj"
+              },
+              "query": {
+                "query": "CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.tier_performance_analysis`\n    PARTITION BY analysis_date\n    CLUSTER BY tier_id, page_type\n    \n    OPTIONS(description='''Performance analysis and effectiveness tracking for tier-based messaging system''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH tier_performance_metrics AS (\n  SELECT\n    cta.full_tier_assignment as tier_id,\n    cta.page_type,\n    cta.messaging_strategy,\n    cta.base_tier,\n    CURRENT_DATE() as analysis_date,\n\n    -- Message volume metrics\n    COUNT(DISTINCT cta.page_handle) as pages_in_tier,\n    COUNT(me.message_id) as total_messages_sent,\n    AVG(COUNT(me.message_id)) OVER (PARTITION BY cta.full_tier_assignment) as avg_messages_per_page,\n\n    -- Revenue performance\n    SUM(me.revenue_usd) as total_revenue,\n    AVG(me.revenue_usd) as avg_revenue_per_message,\n    PERCENTILE_CONT(me.revenue_usd, 0.5) OVER (PARTITION BY cta.full_tier_assignment) as median_revenue_per_message,\n\n    -- Conversion metrics\n    SUM(me.purchased_count) as total_purchases,\n    SUM(me.sent_count) as total_recipients,\n    SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as overall_buy_rate,\n\n    -- Price analysis\n    AVG(me.price_usd) as avg_price_point,\n    SAFE_DIVIDE(SUM(me.revenue_usd), SUM(me.price_usd * me.purchased_count)) as price_realization_rate,\n\n    -- Tier adherence metrics\n    COUNTIF(me.sending_hour BETWEEN 8 AND 22) as messages_in_active_hours,\n    SAFE_DIVIDE(COUNTIF(me.sending_hour BETWEEN 8 AND 22), COUNT(me.message_id)) as active_hours_compliance,\n\n    -- Daily volume adherence\n    COUNT(DISTINCT DATE(me.sending_ts)) as active_days,\n    SAFE_DIVIDE(COUNT(me.message_id), COUNT(DISTINCT DATE(me.sending_ts))) as avg_daily_volume\n\n  FROM `of-scheduler-proj.eros_messaging_feat.creator_tier_assignments` cta\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.messages_enriched` me\n    ON cta.page_handle = CASE\n         WHEN cta.final_page_type = 'BOTH'\n         THEN cta.page_handle\n         ELSE cta.username_std\n       END\n    AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)\n  WHERE cta.assignment_date = CURRENT_DATE()\n  GROUP BY 1,2,3,4,5\n),\n\ntier_template_comparison AS (\n  SELECT\n    tpm.*,\n    tbt.min_daily_ppvs as template_min_daily,\n    tbt.max_daily_ppvs as template_max_daily,\n    tbt.premium_price_range.min as template_premium_min,\n    tbt.premium_price_range.max as template_premium_max,\n    tbt.mid_price_range.min as template_mid_min,\n    tbt.mid_price_range.max as template_mid_max,\n\n    -- Template adherence scoring\n    CASE\n      WHEN tpm.avg_daily_volume BETWEEN tbt.min_daily_ppvs AND tbt.max_daily_ppvs THEN 1.0\n      WHEN tpm.avg_daily_volume < tbt.min_daily_ppvs THEN\n        tpm.avg_daily_volume / tbt.min_daily_ppvs\n      ELSE 1.0 - ((tpm.avg_daily_volume - tbt.max_daily_ppvs) / tbt.max_daily_ppvs)\n    END as volume_adherence_score,\n\n    CASE\n      WHEN tpm.avg_price_point BETWEEN tbt.mid_price_range.min AND tbt.premium_price_range.max THEN 1.0\n      WHEN tpm.avg_price_point < tbt.mid_price_range.min THEN\n        tpm.avg_price_point / tbt.mid_price_range.min\n      ELSE 1.0\n    END as pricing_adherence_score\n\n  FROM tier_performance_metrics tpm\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_baseline_templates` tbt\n    ON tpm.tier_id = tbt.tier_id\n),\n\ntier_effectiveness_analysis AS (\n  SELECT\n    ttc.*,\n\n    -- Performance rankings within tier group\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as revenue_rank_within_tier,\n\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as conversion_rank_within_tier,\n\n    -- Cross-tier performance rankings\n    RANK() OVER (\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as overall_revenue_rank,\n\n    RANK() OVER (\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as overall_conversion_rank,\n\n    -- Tier effectiveness scores\n    (ttc.volume_adherence_score * 0.3 +\n     ttc.pricing_adherence_score * 0.3 +\n     ttc.active_hours_compliance * 0.2 +\n     LEAST(ttc.overall_buy_rate / 0.05, 1.0) * 0.2) as tier_adherence_score,\n\n    -- Performance vs expectation\n    CASE ttc.messaging_strategy\n      WHEN 'conversion_aggressive' THEN\n        CASE\n          WHEN ttc.overall_buy_rate >= 0.06 THEN 'exceeds_expectation'\n          WHEN ttc.overall_buy_rate >= 0.04 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      WHEN 'retention_quality' THEN\n        CASE\n          WHEN ttc.avg_revenue_per_message >= 15 THEN 'exceeds_expectation'\n          WHEN ttc.avg_revenue_per_message >= 10 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      ELSE 'unknown_strategy'\n    END as performance_vs_expectation\n\n  FROM tier_template_comparison ttc\n),\n\nadjustment_effectiveness AS (\n  SELECT\n    tea.tier_id,\n    tea.page_type,\n\n    -- Track adjustment impacts\n    COUNT(DISTINCT twa.page_handle) as pages_with_adjustments,\n    STRING_AGG(DISTINCT twa.adjustment_rule) as active_adjustment_rules,\n    AVG(twa.daily_quota_adjustment) as avg_quota_adjustment,\n    AVG(twa.price_adjustment_usd) as avg_price_adjustment,\n\n    -- Performance after adjustments (last 7 days)\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.avg_revenue_per_message\n    END) as post_adjustment_rpm,\n\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.overall_buy_rate\n    END) as post_adjustment_buy_rate\n\n  FROM tier_effectiveness_analysis tea\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_weekly_adjustments` twa\n    ON tea.tier_id = twa.full_tier_assignment\n    AND twa.adjustment_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)\n  GROUP BY 1,2\n)\n\nSELECT\n  tea.analysis_date,\n  tea.tier_id,\n  tea.page_type,\n  tea.messaging_strategy,\n  tea.base_tier,\n  tea.pages_in_tier,\n\n  -- Volume performance\n  tea.total_messages_sent,\n  tea.avg_messages_per_page,\n  tea.avg_daily_volume,\n  tea.template_min_daily,\n  tea.template_max_daily,\n  tea.volume_adherence_score,\n\n  -- Revenue performance\n  tea.total_revenue,\n  tea.avg_revenue_per_message,\n  tea.median_revenue_per_message,\n  tea.revenue_rank_within_tier,\n  tea.overall_revenue_rank,\n\n  -- Conversion performance\n  tea.overall_buy_rate,\n  tea.total_purchases,\n  tea.total_recipients,\n  tea.conversion_rank_within_tier,\n  tea.overall_conversion_rank,\n\n  -- Pricing performance\n  tea.avg_price_point,\n  tea.template_mid_min,\n  tea.template_premium_max,\n  tea.pricing_adherence_score,\n  tea.price_realization_rate,\n\n  -- Adherence and effectiveness\n  tea.active_hours_compliance,\n  tea.tier_adherence_score,\n  tea.performance_vs_expectation,\n\n  -- Adjustment tracking\n  ae.pages_with_adjustments,\n  ae.active_adjustment_rules,\n  ae.avg_quota_adjustment,\n  ae.avg_price_adjustment,\n  ae.post_adjustment_rpm,\n  ae.post_adjustment_buy_rate,\n\n  -- Recommendations for tier optimization\n  CASE\n    WHEN tea.volume_adherence_score < 0.7 THEN 'adjust_volume_targets'\n    WHEN tea.pricing_adherence_score < 0.7 THEN 'review_pricing_bands'\n    WHEN tea.tier_adherence_score < 0.6 THEN 'tier_reassignment_needed'\n    WHEN tea.performance_vs_expectation = 'exceeds_expectation' THEN 'consider_tier_upgrade'\n    WHEN tea.performance_vs_expectation = 'below_expectation' THEN 'performance_intervention_needed'\n    ELSE 'tier_performing_as_expected'\n  END as optimization_recommendation,\n\n  -- Meta\n  CURRENT_TIMESTAMP() as created_at,\n  'tier_analysis_v1' as analysis_version\n\nFROM tier_effectiveness_analysis tea\nLEFT JOIN adjustment_effectiveness ae\n  ON tea.tier_id = ae.tier_id\n  AND tea.page_type = ae.page_type\nWHERE tea.pages_in_tier > 0  -- Only include tiers with actual pages\nORDER BY tea.total_revenue DESC, tea.avg_revenue_per_message DESC\n    )",
+                "destinationTable": {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_mart",
+                  "tableId": "tier_performance_analysis"
+                },
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_EMPTY",
+                "defaultDataset": {},
+                "queryPriority": "QUERY_INTERACTIVE",
+                "statementType": "CREATE_TABLE_AS_SELECT"
+              }
+            },
+            "jobStatus": {
+              "state": "DONE",
+              "error": {
+                "code": 11,
+                "message": "Name message_id not found inside me at [19:14]"
+              },
+              "additionalErrors": [
+                {
+                  "code": 11,
+                  "message": "Name message_id not found inside me at [19:14]"
+                }
+              ]
+            },
+            "jobStatistics": {
+              "createTime": "2025-09-30T14:26:11.395Z",
+              "startTime": "2025-09-30T14:26:11.595Z",
+              "endTime": "2025-09-30T14:26:11.663Z",
+              "referencedTables": [
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "creator_tier_assignments"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "tier_weekly_adjustments"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "messages_enriched"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "tier_baseline_templates"
+                }
+              ],
+              "totalTablesProcessed": 4,
+              "reservation": "unreserved"
+            }
+          }
+        }
+      }
+    },
+    "insertId": "slorl0eu8age",
+    "resource": {
+      "type": "bigquery_resource",
+      "labels": {
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:11.682674Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2025-09-30T14:26:11.885162696Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 3,
+        "message": "Name message_id not found inside me at [19:14]"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "google.cloud.bigquery.v2.JobService.InsertJob",
+      "authorizationInfo": [
+        {
+          "resource": "projects/of-scheduler-proj",
+          "permission": "bigquery.jobs.create",
+          "granted": true,
+          "resourceAttributes": {}
+        }
+      ],
+      "resourceName": "projects/of-scheduler-proj/jobs/script_job_b1c93d46d2fcdbfe47aa66b3a55cb55a_2",
+      "metadata": {
+        "@type": "type.googleapis.com/google.cloud.audit.BigQueryAuditMetadata",
+        "jobChange": {
+          "job": {
+            "jobStats": {
+              "createTime": "2025-09-30T14:26:11.395Z",
+              "queryStats": {
+                "referencedTables": [
+                  "projects/of-scheduler-proj/datasets/eros_messaging_feat/tables/creator_tier_assignments",
+                  "projects/of-scheduler-proj/datasets/eros_messaging_feat/tables/tier_weekly_adjustments",
+                  "projects/of-scheduler-proj/datasets/eros_messaging_feat/tables/messages_enriched",
+                  "projects/of-scheduler-proj/datasets/eros_messaging_feat/tables/tier_baseline_templates"
+                ]
+              },
+              "parentJobName": "projects/of-scheduler-proj/jobs/dataform-gcp-7e44b4b0e85fb94b35d9cf91e2bc8afa3c59a4c32e07729e0bda281cb3ee719c-0",
+              "reservation": "unreserved",
+              "startTime": "2025-09-30T14:26:11.595Z",
+              "endTime": "2025-09-30T14:26:11.663Z"
+            },
+            "jobConfig": {
+              "queryConfig": {
+                "destinationTable": "projects/of-scheduler-proj/datasets/eros_messaging_mart/tables/tier_performance_analysis",
+                "priority": "QUERY_INTERACTIVE",
+                "statementType": "CREATE_TABLE_AS_SELECT",
+                "createDisposition": "CREATE_IF_NEEDED",
+                "query": "CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.tier_performance_analysis`\n    PARTITION BY analysis_date\n    CLUSTER BY tier_id, page_type\n    \n    OPTIONS(description='''Performance analysis and effectiveness tracking for tier-based messaging system''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH tier_performance_metrics AS (\n  SELECT\n    cta.full_tier_assignment as tier_id,\n    cta.page_type,\n    cta.messaging_strategy,\n    cta.base_tier,\n    CURRENT_DATE() as analysis_date,\n\n    -- Message volume metrics\n    COUNT(DISTINCT cta.page_handle) as pages_in_tier,\n    COUNT(me.message_id) as total_messages_sent,\n    AVG(COUNT(me.message_id)) OVER (PARTITION BY cta.full_tier_assignment) as avg_messages_per_page,\n\n    -- Revenue performance\n    SUM(me.revenue_usd) as total_revenue,\n    AVG(me.revenue_usd) as avg_revenue_per_message,\n    PERCENTILE_CONT(me.revenue_usd, 0.5) OVER (PARTITION BY cta.full_tier_assignment) as median_revenue_per_message,\n\n    -- Conversion metrics\n    SUM(me.purchased_count) as total_purchases,\n    SUM(me.sent_count) as total_recipients,\n    SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as overall_buy_rate,\n\n    -- Price analysis\n    AVG(me.price_usd) as avg_price_point,\n    SAFE_DIVIDE(SUM(me.revenue_usd), SUM(me.price_usd * me.purchased_count)) as price_realization_rate,\n\n    -- Tier adherence metrics\n    COUNTIF(me.sending_hour BETWEEN 8 AND 22) as messages_in_active_hours,\n    SAFE_DIVIDE(COUNTIF(me.sending_hour BETWEEN 8 AND 22), COUNT(me.message_id)) as active_hours_compliance,\n\n    -- Daily volume adherence\n    COUNT(DISTINCT DATE(me.sending_ts)) as active_days,\n    SAFE_DIVIDE(COUNT(me.message_id), COUNT(DISTINCT DATE(me.sending_ts))) as avg_daily_volume\n\n  FROM `of-scheduler-proj.eros_messaging_feat.creator_tier_assignments` cta\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.messages_enriched` me\n    ON cta.page_handle = CASE\n         WHEN cta.final_page_type = 'BOTH'\n         THEN cta.page_handle\n         ELSE cta.username_std\n       END\n    AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)\n  WHERE cta.assignment_date = CURRENT_DATE()\n  GROUP BY 1,2,3,4,5\n),\n\ntier_template_comparison AS (\n  SELECT\n    tpm.*,\n    tbt.min_daily_ppvs as template_min_daily,\n    tbt.max_daily_ppvs as template_max_daily,\n    tbt.premium_price_range.min as template_premium_min,\n    tbt.premium_price_range.max as template_premium_max,\n    tbt.mid_price_range.min as template_mid_min,\n    tbt.mid_price_range.max as template_mid_max,\n\n    -- Template adherence scoring\n    CASE\n      WHEN tpm.avg_daily_volume BETWEEN tbt.min_daily_ppvs AND tbt.max_daily_ppvs THEN 1.0\n      WHEN tpm.avg_daily_volume < tbt.min_daily_ppvs THEN\n        tpm.avg_daily_volume / tbt.min_daily_ppvs\n      ELSE 1.0 - ((tpm.avg_daily_volume - tbt.max_daily_ppvs) / tbt.max_daily_ppvs)\n    END as volume_adherence_score,\n\n    CASE\n      WHEN tpm.avg_price_point BETWEEN tbt.mid_price_range.min AND tbt.premium_price_range.max THEN 1.0\n      WHEN tpm.avg_price_point < tbt.mid_price_range.min THEN\n        tpm.avg_price_point / tbt.mid_price_range.min\n      ELSE 1.0\n    END as pricing_adherence_score\n\n  FROM tier_performance_metrics tpm\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_baseline_templates` tbt\n    ON tpm.tier_id = tbt.tier_id\n),\n\ntier_effectiveness_analysis AS (\n  SELECT\n    ttc.*,\n\n    -- Performance rankings within tier group\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as revenue_rank_within_tier,\n\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as conversion_rank_within_tier,\n\n    -- Cross-tier performance rankings\n    RANK() OVER (\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as overall_revenue_rank,\n\n    RANK() OVER (\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as overall_conversion_rank,\n\n    -- Tier effectiveness scores\n    (ttc.volume_adherence_score * 0.3 +\n     ttc.pricing_adherence_score * 0.3 +\n     ttc.active_hours_compliance * 0.2 +\n     LEAST(ttc.overall_buy_rate / 0.05, 1.0) * 0.2) as tier_adherence_score,\n\n    -- Performance vs expectation\n    CASE ttc.messaging_strategy\n      WHEN 'conversion_aggressive' THEN\n        CASE\n          WHEN ttc.overall_buy_rate >= 0.06 THEN 'exceeds_expectation'\n          WHEN ttc.overall_buy_rate >= 0.04 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      WHEN 'retention_quality' THEN\n        CASE\n          WHEN ttc.avg_revenue_per_message >= 15 THEN 'exceeds_expectation'\n          WHEN ttc.avg_revenue_per_message >= 10 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      ELSE 'unknown_strategy'\n    END as performance_vs_expectation\n\n  FROM tier_template_comparison ttc\n),\n\nadjustment_effectiveness AS (\n  SELECT\n    tea.tier_id,\n    tea.page_type,\n\n    -- Track adjustment impacts\n    COUNT(DISTINCT twa.page_handle) as pages_with_adjustments,\n    STRING_AGG(DISTINCT twa.adjustment_rule) as active_adjustment_rules,\n    AVG(twa.daily_quota_adjustment) as avg_quota_adjustment,\n    AVG(twa.price_adjustment_usd) as avg_price_adjustment,\n\n    -- Performance after adjustments (last 7 days)\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.avg_revenue_per_message\n    END) as post_adjustment_rpm,\n\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.overall_buy_rate\n    END) as post_adjustment_buy_rate\n\n  FROM tier_effectiveness_analysis tea\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_weekly_adjustments` twa\n    ON tea.tier_id = twa.full_tier_assignment\n    AND twa.adjustment_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)\n  GROUP BY 1,2\n)\n\nSELECT\n  tea.analysis_date,\n  tea.tier_id,\n  tea.page_type,\n  tea.messaging_strategy,\n  tea.base_tier,\n  tea.pages_in_tier,\n\n  -- Volume performance\n  tea.total_messages_sent,\n  tea.avg_messages_per_page,\n  tea.avg_daily_volume,\n  tea.template_min_daily,\n  tea.template_max_daily,\n  tea.volume_adherence_score,\n\n  -- Revenue performance\n  tea.total_revenue,\n  tea.avg_revenue_per_message,\n  tea.median_revenue_per_message,\n  tea.revenue_rank_within_tier,\n  tea.overall_revenue_rank,\n\n  -- Conversion performance\n  tea.overall_buy_rate,\n  tea.total_purchases,\n  tea.total_recipients,\n  tea.conversion_rank_within_tier,\n  tea.overall_conversion_rank,\n\n  -- Pricing performance\n  tea.avg_price_point,\n  tea.template_mid_min,\n  tea.template_premium_max,\n  tea.pricing_adherence_score,\n  tea.price_realization_rate,\n\n  -- Adherence and effectiveness\n  tea.active_hours_compliance,\n  tea.tier_adherence_score,\n  tea.performance_vs_expectation,\n\n  -- Adjustment tracking\n  ae.pages_with_adjustments,\n  ae.active_adjustment_rules,\n  ae.avg_quota_adjustment,\n  ae.avg_price_adjustment,\n  ae.post_adjustment_rpm,\n  ae.post_adjustment_buy_rate,\n\n  -- Recommendations for tier optimization\n  CASE\n    WHEN tea.volume_adherence_score < 0.7 THEN 'adjust_volume_targets'\n    WHEN tea.pricing_adherence_score < 0.7 THEN 'review_pricing_bands'\n    WHEN tea.tier_adherence_score < 0.6 THEN 'tier_reassignment_needed'\n    WHEN tea.performance_vs_expectation = 'exceeds_expectation' THEN 'consider_tier_upgrade'\n    WHEN tea.performance_vs_expectation = 'below_expectation' THEN 'performance_intervention_needed'\n    ELSE 'tier_performing_as_expected'\n  END as optimization_recommendation,\n\n  -- Meta\n  CURRENT_TIMESTAMP() as created_at,\n  'tier_analysis_v1' as analysis_version\n\nFROM tier_effectiveness_analysis tea\nLEFT JOIN adjustment_effectiveness ae\n  ON tea.tier_id = ae.tier_id\n  AND tea.page_type = ae.page_type\nWHERE tea.pages_in_tier > 0  -- Only include tiers with actual pages\nORDER BY tea.total_revenue DESC, tea.avg_revenue_per_message DESC\n    )",
+                "writeDisposition": "WRITE_EMPTY"
+              },
+              "type": "QUERY",
+              "labels": {
+                "dataform_repository_project_number": "585478978976",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj",
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart",
+                "dataform-action-type": "table",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_action_id_name": "tier_performance_analysis"
+              }
+            },
+            "jobName": "projects/of-scheduler-proj/jobs/script_job_b1c93d46d2fcdbfe47aa66b3a55cb55a_2",
+            "jobStatus": {
+              "errorResult": {
+                "message": "Name message_id not found inside me at [19:14]",
+                "code": 3
+              },
+              "jobState": "DONE",
+              "errors": [
+                {
+                  "message": "Name message_id not found inside me at [19:14]",
+                  "code": 3
+                }
+              ]
+            }
+          },
+          "after": "DONE"
+        }
+      }
+    },
+    "insertId": "slorl0eu8agg",
+    "resource": {
+      "type": "bigquery_project",
+      "labels": {
+        "location": "US",
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:11.683430Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "operation": {
+      "id": "1759242371395-of-scheduler-proj:script_job_b1c93d46d2fcdbfe47aa66b3a55cb55a_2",
+      "producer": "bigquery.googleapis.com",
+      "last": true
+    },
+    "receiveTimestamp": "2025-09-30T14:26:11.885162696Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 11,
+        "message": "Name message_id not found inside me at [19:14]"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "jobservice.getqueryresults",
+      "authorizationInfo": [
+        {
+          "resource": "projects/of-scheduler-proj",
+          "permission": "bigquery.jobs.create",
+          "granted": true,
+          "resourceAttributes": {}
+        },
+        {
+          "resource": "projects/of-scheduler-proj/datasets/eros_messaging_mart/tables/tier_performance_analysis",
+          "permission": "bigquery.tables.getData",
+          "granted": true,
+          "resourceAttributes": {}
+        }
+      ],
+      "resourceName": "projects/of-scheduler-proj/queries/script_job_b1c93d46d2fcdbfe47aa66b3a55cb55a_2",
+      "serviceData": {
+        "@type": "type.googleapis.com/google.cloud.bigquery.logging.v1.AuditData",
+        "jobGetQueryResultsRequest": {},
+        "jobGetQueryResultsResponse": {
+          "job": {
+            "jobName": {
+              "projectId": "of-scheduler-proj",
+              "jobId": "script_job_b1c93d46d2fcdbfe47aa66b3a55cb55a_2",
+              "location": "US"
+            },
+            "jobConfiguration": {
+              "labels": {
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart",
+                "dataform_workflow_execution_action_id_name": "tier_performance_analysis",
+                "dataform-action-type": "table",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj"
+              },
+              "query": {
+                "query": "CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.tier_performance_analysis`\n    PARTITION BY analysis_date\n    CLUSTER BY tier_id, page_type\n    \n    OPTIONS(description='''Performance analysis and effectiveness tracking for tier-based messaging system''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH tier_performance_metrics AS (\n  SELECT\n    cta.full_tier_assignment as tier_id,\n    cta.page_type,\n    cta.messaging_strategy,\n    cta.base_tier,\n    CURRENT_DATE() as analysis_date,\n\n    -- Message volume metrics\n    COUNT(DISTINCT cta.page_handle) as pages_in_tier,\n    COUNT(me.message_id) as total_messages_sent,\n    AVG(COUNT(me.message_id)) OVER (PARTITION BY cta.full_tier_assignment) as avg_messages_per_page,\n\n    -- Revenue performance\n    SUM(me.revenue_usd) as total_revenue,\n    AVG(me.revenue_usd) as avg_revenue_per_message,\n    PERCENTILE_CONT(me.revenue_usd, 0.5) OVER (PARTITION BY cta.full_tier_assignment) as median_revenue_per_message,\n\n    -- Conversion metrics\n    SUM(me.purchased_count) as total_purchases,\n    SUM(me.sent_count) as total_recipients,\n    SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as overall_buy_rate,\n\n    -- Price analysis\n    AVG(me.price_usd) as avg_price_point,\n    SAFE_DIVIDE(SUM(me.revenue_usd), SUM(me.price_usd * me.purchased_count)) as price_realization_rate,\n\n    -- Tier adherence metrics\n    COUNTIF(me.sending_hour BETWEEN 8 AND 22) as messages_in_active_hours,\n    SAFE_DIVIDE(COUNTIF(me.sending_hour BETWEEN 8 AND 22), COUNT(me.message_id)) as active_hours_compliance,\n\n    -- Daily volume adherence\n    COUNT(DISTINCT DATE(me.sending_ts)) as active_days,\n    SAFE_DIVIDE(COUNT(me.message_id), COUNT(DISTINCT DATE(me.sending_ts))) as avg_daily_volume\n\n  FROM `of-scheduler-proj.eros_messaging_feat.creator_tier_assignments` cta\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.messages_enriched` me\n    ON cta.page_handle = CASE\n         WHEN cta.final_page_type = 'BOTH'\n         THEN cta.page_handle\n         ELSE cta.username_std\n       END\n    AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)\n  WHERE cta.assignment_date = CURRENT_DATE()\n  GROUP BY 1,2,3,4,5\n),\n\ntier_template_comparison AS (\n  SELECT\n    tpm.*,\n    tbt.min_daily_ppvs as template_min_daily,\n    tbt.max_daily_ppvs as template_max_daily,\n    tbt.premium_price_range.min as template_premium_min,\n    tbt.premium_price_range.max as template_premium_max,\n    tbt.mid_price_range.min as template_mid_min,\n    tbt.mid_price_range.max as template_mid_max,\n\n    -- Template adherence scoring\n    CASE\n      WHEN tpm.avg_daily_volume BETWEEN tbt.min_daily_ppvs AND tbt.max_daily_ppvs THEN 1.0\n      WHEN tpm.avg_daily_volume < tbt.min_daily_ppvs THEN\n        tpm.avg_daily_volume / tbt.min_daily_ppvs\n      ELSE 1.0 - ((tpm.avg_daily_volume - tbt.max_daily_ppvs) / tbt.max_daily_ppvs)\n    END as volume_adherence_score,\n\n    CASE\n      WHEN tpm.avg_price_point BETWEEN tbt.mid_price_range.min AND tbt.premium_price_range.max THEN 1.0\n      WHEN tpm.avg_price_point < tbt.mid_price_range.min THEN\n        tpm.avg_price_point / tbt.mid_price_range.min\n      ELSE 1.0\n    END as pricing_adherence_score\n\n  FROM tier_performance_metrics tpm\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_baseline_templates` tbt\n    ON tpm.tier_id = tbt.tier_id\n),\n\ntier_effectiveness_analysis AS (\n  SELECT\n    ttc.*,\n\n    -- Performance rankings within tier group\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as revenue_rank_within_tier,\n\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as conversion_rank_within_tier,\n\n    -- Cross-tier performance rankings\n    RANK() OVER (\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as overall_revenue_rank,\n\n    RANK() OVER (\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as overall_conversion_rank,\n\n    -- Tier effectiveness scores\n    (ttc.volume_adherence_score * 0.3 +\n     ttc.pricing_adherence_score * 0.3 +\n     ttc.active_hours_compliance * 0.2 +\n     LEAST(ttc.overall_buy_rate / 0.05, 1.0) * 0.2) as tier_adherence_score,\n\n    -- Performance vs expectation\n    CASE ttc.messaging_strategy\n      WHEN 'conversion_aggressive' THEN\n        CASE\n          WHEN ttc.overall_buy_rate >= 0.06 THEN 'exceeds_expectation'\n          WHEN ttc.overall_buy_rate >= 0.04 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      WHEN 'retention_quality' THEN\n        CASE\n          WHEN ttc.avg_revenue_per_message >= 15 THEN 'exceeds_expectation'\n          WHEN ttc.avg_revenue_per_message >= 10 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      ELSE 'unknown_strategy'\n    END as performance_vs_expectation\n\n  FROM tier_template_comparison ttc\n),\n\nadjustment_effectiveness AS (\n  SELECT\n    tea.tier_id,\n    tea.page_type,\n\n    -- Track adjustment impacts\n    COUNT(DISTINCT twa.page_handle) as pages_with_adjustments,\n    STRING_AGG(DISTINCT twa.adjustment_rule) as active_adjustment_rules,\n    AVG(twa.daily_quota_adjustment) as avg_quota_adjustment,\n    AVG(twa.price_adjustment_usd) as avg_price_adjustment,\n\n    -- Performance after adjustments (last 7 days)\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.avg_revenue_per_message\n    END) as post_adjustment_rpm,\n\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.overall_buy_rate\n    END) as post_adjustment_buy_rate\n\n  FROM tier_effectiveness_analysis tea\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_weekly_adjustments` twa\n    ON tea.tier_id = twa.full_tier_assignment\n    AND twa.adjustment_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)\n  GROUP BY 1,2\n)\n\nSELECT\n  tea.analysis_date,\n  tea.tier_id,\n  tea.page_type,\n  tea.messaging_strategy,\n  tea.base_tier,\n  tea.pages_in_tier,\n\n  -- Volume performance\n  tea.total_messages_sent,\n  tea.avg_messages_per_page,\n  tea.avg_daily_volume,\n  tea.template_min_daily,\n  tea.template_max_daily,\n  tea.volume_adherence_score,\n\n  -- Revenue performance\n  tea.total_revenue,\n  tea.avg_revenue_per_message,\n  tea.median_revenue_per_message,\n  tea.revenue_rank_within_tier,\n  tea.overall_revenue_rank,\n\n  -- Conversion performance\n  tea.overall_buy_rate,\n  tea.total_purchases,\n  tea.total_recipients,\n  tea.conversion_rank_within_tier,\n  tea.overall_conversion_rank,\n\n  -- Pricing performance\n  tea.avg_price_point,\n  tea.template_mid_min,\n  tea.template_premium_max,\n  tea.pricing_adherence_score,\n  tea.price_realization_rate,\n\n  -- Adherence and effectiveness\n  tea.active_hours_compliance,\n  tea.tier_adherence_score,\n  tea.performance_vs_expectation,\n\n  -- Adjustment tracking\n  ae.pages_with_adjustments,\n  ae.active_adjustment_rules,\n  ae.avg_quota_adjustment,\n  ae.avg_price_adjustment,\n  ae.post_adjustment_rpm,\n  ae.post_adjustment_buy_rate,\n\n  -- Recommendations for tier optimization\n  CASE\n    WHEN tea.volume_adherence_score < 0.7 THEN 'adjust_volume_targets'\n    WHEN tea.pricing_adherence_score < 0.7 THEN 'review_pricing_bands'\n    WHEN tea.tier_adherence_score < 0.6 THEN 'tier_reassignment_needed'\n    WHEN tea.performance_vs_expectation = 'exceeds_expectation' THEN 'consider_tier_upgrade'\n    WHEN tea.performance_vs_expectation = 'below_expectation' THEN 'performance_intervention_needed'\n    ELSE 'tier_performing_as_expected'\n  END as optimization_recommendation,\n\n  -- Meta\n  CURRENT_TIMESTAMP() as created_at,\n  'tier_analysis_v1' as analysis_version\n\nFROM tier_effectiveness_analysis tea\nLEFT JOIN adjustment_effectiveness ae\n  ON tea.tier_id = ae.tier_id\n  AND tea.page_type = ae.page_type\nWHERE tea.pages_in_tier > 0  -- Only include tiers with actual pages\nORDER BY tea.total_revenue DESC, tea.avg_revenue_per_message DESC\n    )",
+                "destinationTable": {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_mart",
+                  "tableId": "tier_performance_analysis"
+                },
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_EMPTY",
+                "defaultDataset": {},
+                "queryPriority": "QUERY_INTERACTIVE",
+                "statementType": "CREATE_TABLE_AS_SELECT"
+              }
+            },
+            "jobStatus": {
+              "state": "DONE",
+              "error": {
+                "code": 11,
+                "message": "Name message_id not found inside me at [19:14]"
+              },
+              "additionalErrors": [
+                {
+                  "code": 11,
+                  "message": "Name message_id not found inside me at [19:14]"
+                }
+              ]
+            },
+            "jobStatistics": {
+              "createTime": "2025-09-30T14:26:11.395Z",
+              "startTime": "2025-09-30T14:26:11.595Z",
+              "endTime": "2025-09-30T14:26:11.663Z",
+              "referencedTables": [
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "creator_tier_assignments"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "tier_weekly_adjustments"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "messages_enriched"
+                },
+                {
+                  "projectId": "of-scheduler-proj",
+                  "datasetId": "eros_messaging_feat",
+                  "tableId": "tier_baseline_templates"
+                }
+              ],
+              "totalTablesProcessed": 4,
+              "reservation": "unreserved"
+            }
+          }
+        }
+      }
+    },
+    "insertId": "-dtg74letft46",
+    "resource": {
+      "type": "bigquery_resource",
+      "labels": {
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:11.710610Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2025-09-30T14:26:12.514181046Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 11,
+        "message": "Query error: Name message_id not found inside me at [42:14]"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "jobservice.jobcompleted",
+      "resourceName": "projects/of-scheduler-proj/jobs/dataform-gcp-7e44b4b0e85fb94b35d9cf91e2bc8afa3c59a4c32e07729e0bda281cb3ee719c-0",
+      "serviceData": {
+        "@type": "type.googleapis.com/google.cloud.bigquery.logging.v1.AuditData",
+        "jobCompletedEvent": {
+          "eventName": "query_job_completed",
+          "job": {
+            "jobName": {
+              "projectId": "of-scheduler-proj",
+              "jobId": "dataform-gcp-7e44b4b0e85fb94b35d9cf91e2bc8afa3c59a4c32e07729e0bda281cb3ee719c-0",
+              "location": "US"
+            },
+            "jobConfiguration": {
+              "labels": {
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart",
+                "dataform_workflow_execution_action_id_name": "tier_performance_analysis",
+                "dataform-action-type": "table",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj"
+              },
+              "query": {
+                "query": "    BEGIN\n  CREATE SCHEMA IF NOT EXISTS `of-scheduler-proj.eros_messaging_mart` OPTIONS(location=\"US\");\nEXCEPTION WHEN ERROR THEN\n  IF NOT CONTAINS_SUBSTR(@@error.message, \"already exists: dataset\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"too many dataset metadata update operations\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"User does not have bigquery.datasets.create permission\")\n  THEN\n    RAISE USING MESSAGE = @@error.message;\n  END IF;\nEND;\n    BEGIN\n      DECLARE dataform_table_type DEFAULT (\n  SELECT ANY_VALUE(table_type)\n  FROM `of-scheduler-proj.eros_messaging_mart.INFORMATION_SCHEMA.TABLES`\n  WHERE table_name = 'tier_performance_analysis'\n);\n          IF dataform_table_type IS NOT NULL THEN\n      IF dataform_table_type = 'VIEW' THEN DROP VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.tier_performance_analysis`;\nELSEIF dataform_table_type = 'MATERIALIZED VIEW' THEN DROP MATERIALIZED VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.tier_performance_analysis`;\nEND IF;\n    END IF;\n      BEGIN\n        \n            CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.tier_performance_analysis`\n    PARTITION BY analysis_date\n    CLUSTER BY tier_id, page_type\n    \n    OPTIONS(description='''Performance analysis and effectiveness tracking for tier-based messaging system''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH tier_performance_metrics AS (\n  SELECT\n    cta.full_tier_assignment as tier_id,\n    cta.page_type,\n    cta.messaging_strategy,\n    cta.base_tier,\n    CURRENT_DATE() as analysis_date,\n\n    -- Message volume metrics\n    COUNT(DISTINCT cta.page_handle) as pages_in_tier,\n    COUNT(me.message_id) as total_messages_sent,\n    AVG(COUNT(me.message_id)) OVER (PARTITION BY cta.full_tier_assignment) as avg_messages_per_page,\n\n    -- Revenue performance\n    SUM(me.revenue_usd) as total_revenue,\n    AVG(me.revenue_usd) as avg_revenue_per_message,\n    PERCENTILE_CONT(me.revenue_usd, 0.5) OVER (PARTITION BY cta.full_tier_assignment) as median_revenue_per_message,\n\n    -- Conversion metrics\n    SUM(me.purchased_count) as total_purchases,\n    SUM(me.sent_count) as total_recipients,\n    SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as overall_buy_rate,\n\n    -- Price analysis\n    AVG(me.price_usd) as avg_price_point,\n    SAFE_DIVIDE(SUM(me.revenue_usd), SUM(me.price_usd * me.purchased_count)) as price_realization_rate,\n\n    -- Tier adherence metrics\n    COUNTIF(me.sending_hour BETWEEN 8 AND 22) as messages_in_active_hours,\n    SAFE_DIVIDE(COUNTIF(me.sending_hour BETWEEN 8 AND 22), COUNT(me.message_id)) as active_hours_compliance,\n\n    -- Daily volume adherence\n    COUNT(DISTINCT DATE(me.sending_ts)) as active_days,\n    SAFE_DIVIDE(COUNT(me.message_id), COUNT(DISTINCT DATE(me.sending_ts))) as avg_daily_volume\n\n  FROM `of-scheduler-proj.eros_messaging_feat.creator_tier_assignments` cta\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.messages_enriched` me\n    ON cta.page_handle = CASE\n         WHEN cta.final_page_type = 'BOTH'\n         THEN cta.page_handle\n         ELSE cta.username_std\n       END\n    AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)\n  WHERE cta.assignment_date = CURRENT_DATE()\n  GROUP BY 1,2,3,4,5\n),\n\ntier_template_comparison AS (\n  SELECT\n    tpm.*,\n    tbt.min_daily_ppvs as template_min_daily,\n    tbt.max_daily_ppvs as template_max_daily,\n    tbt.premium_price_range.min as template_premium_min,\n    tbt.premium_price_range.max as template_premium_max,\n    tbt.mid_price_range.min as template_mid_min,\n    tbt.mid_price_range.max as template_mid_max,\n\n    -- Template adherence scoring\n    CASE\n      WHEN tpm.avg_daily_volume BETWEEN tbt.min_daily_ppvs AND tbt.max_daily_ppvs THEN 1.0\n      WHEN tpm.avg_daily_volume < tbt.min_daily_ppvs THEN\n        tpm.avg_daily_volume / tbt.min_daily_ppvs\n      ELSE 1.0 - ((tpm.avg_daily_volume - tbt.max_daily_ppvs) / tbt.max_daily_ppvs)\n    END as volume_adherence_score,\n\n    CASE\n      WHEN tpm.avg_price_point BETWEEN tbt.mid_price_range.min AND tbt.premium_price_range.max THEN 1.0\n      WHEN tpm.avg_price_point < tbt.mid_price_range.min THEN\n        tpm.avg_price_point / tbt.mid_price_range.min\n      ELSE 1.0\n    END as pricing_adherence_score\n\n  FROM tier_performance_metrics tpm\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_baseline_templates` tbt\n    ON tpm.tier_id = tbt.tier_id\n),\n\ntier_effectiveness_analysis AS (\n  SELECT\n    ttc.*,\n\n    -- Performance rankings within tier group\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as revenue_rank_within_tier,\n\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as conversion_rank_within_tier,\n\n    -- Cross-tier performance rankings\n    RANK() OVER (\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as overall_revenue_rank,\n\n    RANK() OVER (\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as overall_conversion_rank,\n\n    -- Tier effectiveness scores\n    (ttc.volume_adherence_score * 0.3 +\n     ttc.pricing_adherence_score * 0.3 +\n     ttc.active_hours_compliance * 0.2 +\n     LEAST(ttc.overall_buy_rate / 0.05, 1.0) * 0.2) as tier_adherence_score,\n\n    -- Performance vs expectation\n    CASE ttc.messaging_strategy\n      WHEN 'conversion_aggressive' THEN\n        CASE\n          WHEN ttc.overall_buy_rate >= 0.06 THEN 'exceeds_expectation'\n          WHEN ttc.overall_buy_rate >= 0.04 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      WHEN 'retention_quality' THEN\n        CASE\n          WHEN ttc.avg_revenue_per_message >= 15 THEN 'exceeds_expectation'\n          WHEN ttc.avg_revenue_per_message >= 10 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      ELSE 'unknown_strategy'\n    END as performance_vs_expectation\n\n  FROM tier_template_comparison ttc\n),\n\nadjustment_effectiveness AS (\n  SELECT\n    tea.tier_id,\n    tea.page_type,\n\n    -- Track adjustment impacts\n    COUNT(DISTINCT twa.page_handle) as pages_with_adjustments,\n    STRING_AGG(DISTINCT twa.adjustment_rule) as active_adjustment_rules,\n    AVG(twa.daily_quota_adjustment) as avg_quota_adjustment,\n    AVG(twa.price_adjustment_usd) as avg_price_adjustment,\n\n    -- Performance after adjustments (last 7 days)\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.avg_revenue_per_message\n    END) as post_adjustment_rpm,\n\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.overall_buy_rate\n    END) as post_adjustment_buy_rate\n\n  FROM tier_effectiveness_analysis tea\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_weekly_adjustments` twa\n    ON tea.tier_id = twa.full_tier_assignment\n    AND twa.adjustment_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)\n  GROUP BY 1,2\n)\n\nSELECT\n  tea.analysis_date,\n  tea.tier_id,\n  tea.page_type,\n  tea.messaging_strategy,\n  tea.base_tier,\n  tea.pages_in_tier,\n\n  -- Volume performance\n  tea.total_messages_sent,\n  tea.avg_messages_per_page,\n  tea.avg_daily_volume,\n  tea.template_min_daily,\n  tea.template_max_daily,\n  tea.volume_adherence_score,\n\n  -- Revenue performance\n  tea.total_revenue,\n  tea.avg_revenue_per_message,\n  tea.median_revenue_per_message,\n  tea.revenue_rank_within_tier,\n  tea.overall_revenue_rank,\n\n  -- Conversion performance\n  tea.overall_buy_rate,\n  tea.total_purchases,\n  tea.total_recipients,\n  tea.conversion_rank_within_tier,\n  tea.overall_conversion_rank,\n\n  -- Pricing performance\n  tea.avg_price_point,\n  tea.template_mid_min,\n  tea.template_premium_max,\n  tea.pricing_adherence_score,\n  tea.price_realization_rate,\n\n  -- Adherence and effectiveness\n  tea.active_hours_compliance,\n  tea.tier_adherence_score,\n  tea.performance_vs_expectation,\n\n  -- Adjustment tracking\n  ae.pages_with_adjustments,\n  ae.active_adjustment_rules,\n  ae.avg_quota_adjustment,\n  ae.avg_price_adjustment,\n  ae.post_adjustment_rpm,\n  ae.post_adjustment_buy_rate,\n\n  -- Recommendations for tier optimization\n  CASE\n    WHEN tea.volume_adherence_score < 0.7 THEN 'adjust_volume_targets'\n    WHEN tea.pricing_adherence_score < 0.7 THEN 'review_pricing_bands'\n    WHEN tea.tier_adherence_score < 0.6 THEN 'tier_reassignment_needed'\n    WHEN tea.performance_vs_expectation = 'exceeds_expectation' THEN 'consider_tier_upgrade'\n    WHEN tea.performance_vs_expectation = 'below_expectation' THEN 'performance_intervention_needed'\n    ELSE 'tier_performing_as_expected'\n  END as optimization_recommendation,\n\n  -- Meta\n  CURRENT_TIMESTAMP() as created_at,\n  'tier_analysis_v1' as analysis_version\n\nFROM tier_effectiveness_analysis tea\nLEFT JOIN adjustment_effectiveness ae\n  ON tea.tier_id = ae.tier_id\n  AND tea.page_type = ae.page_type\nWHERE tea.pages_in_tier > 0  -- Only include tiers with actual pages\nORDER BY tea.total_revenue DESC, tea.avg_revenue_per_message DESC\n    );\n        \n      END;\n    END;",
+                "destinationTable": {},
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_EMPTY",
+                "defaultDataset": {},
+                "queryPriority": "QUERY_INTERACTIVE",
+                "statementType": "SCRIPT"
+              }
+            },
+            "jobStatus": {
+              "state": "DONE",
+              "error": {
+                "code": 11,
+                "message": "Query error: Name message_id not found inside me at [42:14]"
+              }
+            },
+            "jobStatistics": {
+              "createTime": "2025-09-30T14:26:10.026Z",
+              "startTime": "2025-09-30T14:26:10.268Z",
+              "endTime": "2025-09-30T14:26:11.720Z",
+              "totalProcessedBytes": "10485760",
+              "totalBilledBytes": "10485760",
+              "totalSlotMs": "149",
+              "reservation": "unreserved"
+            }
+          }
+        }
+      }
+    },
+    "insertId": "-o4qn2eeibp6c",
+    "resource": {
+      "type": "bigquery_resource",
+      "labels": {
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:11.739304Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2025-09-30T14:26:11.931820288Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 3,
+        "message": "Query error: Name message_id not found inside me at [42:14]"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "google.cloud.bigquery.v2.JobService.InsertJob",
+      "authorizationInfo": [
+        {
+          "resource": "projects/of-scheduler-proj",
+          "permission": "bigquery.jobs.create",
+          "granted": true,
+          "resourceAttributes": {}
+        }
+      ],
+      "resourceName": "projects/of-scheduler-proj/jobs/dataform-gcp-7e44b4b0e85fb94b35d9cf91e2bc8afa3c59a4c32e07729e0bda281cb3ee719c-0",
+      "metadata": {
+        "@type": "type.googleapis.com/google.cloud.audit.BigQueryAuditMetadata",
+        "jobChange": {
+          "job": {
+            "jobConfig": {
+              "labels": {
+                "dataform_repository_project_number": "585478978976",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj",
+                "dataform_workflow_execution_action_id_name": "tier_performance_analysis",
+                "dataform-action-type": "table",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart"
+              },
+              "type": "QUERY",
+              "queryConfig": {
+                "priority": "QUERY_INTERACTIVE",
+                "query": "    BEGIN\n  CREATE SCHEMA IF NOT EXISTS `of-scheduler-proj.eros_messaging_mart` OPTIONS(location=\"US\");\nEXCEPTION WHEN ERROR THEN\n  IF NOT CONTAINS_SUBSTR(@@error.message, \"already exists: dataset\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"too many dataset metadata update operations\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"User does not have bigquery.datasets.create permission\")\n  THEN\n    RAISE USING MESSAGE = @@error.message;\n  END IF;\nEND;\n    BEGIN\n      DECLARE dataform_table_type DEFAULT (\n  SELECT ANY_VALUE(table_type)\n  FROM `of-scheduler-proj.eros_messaging_mart.INFORMATION_SCHEMA.TABLES`\n  WHERE table_name = 'tier_performance_analysis'\n);\n          IF dataform_table_type IS NOT NULL THEN\n      IF dataform_table_type = 'VIEW' THEN DROP VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.tier_performance_analysis`;\nELSEIF dataform_table_type = 'MATERIALIZED VIEW' THEN DROP MATERIALIZED VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.tier_performance_analysis`;\nEND IF;\n    END IF;\n      BEGIN\n        \n            CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.tier_performance_analysis`\n    PARTITION BY analysis_date\n    CLUSTER BY tier_id, page_type\n    \n    OPTIONS(description='''Performance analysis and effectiveness tracking for tier-based messaging system''', labels=[(\"layer\", \"mart\"), (\"domain\", \"messaging\"), (\"app\", \"eros\")], require_partition_filter=true)\n    AS (\n      \n\nWITH tier_performance_metrics AS (\n  SELECT\n    cta.full_tier_assignment as tier_id,\n    cta.page_type,\n    cta.messaging_strategy,\n    cta.base_tier,\n    CURRENT_DATE() as analysis_date,\n\n    -- Message volume metrics\n    COUNT(DISTINCT cta.page_handle) as pages_in_tier,\n    COUNT(me.message_id) as total_messages_sent,\n    AVG(COUNT(me.message_id)) OVER (PARTITION BY cta.full_tier_assignment) as avg_messages_per_page,\n\n    -- Revenue performance\n    SUM(me.revenue_usd) as total_revenue,\n    AVG(me.revenue_usd) as avg_revenue_per_message,\n    PERCENTILE_CONT(me.revenue_usd, 0.5) OVER (PARTITION BY cta.full_tier_assignment) as median_revenue_per_message,\n\n    -- Conversion metrics\n    SUM(me.purchased_count) as total_purchases,\n    SUM(me.sent_count) as total_recipients,\n    SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as overall_buy_rate,\n\n    -- Price analysis\n    AVG(me.price_usd) as avg_price_point,\n    SAFE_DIVIDE(SUM(me.revenue_usd), SUM(me.price_usd * me.purchased_count)) as price_realization_rate,\n\n    -- Tier adherence metrics\n    COUNTIF(me.sending_hour BETWEEN 8 AND 22) as messages_in_active_hours,\n    SAFE_DIVIDE(COUNTIF(me.sending_hour BETWEEN 8 AND 22), COUNT(me.message_id)) as active_hours_compliance,\n\n    -- Daily volume adherence\n    COUNT(DISTINCT DATE(me.sending_ts)) as active_days,\n    SAFE_DIVIDE(COUNT(me.message_id), COUNT(DISTINCT DATE(me.sending_ts))) as avg_daily_volume\n\n  FROM `of-scheduler-proj.eros_messaging_feat.creator_tier_assignments` cta\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.messages_enriched` me\n    ON cta.page_handle = CASE\n         WHEN cta.final_page_type = 'BOTH'\n         THEN cta.page_handle\n         ELSE cta.username_std\n       END\n    AND me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)\n  WHERE cta.assignment_date = CURRENT_DATE()\n  GROUP BY 1,2,3,4,5\n),\n\ntier_template_comparison AS (\n  SELECT\n    tpm.*,\n    tbt.min_daily_ppvs as template_min_daily,\n    tbt.max_daily_ppvs as template_max_daily,\n    tbt.premium_price_range.min as template_premium_min,\n    tbt.premium_price_range.max as template_premium_max,\n    tbt.mid_price_range.min as template_mid_min,\n    tbt.mid_price_range.max as template_mid_max,\n\n    -- Template adherence scoring\n    CASE\n      WHEN tpm.avg_daily_volume BETWEEN tbt.min_daily_ppvs AND tbt.max_daily_ppvs THEN 1.0\n      WHEN tpm.avg_daily_volume < tbt.min_daily_ppvs THEN\n        tpm.avg_daily_volume / tbt.min_daily_ppvs\n      ELSE 1.0 - ((tpm.avg_daily_volume - tbt.max_daily_ppvs) / tbt.max_daily_ppvs)\n    END as volume_adherence_score,\n\n    CASE\n      WHEN tpm.avg_price_point BETWEEN tbt.mid_price_range.min AND tbt.premium_price_range.max THEN 1.0\n      WHEN tpm.avg_price_point < tbt.mid_price_range.min THEN\n        tpm.avg_price_point / tbt.mid_price_range.min\n      ELSE 1.0\n    END as pricing_adherence_score\n\n  FROM tier_performance_metrics tpm\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_baseline_templates` tbt\n    ON tpm.tier_id = tbt.tier_id\n),\n\ntier_effectiveness_analysis AS (\n  SELECT\n    ttc.*,\n\n    -- Performance rankings within tier group\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as revenue_rank_within_tier,\n\n    RANK() OVER (\n      PARTITION BY ttc.base_tier, ttc.page_type\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as conversion_rank_within_tier,\n\n    -- Cross-tier performance rankings\n    RANK() OVER (\n      ORDER BY ttc.avg_revenue_per_message DESC\n    ) as overall_revenue_rank,\n\n    RANK() OVER (\n      ORDER BY ttc.overall_buy_rate DESC\n    ) as overall_conversion_rank,\n\n    -- Tier effectiveness scores\n    (ttc.volume_adherence_score * 0.3 +\n     ttc.pricing_adherence_score * 0.3 +\n     ttc.active_hours_compliance * 0.2 +\n     LEAST(ttc.overall_buy_rate / 0.05, 1.0) * 0.2) as tier_adherence_score,\n\n    -- Performance vs expectation\n    CASE ttc.messaging_strategy\n      WHEN 'conversion_aggressive' THEN\n        CASE\n          WHEN ttc.overall_buy_rate >= 0.06 THEN 'exceeds_expectation'\n          WHEN ttc.overall_buy_rate >= 0.04 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      WHEN 'retention_quality' THEN\n        CASE\n          WHEN ttc.avg_revenue_per_message >= 15 THEN 'exceeds_expectation'\n          WHEN ttc.avg_revenue_per_message >= 10 THEN 'meets_expectation'\n          ELSE 'below_expectation'\n        END\n      ELSE 'unknown_strategy'\n    END as performance_vs_expectation\n\n  FROM tier_template_comparison ttc\n),\n\nadjustment_effectiveness AS (\n  SELECT\n    tea.tier_id,\n    tea.page_type,\n\n    -- Track adjustment impacts\n    COUNT(DISTINCT twa.page_handle) as pages_with_adjustments,\n    STRING_AGG(DISTINCT twa.adjustment_rule) as active_adjustment_rules,\n    AVG(twa.daily_quota_adjustment) as avg_quota_adjustment,\n    AVG(twa.price_adjustment_usd) as avg_price_adjustment,\n\n    -- Performance after adjustments (last 7 days)\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.avg_revenue_per_message\n    END) as post_adjustment_rpm,\n\n    AVG(CASE\n      WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7\n      THEN tea.overall_buy_rate\n    END) as post_adjustment_buy_rate\n\n  FROM tier_effectiveness_analysis tea\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_weekly_adjustments` twa\n    ON tea.tier_id = twa.full_tier_assignment\n    AND twa.adjustment_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)\n  GROUP BY 1,2\n)\n\nSELECT\n  tea.analysis_date,\n  tea.tier_id,\n  tea.page_type,\n  tea.messaging_strategy,\n  tea.base_tier,\n  tea.pages_in_tier,\n\n  -- Volume performance\n  tea.total_messages_sent,\n  tea.avg_messages_per_page,\n  tea.avg_daily_volume,\n  tea.template_min_daily,\n  tea.template_max_daily,\n  tea.volume_adherence_score,\n\n  -- Revenue performance\n  tea.total_revenue,\n  tea.avg_revenue_per_message,\n  tea.median_revenue_per_message,\n  tea.revenue_rank_within_tier,\n  tea.overall_revenue_rank,\n\n  -- Conversion performance\n  tea.overall_buy_rate,\n  tea.total_purchases,\n  tea.total_recipients,\n  tea.conversion_rank_within_tier,\n  tea.overall_conversion_rank,\n\n  -- Pricing performance\n  tea.avg_price_point,\n  tea.template_mid_min,\n  tea.template_premium_max,\n  tea.pricing_adherence_score,\n  tea.price_realization_rate,\n\n  -- Adherence and effectiveness\n  tea.active_hours_compliance,\n  tea.tier_adherence_score,\n  tea.performance_vs_expectation,\n\n  -- Adjustment tracking\n  ae.pages_with_adjustments,\n  ae.active_adjustment_rules,\n  ae.avg_quota_adjustment,\n  ae.avg_price_adjustment,\n  ae.post_adjustment_rpm,\n  ae.post_adjustment_buy_rate,\n\n  -- Recommendations for tier optimization\n  CASE\n    WHEN tea.volume_adherence_score < 0.7 THEN 'adjust_volume_targets'\n    WHEN tea.pricing_adherence_score < 0.7 THEN 'review_pricing_bands'\n    WHEN tea.tier_adherence_score < 0.6 THEN 'tier_reassignment_needed'\n    WHEN tea.performance_vs_expectation = 'exceeds_expectation' THEN 'consider_tier_upgrade'\n    WHEN tea.performance_vs_expectation = 'below_expectation' THEN 'performance_intervention_needed'\n    ELSE 'tier_performing_as_expected'\n  END as optimization_recommendation,\n\n  -- Meta\n  CURRENT_TIMESTAMP() as created_at,\n  'tier_analysis_v1' as analysis_version\n\nFROM tier_effectiveness_analysis tea\nLEFT JOIN adjustment_effectiveness ae\n  ON tea.tier_id = ae.tier_id\n  AND tea.page_type = ae.page_type\nWHERE tea.pages_in_tier > 0  -- Only include tiers with actual pages\nORDER BY tea.total_revenue DESC, tea.avg_revenue_per_message DESC\n    );\n        \n      END;\n    END;",
+                "createDisposition": "CREATE_IF_NEEDED",
+                "statementType": "SCRIPT",
+                "writeDisposition": "WRITE_EMPTY"
+              }
+            },
+            "jobStats": {
+              "queryStats": {
+                "totalProcessedBytes": "10485760",
+                "totalBilledBytes": "10485760"
+              },
+              "reservation": "unreserved",
+              "totalSlotMs": "149",
+              "endTime": "2025-09-30T14:26:11.720Z",
+              "startTime": "2025-09-30T14:26:10.268Z",
+              "createTime": "2025-09-30T14:26:10.026Z"
+            },
+            "jobName": "projects/of-scheduler-proj/jobs/dataform-gcp-7e44b4b0e85fb94b35d9cf91e2bc8afa3c59a4c32e07729e0bda281cb3ee719c-0",
+            "jobStatus": {
+              "errorResult": {
+                "code": 3,
+                "message": "Query error: Name message_id not found inside me at [42:14]"
+              },
+              "jobState": "DONE"
+            }
+          },
+          "after": "DONE"
+        }
+      }
+    },
+    "insertId": "-o4qn2eeibp6e",
+    "resource": {
+      "type": "bigquery_project",
+      "labels": {
+        "project_id": "of-scheduler-proj",
+        "location": "US"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:11.739907Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "operation": {
+      "id": "1759242370026-of-scheduler-proj:dataform-gcp-7e44b4b0e85fb94b35d9cf91e2bc8afa3c59a4c32e07729e0bda281cb3ee719c-0",
+      "producer": "bigquery.googleapis.com",
+      "last": true
+    },
+    "receiveTimestamp": "2025-09-30T14:26:11.931820288Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 11,
+        "message": "Syntax error: Unexpected keyword WINDOW at [119:47]"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "jobservice.jobcompleted",
+      "resourceName": "projects/of-scheduler-proj/jobs/dataform-gcp-3036dcba1c41ea92dad53974301d92614a4c10062cadda3da36202e03d5e36ea-0",
+      "serviceData": {
+        "@type": "type.googleapis.com/google.cloud.bigquery.logging.v1.AuditData",
+        "jobCompletedEvent": {
+          "eventName": "query_job_completed",
+          "job": {
+            "jobName": {
+              "projectId": "of-scheduler-proj",
+              "jobId": "dataform-gcp-3036dcba1c41ea92dad53974301d92614a4c10062cadda3da36202e03d5e36ea-0",
+              "location": "US"
+            },
+            "jobConfiguration": {
+              "labels": {
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj",
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart",
+                "dataform_workflow_execution_action_id_name": "daily_recommendations",
+                "dataform-action-type": "table"
+              },
+              "query": {
+                "query": "    BEGIN\n  CREATE SCHEMA IF NOT EXISTS `of-scheduler-proj.eros_messaging_mart` OPTIONS(location=\"US\");\nEXCEPTION WHEN ERROR THEN\n  IF NOT CONTAINS_SUBSTR(@@error.message, \"already exists: dataset\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"too many dataset metadata update operations\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"User does not have bigquery.datasets.create permission\")\n  THEN\n    RAISE USING MESSAGE = @@error.message;\n  END IF;\nEND;\n    BEGIN\n      DECLARE dataform_table_type DEFAULT (\n  SELECT ANY_VALUE(table_type)\n  FROM `of-scheduler-proj.eros_messaging_mart.INFORMATION_SCHEMA.TABLES`\n  WHERE table_name = 'daily_recommendations'\n);\n          IF dataform_table_type IS NOT NULL THEN\n      IF dataform_table_type = 'VIEW' THEN DROP VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.daily_recommendations`;\nELSEIF dataform_table_type = 'MATERIALIZED VIEW' THEN DROP MATERIALIZED VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.daily_recommendations`;\nEND IF;\n    END IF;\n      BEGIN\n        \n            CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.daily_recommendations`\n    PARTITION BY recommendation_date\n    CLUSTER BY page_handle, username_std\n    \n    OPTIONS(description='''Tier-aware daily ranked recommendations solving all 6 core problems with page type intelligence''', labels=[(\"app\", \"eros\"), (\"domain\", \"messaging\"), (\"layer\", \"mart\")], require_partition_filter=true)\n    AS (\n      \n\nWITH\nactive_creators_with_tiers AS (\n  SELECT DISTINCT\n    cta.username_std,\n    cta.page_handle,\n    cta.page_type,\n    cta.final_page_type,\n    cta.full_tier_assignment,\n    cta.messaging_strategy,\n    cta.min_daily_messages,\n    cta.max_daily_messages\n  FROM `of-scheduler-proj.eros_messaging_feat.creator_tier_assignments` cta\n  INNER JOIN `of-scheduler-proj.eros_messaging_feat.messages_enriched` me\n    ON cta.username_std = me.username_std\n  WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)\n    AND cta.assignment_date = CURRENT_DATE()\n),\n\ncandidate_slots AS (\n  SELECT\n    ac.username_std,\n    ac.page_handle,\n    ac.page_type,\n    ac.final_page_type,\n    ac.full_tier_assignment,\n    ac.messaging_strategy,\n    ac.min_daily_messages,\n    ac.max_daily_messages,\n    CURRENT_DATE() as recommendation_date,\n    slot_ts,\n    EXTRACT(HOUR FROM slot_ts) as slot_hour,\n    FORMAT_DATE('%A', DATE(slot_ts)) as slot_day_of_week\n  FROM active_creators_with_tiers ac\n  CROSS JOIN UNNEST(\n    GENERATE_TIMESTAMP_ARRAY(\n      TIMESTAMP(CURRENT_DATE()),\n      TIMESTAMP(DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY)),\n      INTERVAL 30 MINUTE\n    )\n  ) as slot_ts\n),\n\nlast_message_check AS (\n  SELECT\n    cs.*,\n    COALESCE(lm.last_message_ts, TIMESTAMP('2024-01-01')) as last_message_ts,\n    TIMESTAMP_DIFF(cs.slot_ts, COALESCE(lm.last_message_ts, TIMESTAMP('2024-01-01')), HOUR) as hours_since_last\n  FROM candidate_slots cs\n  LEFT JOIN (\n    SELECT\n      username_std,\n      MAX(sending_ts) as last_message_ts\n    FROM `of-scheduler-proj.eros_messaging_feat.messages_enriched`\n    WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY)\n    GROUP BY username_std\n  ) lm ON cs.username_std = lm.username_std\n),\n\ntier_constraints AS (\n  SELECT\n    lmc.*,\n    tbt.min_spacing_minutes,\n    tbt.ppv_windows,\n    tbt.premium_price_range,\n    tbt.mid_price_range,\n    tbt.teaser_price_range,\n\n    -- Get weekly adjustments if any\n    COALESCE(twa.daily_quota_adjustment, 0) as quota_adjustment,\n    COALESCE(twa.price_adjustment_usd, 0) as price_adjustment,\n    COALESCE(twa.adjustment_rule, 'maintain_baseline') as adjustment_rule\n\n  FROM last_message_check lmc\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_baseline_templates` tbt\n    ON lmc.full_tier_assignment = tbt.tier_id\n  LEFT JOIN (\n    SELECT * FROM `of-scheduler-proj.eros_messaging_feat.tier_weekly_adjustments`\n    WHERE adjustment_date = CURRENT_DATE()\n      AND CURRENT_DATE() BETWEEN valid_from_date AND valid_until_date\n  ) twa ON lmc.page_handle = twa.page_handle\n),\n\nvalid_slots AS (\n  SELECT\n    tc.*,\n    -- Check if slot hour falls within tier-defined windows\n    EXISTS(\n      SELECT 1 FROM UNNEST(tc.ppv_windows) AS window\n      WHERE tc.slot_hour IN UNNEST(window.hours)\n    ) as in_tier_window,\n\n    -- Apply tier-specific spacing rules\n    COALESCE(tc.min_spacing_minutes, 120) / 60.0 as min_hours_between_messages\n  FROM tier_constraints tc\n  WHERE tc.hours_since_last >= COALESCE(tc.min_spacing_minutes, 120) / 60.0  -- Tier-aware spacing\n    AND tc.slot_hour BETWEEN 8 AND 22  -- Reasonable hours\n    AND tc.ppv_windows IS NOT NULL  -- Must have valid tier template\n),\n\nscored_slots AS (\n  SELECT\n    vs.*,\n\n    -- PROBLEM 1: Timing intelligence (enhanced with tier awareness)\n    COALESCE(hm.avg_rpm, 0.5) as timing_score,\n    COALESCE(hm.confidence_level, 'LOW') as timing_confidence,\n\n    -- PROBLEM 2: Tier-aware pricing opportunity\n    CASE\n      WHEN vs.in_tier_window THEN\n        -- Determine price tier based on slot hour and tier template\n        CASE\n          WHEN EXISTS(\n            SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n            WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'premium'\n          ) THEN 'PREMIUM'\n          WHEN EXISTS(\n            SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n            WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'mid'\n          ) THEN 'MID'\n          WHEN EXISTS(\n            SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n            WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'alternate'\n          ) THEN 'ALTERNATE'\n          ELSE 'MID'\n        END\n      ELSE COALESCE(pb.recommended_price_tier, 'MEDIUM')\n    END as price_tier,\n\n    -- Tier-aware price calculation\n    CASE\n      WHEN vs.in_tier_window AND EXISTS(\n        SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n        WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'premium'\n      ) THEN\n        GREATEST(\n          vs.premium_price_range.min + vs.price_adjustment,\n          vs.premium_price_range.min\n        )\n      WHEN vs.in_tier_window AND EXISTS(\n        SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n        WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type IN ('mid', 'alternate')\n      ) THEN\n        GREATEST(\n          vs.mid_price_range.min + vs.price_adjustment,\n          vs.teaser_price_range.min\n        )\n      ELSE\n        GREATEST(\n          COALESCE(pb.price_medium, vs.mid_price_range.min) + vs.price_adjustment,\n          vs.teaser_price_range.min\n        )\n    END as suggested_price,\n\n    -- PROBLEM 3: Enhanced fatigue safety with tier limits\n    COALESCE(100 - fs.fatigue_risk_score, 50) as fatigue_safety_score,\n    LEAST(\n      COALESCE(fs.recommended_max_daily, vs.max_daily_messages),  -- Fatigue limit\n      vs.max_daily_messages + vs.quota_adjustment                -- Tier limit with adjustment\n    ) as daily_limit,\n\n    -- Enhanced tier-aware recommendation score\n    (\n      -- Base timing performance (30%)\n      COALESCE(hm.avg_rpm, 0.5) * 0.3 +\n\n      -- Fatigue safety (25%)\n      COALESCE((100 - fs.fatigue_risk_score)/100, 0.5) * 0.25 +\n\n      -- Pricing opportunity (20%)\n      CASE\n        WHEN vs.in_tier_window AND EXISTS(\n          SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n          WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'premium'\n        ) THEN 1.0\n        WHEN vs.in_tier_window THEN 0.8\n        ELSE 0.6\n      END * 0.2 +\n\n      -- Tier window compliance bonus (15%)\n      CASE WHEN vs.in_tier_window THEN 1.0 ELSE 0.3 END * 0.15 +\n\n      -- Strategy alignment (10%)\n      CASE vs.messaging_strategy\n        WHEN 'conversion_aggressive' THEN 0.9\n        WHEN 'conversion_intensive' THEN 1.0\n        WHEN 'retention_quality' THEN 0.8\n        WHEN 'retention_vip' THEN 0.9\n        ELSE 0.7\n      END * 0.1\n\n    ) as recommendation_score\n\n  FROM valid_slots vs\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.creator_heatmap` hm\n    ON vs.username_std = hm.username_std\n    AND vs.slot_day_of_week = hm.local_day_of_week\n    AND vs.slot_hour = hm.local_hour\n  LEFT JOIN `of-scheduler-proj.eros_pricing_feat.pricing_bands` pb\n    ON vs.username_std = pb.username_std\n    AND vs.slot_day_of_week = pb.local_day_of_week\n    AND vs.slot_hour = pb.local_hour\n  LEFT JOIN (\n    SELECT * FROM `of-scheduler-proj.eros_ops_feat.fatigue_scores` WHERE score_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)\n  ) fs\n    ON vs.username_std = fs.username_std\n    AND DATE(vs.slot_ts) = fs.score_date\n),\n\nranked_recommendations AS (\n  SELECT\n    *,\n    ROW_NUMBER() OVER (\n      PARTITION BY page_handle\n      ORDER BY recommendation_score DESC\n    ) as recommendation_rank,\n\n    -- Enhanced human-readable reasoning with tier context\n    CONCAT(\n      'Tier ', full_tier_assignment, ' slot: ',\n      timing_confidence, ' confidence timing (avg $', ROUND(timing_score, 2), ' RPM), ',\n      price_tier, ' pricing tier ($', suggested_price, '), ',\n      'fatigue safety: ', ROUND(fatigue_safety_score), '/100, ',\n      CASE WHEN in_tier_window THEN 'optimal tier window' ELSE 'outside tier window' END,\n      CASE WHEN adjustment_rule != 'maintain_baseline'\n           THEN CONCAT(' [', adjustment_rule, ']') ELSE '' END\n    ) as recommendation_reason\n\n  FROM scored_slots\n)\n\nSELECT\n  username_std,\n  page_handle,\n  page_type,\n  final_page_type,\n  full_tier_assignment,\n  messaging_strategy,\n  recommendation_date,\n  slot_ts as recommended_send_ts,\n  recommendation_rank,\n  recommendation_score,\n  timing_score,\n  timing_confidence,\n  price_tier,\n  suggested_price,\n  fatigue_safety_score,\n  daily_limit,\n  in_tier_window,\n  adjustment_rule,\n  quota_adjustment,\n  price_adjustment,\n  min_daily_messages,\n  max_daily_messages,\n\n  -- Legacy compatibility aliases\n  fatigue_safety_score as fatigue_risk_score,\n  username_std as creator_id,\n\n  recommendation_reason\n\nFROM ranked_recommendations\nWHERE recommendation_rank <= daily_limit  -- Respect tier-adjusted daily limits\n  AND recommendation_score > 0.3  -- Minimum quality threshold\nORDER BY page_handle, recommendation_score DESC\n    );\n        \n      END;\n    END;",
+                "destinationTable": {},
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_EMPTY",
+                "defaultDataset": {},
+                "queryPriority": "QUERY_INTERACTIVE",
+                "statementType": "QUERY_STATEMENT_TYPE_UNSPECIFIED"
+              }
+            },
+            "jobStatus": {
+              "state": "DONE",
+              "error": {
+                "code": 11,
+                "message": "Syntax error: Unexpected keyword WINDOW at [119:47]"
+              },
+              "additionalErrors": [
+                {
+                  "code": 11,
+                  "message": "Syntax error: Unexpected keyword WINDOW at [119:47]"
+                }
+              ]
+            },
+            "jobStatistics": {
+              "createTime": "2025-09-30T14:26:18.812Z",
+              "startTime": "2025-09-30T14:26:18.822Z",
+              "endTime": "2025-09-30T14:26:18.822Z",
+              "reservation": "unreserved"
+            }
+          }
+        }
+      }
+    },
+    "insertId": "295xdkdrxbw",
+    "resource": {
+      "type": "bigquery_resource",
+      "labels": {
+        "project_id": "of-scheduler-proj"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:18.848281Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2025-09-30T14:26:19.641019281Z"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {
+        "code": 3,
+        "message": "Syntax error: Unexpected keyword WINDOW at [119:47]"
+      },
+      "authenticationInfo": {
+        "principalEmail": "kyle@erosops.com"
+      },
+      "requestMetadata": {
+        "callerIp": "private",
+        "requestAttributes": {},
+        "destinationAttributes": {}
+      },
+      "serviceName": "bigquery.googleapis.com",
+      "methodName": "google.cloud.bigquery.v2.JobService.InsertJob",
+      "authorizationInfo": [
+        {
+          "resource": "projects/of-scheduler-proj",
+          "permission": "bigquery.jobs.create",
+          "granted": true,
+          "resourceAttributes": {}
+        }
+      ],
+      "resourceName": "projects/of-scheduler-proj/jobs/dataform-gcp-3036dcba1c41ea92dad53974301d92614a4c10062cadda3da36202e03d5e36ea-0",
+      "metadata": {
+        "jobChange": {
+          "job": {
+            "jobStats": {
+              "createTime": "2025-09-30T14:26:18.812Z",
+              "startTime": "2025-09-30T14:26:18.822Z",
+              "endTime": "2025-09-30T14:26:18.822Z",
+              "reservation": "unreserved",
+              "queryStats": {}
+            },
+            "jobName": "projects/of-scheduler-proj/jobs/dataform-gcp-3036dcba1c41ea92dad53974301d92614a4c10062cadda3da36202e03d5e36ea-0",
+            "jobConfig": {
+              "queryConfig": {
+                "priority": "QUERY_INTERACTIVE",
+                "query": "    BEGIN\n  CREATE SCHEMA IF NOT EXISTS `of-scheduler-proj.eros_messaging_mart` OPTIONS(location=\"US\");\nEXCEPTION WHEN ERROR THEN\n  IF NOT CONTAINS_SUBSTR(@@error.message, \"already exists: dataset\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"too many dataset metadata update operations\") AND\n    NOT CONTAINS_SUBSTR(@@error.message, \"User does not have bigquery.datasets.create permission\")\n  THEN\n    RAISE USING MESSAGE = @@error.message;\n  END IF;\nEND;\n    BEGIN\n      DECLARE dataform_table_type DEFAULT (\n  SELECT ANY_VALUE(table_type)\n  FROM `of-scheduler-proj.eros_messaging_mart.INFORMATION_SCHEMA.TABLES`\n  WHERE table_name = 'daily_recommendations'\n);\n          IF dataform_table_type IS NOT NULL THEN\n      IF dataform_table_type = 'VIEW' THEN DROP VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.daily_recommendations`;\nELSEIF dataform_table_type = 'MATERIALIZED VIEW' THEN DROP MATERIALIZED VIEW IF EXISTS `of-scheduler-proj.eros_messaging_mart.daily_recommendations`;\nEND IF;\n    END IF;\n      BEGIN\n        \n            CREATE OR REPLACE TABLE `of-scheduler-proj.eros_messaging_mart.daily_recommendations`\n    PARTITION BY recommendation_date\n    CLUSTER BY page_handle, username_std\n    \n    OPTIONS(description='''Tier-aware daily ranked recommendations solving all 6 core problems with page type intelligence''', labels=[(\"app\", \"eros\"), (\"domain\", \"messaging\"), (\"layer\", \"mart\")], require_partition_filter=true)\n    AS (\n      \n\nWITH\nactive_creators_with_tiers AS (\n  SELECT DISTINCT\n    cta.username_std,\n    cta.page_handle,\n    cta.page_type,\n    cta.final_page_type,\n    cta.full_tier_assignment,\n    cta.messaging_strategy,\n    cta.min_daily_messages,\n    cta.max_daily_messages\n  FROM `of-scheduler-proj.eros_messaging_feat.creator_tier_assignments` cta\n  INNER JOIN `of-scheduler-proj.eros_messaging_feat.messages_enriched` me\n    ON cta.username_std = me.username_std\n  WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)\n    AND cta.assignment_date = CURRENT_DATE()\n),\n\ncandidate_slots AS (\n  SELECT\n    ac.username_std,\n    ac.page_handle,\n    ac.page_type,\n    ac.final_page_type,\n    ac.full_tier_assignment,\n    ac.messaging_strategy,\n    ac.min_daily_messages,\n    ac.max_daily_messages,\n    CURRENT_DATE() as recommendation_date,\n    slot_ts,\n    EXTRACT(HOUR FROM slot_ts) as slot_hour,\n    FORMAT_DATE('%A', DATE(slot_ts)) as slot_day_of_week\n  FROM active_creators_with_tiers ac\n  CROSS JOIN UNNEST(\n    GENERATE_TIMESTAMP_ARRAY(\n      TIMESTAMP(CURRENT_DATE()),\n      TIMESTAMP(DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY)),\n      INTERVAL 30 MINUTE\n    )\n  ) as slot_ts\n),\n\nlast_message_check AS (\n  SELECT\n    cs.*,\n    COALESCE(lm.last_message_ts, TIMESTAMP('2024-01-01')) as last_message_ts,\n    TIMESTAMP_DIFF(cs.slot_ts, COALESCE(lm.last_message_ts, TIMESTAMP('2024-01-01')), HOUR) as hours_since_last\n  FROM candidate_slots cs\n  LEFT JOIN (\n    SELECT\n      username_std,\n      MAX(sending_ts) as last_message_ts\n    FROM `of-scheduler-proj.eros_messaging_feat.messages_enriched`\n    WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY)\n    GROUP BY username_std\n  ) lm ON cs.username_std = lm.username_std\n),\n\ntier_constraints AS (\n  SELECT\n    lmc.*,\n    tbt.min_spacing_minutes,\n    tbt.ppv_windows,\n    tbt.premium_price_range,\n    tbt.mid_price_range,\n    tbt.teaser_price_range,\n\n    -- Get weekly adjustments if any\n    COALESCE(twa.daily_quota_adjustment, 0) as quota_adjustment,\n    COALESCE(twa.price_adjustment_usd, 0) as price_adjustment,\n    COALESCE(twa.adjustment_rule, 'maintain_baseline') as adjustment_rule\n\n  FROM last_message_check lmc\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.tier_baseline_templates` tbt\n    ON lmc.full_tier_assignment = tbt.tier_id\n  LEFT JOIN (\n    SELECT * FROM `of-scheduler-proj.eros_messaging_feat.tier_weekly_adjustments`\n    WHERE adjustment_date = CURRENT_DATE()\n      AND CURRENT_DATE() BETWEEN valid_from_date AND valid_until_date\n  ) twa ON lmc.page_handle = twa.page_handle\n),\n\nvalid_slots AS (\n  SELECT\n    tc.*,\n    -- Check if slot hour falls within tier-defined windows\n    EXISTS(\n      SELECT 1 FROM UNNEST(tc.ppv_windows) AS window\n      WHERE tc.slot_hour IN UNNEST(window.hours)\n    ) as in_tier_window,\n\n    -- Apply tier-specific spacing rules\n    COALESCE(tc.min_spacing_minutes, 120) / 60.0 as min_hours_between_messages\n  FROM tier_constraints tc\n  WHERE tc.hours_since_last >= COALESCE(tc.min_spacing_minutes, 120) / 60.0  -- Tier-aware spacing\n    AND tc.slot_hour BETWEEN 8 AND 22  -- Reasonable hours\n    AND tc.ppv_windows IS NOT NULL  -- Must have valid tier template\n),\n\nscored_slots AS (\n  SELECT\n    vs.*,\n\n    -- PROBLEM 1: Timing intelligence (enhanced with tier awareness)\n    COALESCE(hm.avg_rpm, 0.5) as timing_score,\n    COALESCE(hm.confidence_level, 'LOW') as timing_confidence,\n\n    -- PROBLEM 2: Tier-aware pricing opportunity\n    CASE\n      WHEN vs.in_tier_window THEN\n        -- Determine price tier based on slot hour and tier template\n        CASE\n          WHEN EXISTS(\n            SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n            WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'premium'\n          ) THEN 'PREMIUM'\n          WHEN EXISTS(\n            SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n            WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'mid'\n          ) THEN 'MID'\n          WHEN EXISTS(\n            SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n            WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'alternate'\n          ) THEN 'ALTERNATE'\n          ELSE 'MID'\n        END\n      ELSE COALESCE(pb.recommended_price_tier, 'MEDIUM')\n    END as price_tier,\n\n    -- Tier-aware price calculation\n    CASE\n      WHEN vs.in_tier_window AND EXISTS(\n        SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n        WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'premium'\n      ) THEN\n        GREATEST(\n          vs.premium_price_range.min + vs.price_adjustment,\n          vs.premium_price_range.min\n        )\n      WHEN vs.in_tier_window AND EXISTS(\n        SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n        WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type IN ('mid', 'alternate')\n      ) THEN\n        GREATEST(\n          vs.mid_price_range.min + vs.price_adjustment,\n          vs.teaser_price_range.min\n        )\n      ELSE\n        GREATEST(\n          COALESCE(pb.price_medium, vs.mid_price_range.min) + vs.price_adjustment,\n          vs.teaser_price_range.min\n        )\n    END as suggested_price,\n\n    -- PROBLEM 3: Enhanced fatigue safety with tier limits\n    COALESCE(100 - fs.fatigue_risk_score, 50) as fatigue_safety_score,\n    LEAST(\n      COALESCE(fs.recommended_max_daily, vs.max_daily_messages),  -- Fatigue limit\n      vs.max_daily_messages + vs.quota_adjustment                -- Tier limit with adjustment\n    ) as daily_limit,\n\n    -- Enhanced tier-aware recommendation score\n    (\n      -- Base timing performance (30%)\n      COALESCE(hm.avg_rpm, 0.5) * 0.3 +\n\n      -- Fatigue safety (25%)\n      COALESCE((100 - fs.fatigue_risk_score)/100, 0.5) * 0.25 +\n\n      -- Pricing opportunity (20%)\n      CASE\n        WHEN vs.in_tier_window AND EXISTS(\n          SELECT 1 FROM UNNEST(vs.ppv_windows) AS window\n          WHERE vs.slot_hour IN UNNEST(window.hours) AND window.price_type = 'premium'\n        ) THEN 1.0\n        WHEN vs.in_tier_window THEN 0.8\n        ELSE 0.6\n      END * 0.2 +\n\n      -- Tier window compliance bonus (15%)\n      CASE WHEN vs.in_tier_window THEN 1.0 ELSE 0.3 END * 0.15 +\n\n      -- Strategy alignment (10%)\n      CASE vs.messaging_strategy\n        WHEN 'conversion_aggressive' THEN 0.9\n        WHEN 'conversion_intensive' THEN 1.0\n        WHEN 'retention_quality' THEN 0.8\n        WHEN 'retention_vip' THEN 0.9\n        ELSE 0.7\n      END * 0.1\n\n    ) as recommendation_score\n\n  FROM valid_slots vs\n  LEFT JOIN `of-scheduler-proj.eros_messaging_feat.creator_heatmap` hm\n    ON vs.username_std = hm.username_std\n    AND vs.slot_day_of_week = hm.local_day_of_week\n    AND vs.slot_hour = hm.local_hour\n  LEFT JOIN `of-scheduler-proj.eros_pricing_feat.pricing_bands` pb\n    ON vs.username_std = pb.username_std\n    AND vs.slot_day_of_week = pb.local_day_of_week\n    AND vs.slot_hour = pb.local_hour\n  LEFT JOIN (\n    SELECT * FROM `of-scheduler-proj.eros_ops_feat.fatigue_scores` WHERE score_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)\n  ) fs\n    ON vs.username_std = fs.username_std\n    AND DATE(vs.slot_ts) = fs.score_date\n),\n\nranked_recommendations AS (\n  SELECT\n    *,\n    ROW_NUMBER() OVER (\n      PARTITION BY page_handle\n      ORDER BY recommendation_score DESC\n    ) as recommendation_rank,\n\n    -- Enhanced human-readable reasoning with tier context\n    CONCAT(\n      'Tier ', full_tier_assignment, ' slot: ',\n      timing_confidence, ' confidence timing (avg $', ROUND(timing_score, 2), ' RPM), ',\n      price_tier, ' pricing tier ($', suggested_price, '), ',\n      'fatigue safety: ', ROUND(fatigue_safety_score), '/100, ',\n      CASE WHEN in_tier_window THEN 'optimal tier window' ELSE 'outside tier window' END,\n      CASE WHEN adjustment_rule != 'maintain_baseline'\n           THEN CONCAT(' [', adjustment_rule, ']') ELSE '' END\n    ) as recommendation_reason\n\n  FROM scored_slots\n)\n\nSELECT\n  username_std,\n  page_handle,\n  page_type,\n  final_page_type,\n  full_tier_assignment,\n  messaging_strategy,\n  recommendation_date,\n  slot_ts as recommended_send_ts,\n  recommendation_rank,\n  recommendation_score,\n  timing_score,\n  timing_confidence,\n  price_tier,\n  suggested_price,\n  fatigue_safety_score,\n  daily_limit,\n  in_tier_window,\n  adjustment_rule,\n  quota_adjustment,\n  price_adjustment,\n  min_daily_messages,\n  max_daily_messages,\n\n  -- Legacy compatibility aliases\n  fatigue_safety_score as fatigue_risk_score,\n  username_std as creator_id,\n\n  recommendation_reason\n\nFROM ranked_recommendations\nWHERE recommendation_rank <= daily_limit  -- Respect tier-adjusted daily limits\n  AND recommendation_score > 0.3  -- Minimum quality threshold\nORDER BY page_handle, recommendation_score DESC\n    );\n        \n      END;\n    END;",
+                "writeDisposition": "WRITE_EMPTY",
+                "createDisposition": "CREATE_IF_NEEDED"
+              },
+              "labels": {
+                "dataform_workflow_execution_id": "1759242353-d13ca44c-0895-4ed5-8fac-9bb29bd21cef",
+                "dataform-action-type": "table",
+                "dataform_repository_id": "eros-data-pipe",
+                "dataform_workflow_execution_action_id_name": "daily_recommendations",
+                "dataform_repository_location": "us-central1",
+                "dataform_workflow_execution_action_id_schema": "eros_messaging_mart",
+                "dataform_repository_project_number": "585478978976",
+                "dataform_workflow_execution_action_id_database": "of-scheduler-proj"
+              },
+              "type": "QUERY"
+            },
+            "jobStatus": {
+              "jobState": "DONE",
+              "errors": [
+                {
+                  "message": "Syntax error: Unexpected keyword WINDOW at [119:47]",
+                  "code": 3
+                }
+              ],
+              "errorResult": {
+                "code": 3,
+                "message": "Syntax error: Unexpected keyword WINDOW at [119:47]"
+              }
+            }
+          },
+          "after": "DONE"
+        },
+        "@type": "type.googleapis.com/google.cloud.audit.BigQueryAuditMetadata"
+      }
+    },
+    "insertId": "295xdkdrxby",
+    "resource": {
+      "type": "bigquery_project",
+      "labels": {
+        "project_id": "of-scheduler-proj",
+        "location": "US"
+      }
+    },
+    "timestamp": "2025-09-30T14:26:18.848784Z",
+    "severity": "ERROR",
+    "logName": "projects/of-scheduler-proj/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "operation": {
+      "id": "1759242378812-of-scheduler-proj:dataform-gcp-3036dcba1c41ea92dad53974301d92614a4c10062cadda3da36202e03d5e36ea-0",
+      "producer": "bigquery.googleapis.com",
+      "last": true
+    },
+    "receiveTimestamp": "2025-09-30T14:26:19.641019281Z"
+  }
+]

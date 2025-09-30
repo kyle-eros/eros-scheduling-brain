@@ -20,13 +20,13 @@ WITH tier_performance_metrics AS (
 
     -- Message volume metrics
     COUNT(DISTINCT cta.page_handle) as pages_in_tier,
-    COUNT(me.message_id) as total_messages_sent,
-    AVG(COUNT(me.message_id)) OVER (PARTITION BY cta.full_tier_assignment) as avg_messages_per_page,
+    COUNT(me.message_sk) as total_messages_sent,
+    SAFE_DIVIDE(COUNT(me.message_sk), COUNT(DISTINCT cta.page_handle)) AS avg_messages_per_page,
 
     -- Revenue performance
-    SUM(me.revenue_usd) as total_revenue,
-    AVG(me.revenue_usd) as avg_revenue_per_message,
-    PERCENTILE_CONT(me.revenue_usd, 0.5) OVER (PARTITION BY cta.full_tier_assignment) as median_revenue_per_message,
+    SUM(me.earnings_total) as total_revenue,
+    AVG(me.earnings_total) as avg_revenue_per_message,
+    PERCENTILE_CONT(me.earnings_total, 0.5) OVER (PARTITION BY cta.full_tier_assignment) as median_revenue_per_message,
 
     -- Conversion metrics
     SUM(me.purchased_count) as total_purchases,
@@ -34,16 +34,16 @@ WITH tier_performance_metrics AS (
     SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as overall_buy_rate,
 
     -- Price analysis
-    AVG(me.price_usd) as avg_price_point,
-    SAFE_DIVIDE(SUM(me.revenue_usd), SUM(me.price_usd * me.purchased_count)) as price_realization_rate,
+    AVG(me.price) as avg_price_point,
+    SAFE_DIVIDE(SUM(me.earnings_total), SUM(me.price * me.purchased_count)) as price_realization_rate,
 
     -- Tier adherence metrics
-    COUNTIF(me.sending_hour BETWEEN 8 AND 22) as messages_in_active_hours,
-    SAFE_DIVIDE(COUNTIF(me.sending_hour BETWEEN 8 AND 22), COUNT(me.message_id)) as active_hours_compliance,
+    COUNTIF(EXTRACT(HOUR FROM me.local_sending_dt) BETWEEN 8 AND 22) as messages_in_active_hours,
+    SAFE_DIVIDE(COUNTIF(EXTRACT(HOUR FROM me.local_sending_dt) BETWEEN 8 AND 22), COUNT(me.message_sk)) as active_hours_compliance,
 
     -- Daily volume adherence
     COUNT(DISTINCT DATE(me.sending_ts)) as active_days,
-    SAFE_DIVIDE(COUNT(me.message_id), COUNT(DISTINCT DATE(me.sending_ts))) as avg_daily_volume
+    SAFE_DIVIDE(COUNT(me.message_sk), COUNT(DISTINCT DATE(me.sending_ts))) as avg_daily_volume
 
   FROM ${ref("creator_tier_assignments")} cta
   LEFT JOIN ${ref("messages_enriched")} me

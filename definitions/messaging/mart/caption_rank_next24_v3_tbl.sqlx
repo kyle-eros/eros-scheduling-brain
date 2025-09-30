@@ -82,7 +82,9 @@ theme_scoring AS (
       ELSE 0.5
     END as explicitness_bonus
   FROM ${ref("captions")} c
-  LEFT JOIN ${ref("caption_theme_signals")} cts ON c.caption_sk = cts.caption_sk
+  LEFT JOIN ${ref("caption_theme_signals")} cts
+    ON c.caption_sk = cts.caption_sk
+   AND cts.tagged_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
   WHERE c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')
 ),
 
