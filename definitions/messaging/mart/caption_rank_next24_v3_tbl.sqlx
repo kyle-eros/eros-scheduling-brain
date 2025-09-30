@@ -67,7 +67,7 @@ theme_scoring AS (
     CASE cts.primary_theme
       WHEN 'JOI / Instruction' THEN 0.9
       WHEN 'Solo Touch' THEN 0.85
-      WHEN 'Toy Play (
+      WHEN 'Toy Play' THEN 0.8
       WHEN 'Urgent / Last Chance' THEN 0.6
       ELSE 0.5
     END as theme_score,
