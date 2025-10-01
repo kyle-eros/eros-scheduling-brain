@@ -1,3 +1,7 @@
+# ===================================
+# Dataform Repository .gitignore
+# ===================================
+
 # Node.js dependencies
 node_modules/
 npm-debug.log*
@@ -7,28 +11,93 @@ yarn-error.log*
 # Dataform compilation output
 .dataform/
 compiled/
+.compiled/
+build/
 
-# Environment files
+# Credentials and secrets
+.df-credentials.json
+*.credentials.json
 .env
 .env.local
 .env.development
 .env.production
 
-# IDE files
+# IDE and editor files
 .vscode/
 .idea/
 *.swp
 *.swo
+.project
+.settings/
 
 # OS files
 .DS_Store
 Thumbs.db
+.Spotlight-V100
+.Trashes
 
 # Logs
 logs/
 *.log
 
-# Python
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# ===================================
+# Non-Dataform files (separate repos)
+# ===================================
+
+# Apps Script projects (separate repo)
+app/
+eros-scheduler-hub/
+
+# Email processing code (separate repo)
+gmail-etl/
+
+# External scripts (separate repo or local only)
+scripts/
+
+# Dashboard UI code (separate repo)
+dashboard_ui/
+
+# Data files (should not be in version control)
+data/
+*.csv
+*.json
+!dataform.json
+!package.json
+!package-lock.json
+!tsconfig.json
+
+# Backup files (local only)
+backups/
+
+# Debug/temp files (local only)
+debug_dataform/
+test_output/
+
+# Local scripts (use Dataform UI instead)
+RUN_INCREMENTAL_PIPELINE.sh
+*.sh
+
+# Workflow config (use Dataform UI)
+workflow_settings.yaml
+
+# Documentation (unless Dataform-specific)
+docs/
+
+# Audit logs
+bigquery_audit_*.json
+
+# Node version management (not needed in cloud)
+.nvmrc
+
+# Credentials templates
+.df-credentials.json.template
+
+# Python (if any)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -40,25 +109,5 @@ ENV/
 env.bak/
 venv.bak/
 
-# Temporary files
-tmp/
-temp/
-
-# Temporary build files
-*.sql
-.df-credentials.json
-*_query.sql
-compile_output.json
-
-# Data files (may contain sensitive information)
-data/
-*.csv
-
-# Backup files
-backups/
-
-# Test output files
-test_output/
-
-/target/
-/.compiled/
+# Claude artifacts
+.claude/
