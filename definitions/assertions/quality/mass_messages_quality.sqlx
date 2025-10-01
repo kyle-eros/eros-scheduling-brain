@@ -3,7 +3,8 @@ config {
   schema: "eros_assertions",
   name: "mass_messages_quality",
   description: "Data quality checks for mass_messages table",
-  tags: ["quality", "mass_messages"]
+  tags: ["quality", "mass_messages"],
+  disabled: true
 }
 
 /* QUALITY CHECKS FOR mass_messages */

@@ -1,20 +1,25 @@
 config {
   type: "table",
   schema: "eros_ops_stg",
-  clusterBy: ["username_std"],
-  description: "External scheduler overrides and manual interventions",
+  partitionBy: "override_date",
+  clusterBy: ["username_std", "override_type"],
+  description: "External scheduler overrides and manual interventions (price guards, manager overrides)",
   labels: {app: "eros", domain: "ops", layer: "stg"},
-  tags: ["ops_stg"]
+  tags: ["ops_stg", "overrides"]
 }
 
--- This model is disabled because the source data is not available.
--- It creates an empty table with the correct schema.
-SELECT 
-  CAST(NULL AS STRING) as override_sk,
-  CAST(NULL AS STRING) as username_std,
+-- Price override logging table for manager overrides
+-- Populated by Apps Script when managers override tier-based price guardrails
+SELECT
+  CAST(NULL AS STRING) as override_id,
+  CAST(NULL AS TIMESTAMP) as override_ts,
   CAST(NULL AS DATE) as override_date,
-  CAST(NULL AS STRING) as override_type,
-  CAST(NULL AS STRING) as override_reason,
-  CAST(NULL AS STRING) as scheduler_code,
-  CAST(NULL AS TIMESTAMP) as loaded_at
+  CAST(NULL AS STRING) as username_std,
+  CAST(NULL AS STRING) as tier_id,
+  CAST(NULL AS STRING) as price_band,
+  CAST(NULL AS FLOAT64) as min_allowed,
+  CAST(NULL AS FLOAT64) as max_allowed,
+  CAST(NULL AS FLOAT64) as price_entered,
+  CAST(NULL AS STRING) as reason,
+  CAST(NULL AS STRING) as scheduler_email
 LIMIT 0
