@@ -24,3 +24,9 @@ SELECT
   CAST(NULL AS STRING) as reason,
   CAST(NULL AS STRING) as scheduler_email
 LIMIT 0
+
+post_operations {
+  -- Ensure BigQuery table clustering matches Dataform config
+  ALTER TABLE ${self()}
+  SET OPTIONS (clustering_fields = ['username_std', 'scheduler_email']);
+}
