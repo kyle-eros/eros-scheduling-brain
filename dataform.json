@@ -2,7 +2,7 @@
   "warehouse": "bigquery",
   "assertionSchema": "eros_assertions",
   "vars": {
-    "enable_strict_freshness": false,
-    "enable_partition_slo": false
+    "enable_strict_freshness": "false",
+    "enable_partition_slo": "false"
   }
 }
