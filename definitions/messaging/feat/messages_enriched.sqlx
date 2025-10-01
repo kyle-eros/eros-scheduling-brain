@@ -1,11 +1,13 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
-  partitionBy: "sending_date", 
-  clusterBy: ["username_std"],
-  requirePartitionFilter: true,
   description: "Messages enriched with time features and performance metrics",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    partitionBy: "sending_date",
+    clusterBy: ["username_std"],
+    requirePartitionFilter: true,
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat"],
   dependencies: ["mass_messages", "dim_creator_timezone"]
 }

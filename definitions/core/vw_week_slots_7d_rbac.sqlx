@@ -1,8 +1,10 @@
-config {
-  type: "view",
+config {  type: "view",
   schema: "eros_core",
   description: "7-day weekly slots with scheduler RBAC assignments",
-  labels: {app: "eros", domain: "core", layer: "view"},
+  bigquery: {
+    labels: {app: "eros", domain: "core", layer: "view"}
+  }
+},
   tags: ["core", "rbac", "scheduling"],
   dependencies: ["daily_recommendations", "scheduler_assignments"]
 }

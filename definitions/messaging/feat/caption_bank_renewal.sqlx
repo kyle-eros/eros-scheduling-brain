@@ -1,10 +1,12 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
-  partitionBy: "created_date",
-  clusterBy: ["renewal_type", "urgency_level", "incentive_type"],
   description: "Specialized caption bank for renewal campaigns with FOMO and exclusive value propositions",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    partitionBy: "created_date",
+    clusterBy: ["renewal_type", "urgency_level", "incentive_type"],
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat", "caption_bank", "renewals"],
   dependencies: []
 }

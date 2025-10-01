@@ -1,11 +1,13 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_stg",
-  partitionBy: "loaded_date",
-  clusterBy: ["caption_type"],
-  requirePartitionFilter: true,
   description: "Caption bank data for content analysis and optimization",
-  labels: {app: "eros", domain: "messaging", layer: "stg"},
+  bigquery: {
+    partitionBy: "loaded_date",
+    clusterBy: ["caption_type"],
+    requirePartitionFilter: true,
+    labels: {app: "eros", domain: "messaging", layer: "stg"}
+  }
+},
   tags: ["messaging_stg"]
 }
 

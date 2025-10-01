@@ -1,12 +1,14 @@
-config {
-  type: "incremental",
+config {  type: "incremental",
   schema: "eros_messaging_stg",
   uniqueKey: ["message_sk"],
-  partitionBy: "sending_date",
-  clusterBy: ["username_std"],
-  requirePartitionFilter: false,  // Start false for initial creation, can be altered later
   description: "Incremental mass messages with 14-day watermark and robust partition handling",
-  labels: {app: "eros", domain: "messaging", layer: "stg"},
+  bigquery: {
+    partitionBy: "sending_date",
+    clusterBy: ["username_std"],
+    requirePartitionFilter: false,  // Start false for initial creation, can be altered later,
+    labels: {app: "eros", domain: "messaging", layer: "stg"}
+  }
+},
   tags: ["messaging_stg"]
 }
 

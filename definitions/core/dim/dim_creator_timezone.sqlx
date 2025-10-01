@@ -1,8 +1,10 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_core_dim",
   description: "Authoritative creator timezone mapping (IANA)",
-  labels: {app: "eros", domain: "core", layer: "dim"},
+  bigquery: {
+    labels: {app: "eros", domain: "core", layer: "dim"}
+  }
+},
   tags: ["core_dim"]
 }
 

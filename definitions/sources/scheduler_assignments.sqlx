@@ -1,9 +1,11 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_source",
   name: "scheduler_assignments",
   description: "Master scheduler to creator assignments for the EROS system",
-  labels: {app: "eros", domain: "ops", layer: "source"},
+  bigquery: {
+    labels: {app: "eros", domain: "ops", layer: "source"}
+  }
+},
   tags: ["scheduler", "assignments", "source"]
 }
 

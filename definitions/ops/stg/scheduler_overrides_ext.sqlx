@@ -1,10 +1,12 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_ops_stg",
-  partitionBy: "override_date",
-  clusterBy: ["username_std", "scheduler_email"],
   description: "External scheduler overrides and manual interventions (price guards, manager overrides)",
-  labels: {app: "eros", domain: "ops", layer: "stg"},
+  bigquery: {
+    partitionBy: "override_date",
+    clusterBy: ["username_std", "scheduler_email"],
+    labels: {app: "eros", domain: "ops", layer: "stg"}
+  }
+},
   tags: ["ops_stg", "overrides"]
 }
 

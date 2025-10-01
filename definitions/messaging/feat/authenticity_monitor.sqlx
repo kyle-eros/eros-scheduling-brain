@@ -1,10 +1,12 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
-  partitionBy: "analysis_date",
-  clusterBy: ["username_std", "pattern_risk_level"],
   description: "Authenticity monitoring; windows computed in CTE then aggregated.",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    partitionBy: "analysis_date",
+    clusterBy: ["username_std", "pattern_risk_level"],
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat", "authenticity", "anti_pattern"],
   dependencies: ["messages_enriched", "creator_tier_assignments"]
 }

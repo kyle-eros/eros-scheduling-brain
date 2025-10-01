@@ -1,10 +1,12 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
-  partitionBy: "created_date",
-  clusterBy: ["drip_type", "time_energy", "authenticity_score"],
   description: "Specialized caption bank for drip bump messages with time-of-day energy matching and authenticity scoring",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    partitionBy: "created_date",
+    clusterBy: ["drip_type", "time_energy", "authenticity_score"],
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat", "caption_bank", "drip_bumps"],
   dependencies: []
 }

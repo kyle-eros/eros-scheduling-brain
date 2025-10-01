@@ -1,9 +1,11 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
-  clusterBy: ["username_std", "page_type"],
   description: "Page type assignments for each creator with FREE/PAID/BOTH detection",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    clusterBy: ["username_std", "page_type"],
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat", "page_types"],
   dependencies: ["creator_statistics_final"]
 }

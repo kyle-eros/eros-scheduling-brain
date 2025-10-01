@@ -1,8 +1,10 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
   description: "Baseline tier templates with quotas, pricing, and timing windows for each tier/page type combination",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat", "tier_templates"],
   dependencies: []
 }

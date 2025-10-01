@@ -1,11 +1,13 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_ops_mart",
-  partitionBy: "insight_date",
-  clusterBy: ["insight_category"],
-  requirePartitionFilter: true,
   description: "Learning insights capturing human expertise and system performance patterns",
-  labels: {app: "eros", domain: "ops", layer: "mart"},
+  bigquery: {
+    partitionBy: "insight_date",
+    clusterBy: ["insight_category"],
+    requirePartitionFilter: true,
+    labels: {app: "eros", domain: "ops", layer: "mart"}
+  }
+},
   tags: ["ops_mart"],
   dependencies: ["fatigue_scores", "creator_heatmap", "pricing_bands"]
 }

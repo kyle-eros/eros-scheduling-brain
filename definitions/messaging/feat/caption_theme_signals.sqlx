@@ -1,11 +1,13 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
-  partitionBy: "tagged_date",
-  clusterBy: ["caption_type"],
-  requirePartitionFilter: true,
   description: "Automated content themes, explicitness levels, and compliance flags for caption catalog",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    partitionBy: "tagged_date",
+    clusterBy: ["caption_type"],
+    requirePartitionFilter: true,
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat", "caption_tagging"],
   dependencies: ["captions"]
 }

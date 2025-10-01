@@ -1,8 +1,10 @@
-config {
-  type: "view",
+config {  type: "view",
   schema: "eros_messaging_srv",
   description: "Scheduler dashboard summary combining enhanced recommendations with roster context",
-  labels: {app: "eros", domain: "messaging", layer: "srv"},
+  bigquery: {
+    labels: {app: "eros", domain: "messaging", layer: "srv"}
+  }
+},
   tags: ["messaging_srv"],
   dependencies: ["enhanced_daily_recommendations", "scheduler_assignments"]
 }

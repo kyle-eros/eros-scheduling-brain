@@ -1,9 +1,11 @@
-config {
-  type: "table", 
+config {  type: "table", 
   schema: "eros_messaging_feat",
-  clusterBy: ["username_std"],
   description: "Creator performance heatmap by hour/day for timing optimization",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    clusterBy: ["username_std"],
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat"],
   dependencies: ["messages_enriched"]
 }

@@ -1,9 +1,11 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
-  clusterBy: ["username_std", "full_tier_assignment"],
   description: "Creator tier assignments with page-type aware scoring and tier classification",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    clusterBy: ["username_std", "full_tier_assignment"],
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat", "tier_assignments"],
   dependencies: ["creator_page_assignments"]
 }

@@ -1,11 +1,13 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_ops_feat",
-  partitionBy: "score_date",
-  clusterBy: ["username_std"], 
-  requirePartitionFilter: true,
   description: "Daily fatigue scores to prevent over-messaging",
-  labels: {app: "eros", domain: "ops", layer: "feat"},
+  bigquery: {
+    partitionBy: "score_date",
+    clusterBy: ["username_std"],
+    requirePartitionFilter: true,
+    labels: {app: "eros", domain: "ops", layer: "feat"}
+  }
+},
   tags: ["ops_feat"],
   dependencies: ["messages_enriched"]
 }

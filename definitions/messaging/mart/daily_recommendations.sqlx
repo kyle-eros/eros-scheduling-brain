@@ -1,11 +1,13 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_mart",
-  partitionBy: "recommendation_date",
-  clusterBy: ["page_handle", "username_std"],
-  requirePartitionFilter: true,
   description: "Tier-aware daily ranked recommendations solving all 6 core problems with page type intelligence",
-  labels: {app: "eros", domain: "messaging", layer: "mart"},
+  bigquery: {
+    partitionBy: "recommendation_date",
+    clusterBy: ["page_handle", "username_std"],
+    requirePartitionFilter: true,
+    labels: {app: "eros", domain: "messaging", layer: "mart"}
+  }
+},
   tags: ["messaging_mart", "tier_aware"],
   dependencies: ["messages_enriched", "creator_heatmap", "pricing_bands", "fatigue_scores", "creator_tier_assignments", "tier_baseline_templates", "tier_weekly_adjustments"]
 }

@@ -1,10 +1,12 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
-  partitionBy: "created_date",
-  clusterBy: ["tip_type", "effort_level", "reward_type"],
   description: "Specialized caption bank for tip campaigns with choice-based engagement and scarcity tactics",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    partitionBy: "created_date",
+    clusterBy: ["tip_type", "effort_level", "reward_type"],
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat", "caption_bank", "tips"],
   dependencies: []
 }

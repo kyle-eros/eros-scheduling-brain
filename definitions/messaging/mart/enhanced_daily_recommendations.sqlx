@@ -1,11 +1,13 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_mart",
-  partitionBy: "recommendation_date",
-  clusterBy: ["page_handle", "message_type", "recommendation_rank"],
-  requirePartitionFilter: true,
   description: "Daily scheduling feed blending mandatory drips, renewals, PPVs, and tip campaigns with tier-aware AI scoring.",
-  labels: {app: "eros", domain: "messaging", layer: "mart"},
+  bigquery: {
+    partitionBy: "recommendation_date",
+    clusterBy: ["page_handle", "message_type", "recommendation_rank"],
+    requirePartitionFilter: true,
+    labels: {app: "eros", domain: "messaging", layer: "mart"}
+  }
+},
   tags: ["messaging_mart", "enhanced_scheduling"],
   dependencies: ["creator_tier_assignments", "tier_baseline_templates", "creator_heatmap", "daily_recommendations"]
 }

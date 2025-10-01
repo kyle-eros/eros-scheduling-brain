@@ -4,12 +4,14 @@ config {
   type: "table",
   schema: "eros_ops",
   name: "send_log",
-  partitionBy: "action_date",
-  clusterBy: ["scheduler_code", "username_std"],
-  requirePartitionFilter: false,
   description: "Activity log for scheduler actions and message sending",
-  labels: {app: "eros", domain: "ops", layer: "logging"},
-  tags: ["ops", "logging", "scheduler"]
+  tags: ["ops", "logging", "scheduler"],
+  bigquery: {
+    partitionBy: "action_date",
+    clusterBy: ["scheduler_code", "username_std"],
+    requirePartitionFilter: false,
+    labels: {app: "eros", domain: "ops", layer: "logging"}
+  }
 }
 
 -- This creates the ops logging table structure

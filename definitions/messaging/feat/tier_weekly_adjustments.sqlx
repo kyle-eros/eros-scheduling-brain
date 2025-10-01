@@ -1,9 +1,11 @@
-config {
-  type: "table",
+config {  type: "table",
   schema: "eros_messaging_feat",
-  clusterBy: ["page_handle", "adjustment_rule"],
   description: "Weekly performance-based adjustments to tier baseline templates",
-  labels: {app: "eros", domain: "messaging", layer: "feat"},
+  bigquery: {
+    clusterBy: ["page_handle", "adjustment_rule"],
+    labels: {app: "eros", domain: "messaging", layer: "feat"}
+  }
+},
   tags: ["messaging_feat", "tier_adjustments"],
   dependencies: ["creator_tier_assignments", "messages_enriched"]
 }
