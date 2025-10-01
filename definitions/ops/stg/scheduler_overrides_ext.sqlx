@@ -2,7 +2,7 @@ config {
   type: "table",
   schema: "eros_ops_stg",
   partitionBy: "override_date",
-  clusterBy: ["username_std", "override_type"],
+  clusterBy: ["username_std", "scheduler_email"],
   description: "External scheduler overrides and manual interventions (price guards, manager overrides)",
   labels: {app: "eros", domain: "ops", layer: "stg"},
   tags: ["ops_stg", "overrides"]
@@ -20,6 +20,7 @@ SELECT
   CAST(NULL AS FLOAT64) as min_allowed,
   CAST(NULL AS FLOAT64) as max_allowed,
   CAST(NULL AS FLOAT64) as price_entered,
+  CAST(NULL AS STRING) as override_type,
   CAST(NULL AS STRING) as reason,
   CAST(NULL AS STRING) as scheduler_email
 LIMIT 0

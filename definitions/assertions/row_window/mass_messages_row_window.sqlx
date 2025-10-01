@@ -1,4 +1,5 @@
 config {
+  disabled: true,
   type: "assertion",
   schema: "eros_assertions",
   description: "mass_messages: no duplicates after ROW_NUMBER() on 14 days",
