@@ -10,11 +10,10 @@ config {
 
 pre_operations {
   BEGIN
-    -- Align the existing table's clustering to match the new spec BEFORE CTAS.
-    ALTER TABLE `of-scheduler-proj.eros_ops_stg.scheduler_overrides_ext`
-    SET OPTIONS (clustering_fields = ['username_std','scheduler_email']);
+    -- Drop existing table to allow recreation with new clustering
+    DROP TABLE IF EXISTS `of-scheduler-proj.eros_ops_stg.scheduler_overrides_ext`;
   EXCEPTION WHEN ERROR THEN
-    -- Ignore if the table doesn't exist yet.
+    -- Ignore if table doesn't exist
   END;
 }
 
@@ -34,9 +33,3 @@ SELECT
   CAST(NULL AS STRING) as reason,
   CAST(NULL AS STRING) as scheduler_email
 LIMIT 0
-
-post_operations {
-  -- Ensure BigQuery table clustering matches Dataform config
-  ALTER TABLE ${self()}
-  SET OPTIONS (clustering_fields = ['username_std', 'scheduler_email']);
-}
