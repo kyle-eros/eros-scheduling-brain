@@ -124,6 +124,16 @@ QUALIFY ROW_NUMBER() OVER (
   ORDER BY loaded_at DESC
 ) = 1
 
+pre_operations {
+  BEGIN
+    -- Allow the incremental MERGE to run without a target partition predicate.
+    ALTER TABLE ${self()} SET OPTIONS (require_partition_filter = FALSE);
+  EXCEPTION WHEN ERROR THEN
+    -- Table might not exist yet; ignore.
+  END;
+}
+
 post_operations {
+  -- Re-enforce after MERGE completes.
   ALTER TABLE ${self()} SET OPTIONS (require_partition_filter = TRUE);
 }

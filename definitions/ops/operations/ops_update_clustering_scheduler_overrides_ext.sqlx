@@ -1,0 +1,8 @@
+config {
+  type: "operation",
+  schema: "eros_ops_stg",
+  tags: ["oneoff","ops"]
+}
+
+ALTER TABLE `of-scheduler-proj.eros_ops_stg.scheduler_overrides_ext`
+SET OPTIONS (clustering_fields = ['username_std','scheduler_email']);

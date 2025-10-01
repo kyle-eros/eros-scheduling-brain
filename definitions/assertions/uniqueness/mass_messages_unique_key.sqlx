@@ -1,5 +1,4 @@
 config {
-  disabled: true,
   type: "assertion",
   schema: "eros_assertions",
   description: "mass_messages: message_sk unique within 14 days",
