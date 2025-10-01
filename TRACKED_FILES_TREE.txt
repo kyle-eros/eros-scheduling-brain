@@ -1,0 +1,107 @@
+# Tracked Files in Dataform Repository
+# =====================================
+# Total: 52 files
+
+eros-data-pipe/
+├── Core Configuration
+│   ├── .gitignore
+│   ├── dataform.json
+│   ├── package.json
+│   └── package-lock.json
+│
+├── Entrypoint & Shared Code
+│   ├── index.js
+│   └── includes/
+│       ├── helpers.js
+│       └── index.js
+│
+├── Documentation
+│   └── README.md
+│
+└── SQL Transformations (definitions/)
+    │
+    ├── assertions/ (11 files)
+    │   ├── acceptance/
+    │   │   ├── creator_tier_tier_values.sqlx
+    │   │   ├── messages_enriched_day_values.sqlx
+    │   │   └── templates_randomize_minutes_range.sqlx
+    │   ├── accepted_values/
+    │   │   └── price_tier_values.sqlx
+    │   ├── freshness/
+    │   │   ├── mass_messages_freshness.sqlx
+    │   │   ├── mass_messages_freshness_24h.sqlx
+    │   │   ├── messages_enriched_freshness_24h.sqlx
+    │   │   └── send_log_freshness_24h.sqlx
+    │   ├── not_null/
+    │   │   ├── creator_tier_assignments_not_null_core.sqlx
+    │   │   └── messages_enriched_not_null_core.sqlx
+    │   ├── quality/
+    │   │   ├── mass_messages_partition_check.sqlx
+    │   │   ├── mass_messages_quality.sqlx
+    │   │   └── send_log_partition_check.sqlx
+    │   ├── row_window/
+    │   │   └── mass_messages_row_window.sqlx
+    │   └── uniqueness/
+    │       ├── mass_messages_unique_key.sqlx
+    │       └── messages_enriched_unique_key.sqlx
+    │
+    ├── core/ (2 files)
+    │   ├── dim/
+    │   │   └── dim_creator_timezone.sqlx
+    │   └── vw_week_slots_7d_rbac.sqlx
+    │
+    ├── messaging/ (23 files)
+    │   ├── feat/
+    │   │   ├── authenticity_monitor.sqlx
+    │   │   ├── caption_bank_drip.sqlx
+    │   │   ├── caption_bank_renewal.sqlx
+    │   │   ├── caption_bank_tip.sqlx
+    │   │   ├── caption_theme_signals.sqlx
+    │   │   ├── creator_heatmap.sqlx
+    │   │   ├── creator_page_assignments.sqlx
+    │   │   ├── creator_tier_assignments.sqlx
+    │   │   ├── messages_enriched.sqlx
+    │   │   ├── tier_baseline_templates.sqlx
+    │   │   └── tier_weekly_adjustments.sqlx
+    │   ├── mart/
+    │   │   ├── caption_rank_next24_v3_tbl.sqlx
+    │   │   ├── daily_recommendations.sqlx
+    │   │   ├── enhanced_daily_recommendations.sqlx
+    │   │   └── tier_performance_analysis.sqlx
+    │   ├── srv/
+    │   │   └── scheduler_dashboard.sqlx
+    │   └── stg/
+    │       ├── captions.sqlx
+    │       └── mass_messages.sqlx
+    │
+    ├── ops/ (3 files)
+    │   ├── feat/
+    │   │   └── fatigue_scores.sqlx
+    │   ├── mart/
+    │   │   └── learning_insights.sqlx
+    │   ├── send_log.sqlx
+    │   └── stg/
+    │       └── scheduler_overrides_ext.sqlx
+    │
+    ├── pricing/ (1 file)
+    │   └── feat/
+    │       └── pricing_bands.sqlx
+    │
+    └── sources/ (3 files)
+        ├── sources.js
+        ├── scheduler_assignments.sqlx
+        └── scheduler_roster.sqlx
+
+SUMMARY BY DOMAIN:
+==================
+• Assertions (data quality):  11 files
+• Core (dimensions/views):     2 files
+• Messaging (transformations): 23 files
+• Operations (ops):            3 files
+• Pricing (features):          1 file
+• Sources (declarations):      3 files
+• Configuration:               4 files
+• Shared code:                 3 files
+• Documentation:               1 file
+-------------------------------------------
+TOTAL:                        52 files
