@@ -1,12 +1,11 @@
 config {
   type: "table",
   schema: "eros_messaging_mart",
-  description: "Tier-aware daily ranked recommendations solving all 6 core problems with page type intelligence",
   partitionBy: "recommendation_date",
   clusterBy: ["page_handle", "username_std"],
   requirePartitionFilter: true,
-  labels: {app: "eros", domain: "messaging", layer: "mart"}
-}
+  description: "Tier-aware daily ranked recommendations solving all 6 core problems with page type intelligence",
+  labels: {app: "eros", domain: "messaging", layer: "mart"},
   tags: ["messaging_mart", "tier_aware"],
   dependencies: ["messages_enriched", "creator_heatmap", "pricing_bands", "fatigue_scores", "creator_tier_assignments", "tier_baseline_templates", "tier_weekly_adjustments"]
 }
@@ -14,73 +13,73 @@ config {
 WITH
 active_creators_with_tiers AS (
   SELECT DISTINCT
-    cta.username_std
-    cta.page_handle
-    cta.page_type
-    cta.final_page_type
-    cta.full_tier_assignment
-    cta.messaging_strategy
-    cta.min_daily_messages
+    cta.username_std,
+    cta.page_handle,
+    cta.page_type,
+    cta.final_page_type,
+    cta.full_tier_assignment,
+    cta.messaging_strategy,
+    cta.min_daily_messages,
     cta.max_daily_messages
   FROM ${ref("creator_tier_assignments")} cta
   INNER JOIN ${ref("messages_enriched")} me
     ON cta.username_std = me.username_std
   WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
     AND cta.assignment_date = CURRENT_DATE()
-)
+),
 
 candidate_slots AS (
   SELECT
-    ac.username_std
-    ac.page_handle
-    ac.page_type
-    ac.final_page_type
-    ac.full_tier_assignment
-    ac.messaging_strategy
-    ac.min_daily_messages
-    ac.max_daily_messages
-    CURRENT_DATE() as recommendation_date
-    slot_ts
-    EXTRACT(HOUR FROM slot_ts) as slot_hour
+    ac.username_std,
+    ac.page_handle,
+    ac.page_type,
+    ac.final_page_type,
+    ac.full_tier_assignment,
+    ac.messaging_strategy,
+    ac.min_daily_messages,
+    ac.max_daily_messages,
+    CURRENT_DATE() as recommendation_date,
+    slot_ts,
+    EXTRACT(HOUR FROM slot_ts) as slot_hour,
     FORMAT_DATE('%A', DATE(slot_ts)) as slot_day_of_week
   FROM active_creators_with_tiers ac
   CROSS JOIN UNNEST(
     GENERATE_TIMESTAMP_ARRAY(
-      TIMESTAMP(CURRENT_DATE())
-      TIMESTAMP(DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY))
+      TIMESTAMP(CURRENT_DATE()),
+      TIMESTAMP(DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY)),
       INTERVAL 30 MINUTE
     )
   ) as slot_ts
-)
+),
 
 last_message_check AS (
   SELECT
-    cs.*
-    COALESCE(lm.last_message_ts, TIMESTAMP('2024-01-01')) as last_message_ts
+    cs.*,
+    COALESCE(lm.last_message_ts, TIMESTAMP('2024-01-01')) as last_message_ts,
     TIMESTAMP_DIFF(cs.slot_ts, COALESCE(lm.last_message_ts, TIMESTAMP('2024-01-01')), HOUR) as hours_since_last
   FROM candidate_slots cs
   LEFT JOIN (
     SELECT
-      username_std
+      username_std,
       MAX(sending_ts) as last_message_ts
     FROM ${ref("messages_enriched")}
     WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY)
     GROUP BY username_std
   ) lm ON cs.username_std = lm.username_std
-)
+),
 
 tier_constraints AS (
   SELECT
-    lmc.*
-    tbt.min_spacing_minutes
-    tbt.ppv_windows
-    tbt.premium_price_range
-    tbt.mid_price_range
-    tbt.teaser_price_range
+    lmc.*,
+    tbt.min_spacing_minutes,
+    tbt.ppv_windows,
+    tbt.premium_price_range,
+    tbt.mid_price_range,
+    tbt.teaser_price_range,
 
     -- Get weekly adjustments if any
-    COALESCE(twa.daily_quota_adjustment, 0) as quota_adjustment
-    COALESCE(twa.price_adjustment_usd, 0) as price_adjustment
+    COALESCE(twa.daily_quota_adjustment, 0) as quota_adjustment,
+    COALESCE(twa.price_adjustment_usd, 0) as price_adjustment,
     COALESCE(twa.adjustment_rule, 'maintain_baseline') as adjustment_rule
 
   FROM last_message_check lmc
@@ -91,16 +90,16 @@ tier_constraints AS (
     WHERE adjustment_date = CURRENT_DATE()
       AND CURRENT_DATE() BETWEEN valid_from_date AND valid_until_date
   ) twa ON lmc.page_handle = twa.page_handle
-)
+),
 
 valid_slots AS (
   SELECT
-    tc.*
+    tc.*,
     -- Check if slot hour falls within tier-defined windows
     EXISTS(
       SELECT 1 FROM UNNEST(tc.ppv_windows) AS win
       WHERE tc.slot_hour IN UNNEST(win.hours)
-    ) as in_tier_window
+    ) as in_tier_window,
 
     -- Apply tier-specific spacing rules
     COALESCE(tc.min_spacing_minutes, 120) / 60.0 as min_hours_between_messages
@@ -108,15 +107,15 @@ valid_slots AS (
   WHERE tc.hours_since_last >= COALESCE(tc.min_spacing_minutes, 120) / 60.0  -- Tier-aware spacing
     AND tc.slot_hour BETWEEN 8 AND 22  -- Reasonable hours
     AND tc.ppv_windows IS NOT NULL  -- Must have valid tier template
-)
+),
 
 scored_slots AS (
   SELECT
-    vs.*
+    vs.*,
 
     -- PROBLEM 1: Timing intelligence (enhanced with tier awareness)
-    COALESCE(hm.avg_rpm, 0.5) as timing_score
-    COALESCE(hm.confidence_level, 'LOW') as timing_confidence
+    COALESCE(hm.avg_rpm, 0.5) as timing_score,
+    COALESCE(hm.confidence_level, 'LOW') as timing_confidence,
 
     -- PROBLEM 2: Tier-aware pricing opportunity
     CASE
@@ -138,7 +137,7 @@ scored_slots AS (
           ELSE 'MID'
         END
       ELSE COALESCE(pb.recommended_price_tier, 'MEDIUM')
-    END as price_tier
+    END as price_tier,
 
     -- Tier-aware price calculation
     CASE
@@ -147,7 +146,7 @@ scored_slots AS (
         WHERE vs.slot_hour IN UNNEST(win.hours) AND win.price_type = 'premium'
       ) THEN
         GREATEST(
-          vs.premium_price_range.min + vs.price_adjustment
+          vs.premium_price_range.min + vs.price_adjustment,
           vs.premium_price_range.min
         )
       WHEN vs.in_tier_window AND EXISTS(
@@ -155,22 +154,22 @@ scored_slots AS (
         WHERE vs.slot_hour IN UNNEST(win.hours) AND win.price_type IN ('mid', 'alternate')
       ) THEN
         GREATEST(
-          vs.mid_price_range.min + vs.price_adjustment
+          vs.mid_price_range.min + vs.price_adjustment,
           vs.teaser_price_range.min
         )
       ELSE
         GREATEST(
-          COALESCE(pb.price_medium, vs.mid_price_range.min) + vs.price_adjustment
+          COALESCE(pb.price_medium, vs.mid_price_range.min) + vs.price_adjustment,
           vs.teaser_price_range.min
         )
-    END as suggested_price
+    END as suggested_price,
 
     -- PROBLEM 3: Enhanced fatigue safety with tier limits
-    COALESCE(100 - fs.fatigue_risk_score, 50) as fatigue_safety_score
+    COALESCE(100 - fs.fatigue_risk_score, 50) as fatigue_safety_score,
     LEAST(
       COALESCE(fs.recommended_max_daily, vs.max_daily_messages),  -- Fatigue limit
       vs.max_daily_messages + vs.quota_adjustment                -- Tier limit with adjustment
-    ) as daily_limit
+    ) as daily_limit,
 
     -- Enhanced tier-aware recommendation score
     (
@@ -218,23 +217,23 @@ scored_slots AS (
   ) fs
     ON vs.username_std = fs.username_std
     AND DATE(vs.slot_ts) = fs.score_date
-)
+),
 
 ranked_recommendations AS (
   SELECT
-    *
+    *,
     ROW_NUMBER() OVER (
       PARTITION BY page_handle
       ORDER BY recommendation_score DESC
-    ) as recommendation_rank
+    ) as recommendation_rank,
 
     -- Enhanced human-readable reasoning with tier context
     CONCAT(
-      'Tier ', full_tier_assignment, ' slot: '
-      timing_confidence, ' confidence timing (avg $', ROUND(timing_score, 2), ' RPM), '
-      price_tier, ' pricing tier ($', suggested_price, '), '
-      'fatigue safety: ', ROUND(fatigue_safety_score), '/100, '
-      CASE WHEN in_tier_window THEN 'optimal tier window' ELSE 'outside tier window' END
+      'Tier ', full_tier_assignment, ' slot: ',
+      timing_confidence, ' confidence timing (avg $', ROUND(timing_score, 2), ' RPM), ',
+      price_tier, ' pricing tier ($', suggested_price, '), ',
+      'fatigue safety: ', ROUND(fatigue_safety_score), '/100, ',
+      CASE WHEN in_tier_window THEN 'optimal tier window' ELSE 'outside tier window' END,
       CASE WHEN adjustment_rule != 'maintain_baseline'
            THEN CONCAT(' [', adjustment_rule, ']') ELSE '' END
     ) as recommendation_reason
@@ -243,32 +242,32 @@ ranked_recommendations AS (
 )
 
 SELECT
-  username_std
-  page_handle
-  page_type
-  final_page_type
-  full_tier_assignment
-  messaging_strategy
-  recommendation_date
-  slot_ts as recommended_send_ts
-  recommendation_rank
-  recommendation_score
-  timing_score
-  timing_confidence
-  price_tier
-  suggested_price
-  fatigue_safety_score
-  daily_limit
-  in_tier_window
-  adjustment_rule
-  quota_adjustment
-  price_adjustment
-  min_daily_messages
-  max_daily_messages
+  username_std,
+  page_handle,
+  page_type,
+  final_page_type,
+  full_tier_assignment,
+  messaging_strategy,
+  recommendation_date,
+  slot_ts as recommended_send_ts,
+  recommendation_rank,
+  recommendation_score,
+  timing_score,
+  timing_confidence,
+  price_tier,
+  suggested_price,
+  fatigue_safety_score,
+  daily_limit,
+  in_tier_window,
+  adjustment_rule,
+  quota_adjustment,
+  price_adjustment,
+  min_daily_messages,
+  max_daily_messages,
 
   -- Legacy compatibility aliases
-  fatigue_safety_score as fatigue_risk_score
-  username_std as creator_id
+  fatigue_safety_score as fatigue_risk_score,
+  username_std as creator_id,
 
   recommendation_reason
 

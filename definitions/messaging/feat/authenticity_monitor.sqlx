@@ -1,47 +1,46 @@
 config {
   type: "table",
   schema: "eros_messaging_feat",
-  description: "Authenticity monitoring; windows computed in CTE then aggregated.",
   partitionBy: "analysis_date",
   clusterBy: ["username_std", "pattern_risk_level"],
-  labels: {app: "eros", domain: "messaging", layer: "feat"}
-}
+  description: "Authenticity monitoring; windows computed in CTE then aggregated.",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
   tags: ["messaging_feat", "authenticity", "anti_pattern"],
   dependencies: ["messages_enriched", "creator_tier_assignments"]
 }
 
 WITH base AS (
   SELECT
-    me.username_std
-    me.sending_ts
-    me.sending_date
-    me.message_text
+    me.username_std,
+    me.sending_ts,
+    me.sending_date,
+    me.message_text,
     TIMESTAMP_DIFF(
-      me.sending_ts
-      LAG(me.sending_ts) OVER (PARTITION BY me.username_std ORDER BY me.sending_ts)
+      me.sending_ts,
+      LAG(me.sending_ts) OVER (PARTITION BY me.username_std ORDER BY me.sending_ts),
       MINUTE
-    ) AS gap_min
-    EXTRACT(HOUR FROM DATETIME(me.sending_ts, 'America/New_York')) AS hod_local
+    ) AS gap_min,
+    EXTRACT(HOUR FROM DATETIME(me.sending_ts, 'America/New_York')) AS hod_local,
     FORMAT_TIMESTAMP('%H:%M', me.sending_ts, 'America/New_York') AS hhmm_local
   FROM ${ref("messages_enriched")} me
   WHERE me.sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-)
+),
 agg AS (
   SELECT
-    b.username_std
-    COUNT(*) AS msg_count_30d
-    COUNT(DISTINCT b.hod_local) AS unique_hours_used_30d
-    COUNT(*) - COUNT(DISTINCT b.hhmm_local) AS exact_time_repetitions_30d
-    AVG(b.gap_min) AS avg_spacing_minutes_30d
-    STDDEV(b.gap_min) AS spacing_variance_30d
-    COUNT(DISTINCT b.message_text) AS unique_messages_30d
+    b.username_std,
+    COUNT(*) AS msg_count_30d,
+    COUNT(DISTINCT b.hod_local) AS unique_hours_used_30d,
+    COUNT(*) - COUNT(DISTINCT b.hhmm_local) AS exact_time_repetitions_30d,
+    AVG(b.gap_min) AS avg_spacing_minutes_30d,
+    STDDEV(b.gap_min) AS spacing_variance_30d,
+    COUNT(DISTINCT b.message_text) AS unique_messages_30d,
     COUNT(*) - COUNT(DISTINCT b.message_text) AS message_repetitions_30d
   FROM base b
   GROUP BY b.username_std
-)
+),
 risk AS (
   SELECT
-    a.*
+    a.*,
     CASE
       WHEN a.msg_count_30d >= 200
        AND a.exact_time_repetitions_30d >= 40
@@ -54,15 +53,15 @@ risk AS (
   FROM agg a
 )
 SELECT
-  r.username_std
-  r.msg_count_30d
-  r.unique_hours_used_30d
-  r.exact_time_repetitions_30d
-  r.avg_spacing_minutes_30d
-  r.spacing_variance_30d
-  r.unique_messages_30d
-  r.message_repetitions_30d
-  r.pattern_risk_level
+  r.username_std,
+  r.msg_count_30d,
+  r.unique_hours_used_30d,
+  r.exact_time_repetitions_30d,
+  r.avg_spacing_minutes_30d,
+  r.spacing_variance_30d,
+  r.unique_messages_30d,
+  r.message_repetitions_30d,
+  r.pattern_risk_level,
   CURRENT_DATE() AS analysis_date
 FROM risk r
 

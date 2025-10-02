@@ -1,11 +1,10 @@
 config {
   type: "table",
   schema: "eros_messaging_feat",
-  description: "Specialized caption bank for renewal campaigns with FOMO and exclusive value propositions",
   partitionBy: "created_date",
   clusterBy: ["renewal_type", "urgency_level", "incentive_type"],
-  labels: {app: "eros", domain: "messaging", layer: "feat"}
-}
+  description: "Specialized caption bank for renewal campaigns with FOMO and exclusive value propositions",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
   tags: ["messaging_feat", "caption_bank", "renewals"],
   dependencies: []
 }
@@ -13,202 +12,202 @@ config {
 SELECT * FROM UNNEST([
   -- MORNING RENEWAL CAMPAIGNS (8AM - Fresh Start Energy)
   STRUCT(
-    'renewal_morning_001' as caption_id
-    'renewal_morning' as renewal_type
-    'high' as urgency_level
-    'exclusive_freebie' as incentive_type
-    'LAST CHANCE 😩 make sure to have ur RENEW ON to get ur FREE surprise today daddy!!! sending it out in 3 hours😈 [link]' as caption_text
-    88 as authenticity_score
-    'urgent_deadline' as tone
-    ['last_chance', 'free_surprise', 'daddy', 'deadline'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_morning_001' as caption_id,
+    'renewal_morning' as renewal_type,
+    'high' as urgency_level,
+    'exclusive_freebie' as incentive_type,
+    'LAST CHANCE 😩 make sure to have ur RENEW ON to get ur FREE surprise today daddy!!! sending it out in 3 hours😈 [link]' as caption_text,
+    88 as authenticity_score,
+    'urgent_deadline' as tone,
+    ['last_chance', 'free_surprise', 'daddy', 'deadline'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'renewal_morning_002' as caption_id
-    'renewal_morning' as renewal_type
-    'medium' as urgency_level
-    'appreciation_gift' as incentive_type
-    'thank you for keeping your Re-bill ON ❤️ to show u my appreciation...here\'s a little freebie of me being naughty 😋' as caption_text
-    91 as authenticity_score
-    'grateful_appreciation' as tone
-    ['thank_you', 'appreciation', 'freebie', 'naughty'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_morning_002' as caption_id,
+    'renewal_morning' as renewal_type,
+    'medium' as urgency_level,
+    'appreciation_gift' as incentive_type,
+    'thank you for keeping your Re-bill ON ❤️ to show u my appreciation...here\'s a little freebie of me being naughty 😋' as caption_text,
+    91 as authenticity_score,
+    'grateful_appreciation' as tone,
+    ['thank_you', 'appreciation', 'freebie', 'naughty'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'renewal_morning_003' as caption_id
-    'renewal_morning' as renewal_type
-    'high' as urgency_level
-    'exclusive_content' as incentive_type
-    'REBILL REWARD 🎁 everyone with renew ON gets something special in their DMs today… make sure yours is on!' as caption_text
-    86 as authenticity_score
-    'reward_exclusive' as tone
-    ['rebill_reward', 'special', 'dms', 'make_sure'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_morning_003' as caption_id,
+    'renewal_morning' as renewal_type,
+    'high' as urgency_level,
+    'exclusive_content' as incentive_type,
+    'REBILL REWARD 🎁 everyone with renew ON gets something special in their DMs today… make sure yours is on!' as caption_text,
+    86 as authenticity_score,
+    'reward_exclusive' as tone,
+    ['rebill_reward', 'special', 'dms', 'make_sure'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- AFTERNOON RENEWAL CAMPAIGNS (4PM - Mid-Day Reminder)
   STRUCT(
-    'renewal_afternoon_001' as caption_id
-    'renewal_afternoon' as renewal_type
-    'high' as urgency_level
-    'explicit_content' as incentive_type
-    '💦 sending this video to everyone who has RENEW ON 💦 make sure u have it by Sunday night if u want to see me be a CUM DUMPSTER 😝' as caption_text
-    82 as authenticity_score
-    'explicit_deadline' as tone
-    ['video', 'renew_on', 'sunday_deadline', 'cum_dumpster'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_afternoon_001' as caption_id,
+    'renewal_afternoon' as renewal_type,
+    'high' as urgency_level,
+    'explicit_content' as incentive_type,
+    '💦 sending this video to everyone who has RENEW ON 💦 make sure u have it by Sunday night if u want to see me be a CUM DUMPSTER 😝' as caption_text,
+    82 as authenticity_score,
+    'explicit_deadline' as tone,
+    ['video', 'renew_on', 'sunday_deadline', 'cum_dumpster'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'renewal_afternoon_002' as caption_id
-    'renewal_afternoon' as renewal_type
-    'medium' as urgency_level
-    'loyalty_reward' as incentive_type
-    'my loyal fans deserve the best 💕 if your rebill is ON check your messages for a surprise…' as caption_text
-    89 as authenticity_score
-    'loyal_deserving' as tone
-    ['loyal_fans', 'deserve_best', 'check_messages', 'surprise'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_afternoon_002' as caption_id,
+    'renewal_afternoon' as renewal_type,
+    'medium' as urgency_level,
+    'loyalty_reward' as incentive_type,
+    'my loyal fans deserve the best 💕 if your rebill is ON check your messages for a surprise…' as caption_text,
+    89 as authenticity_score,
+    'loyal_deserving' as tone,
+    ['loyal_fans', 'deserve_best', 'check_messages', 'surprise'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'renewal_afternoon_003' as caption_id
-    'renewal_afternoon' as renewal_type
-    'high' as urgency_level
-    'time_limited' as incentive_type
-    'ATTENTION: rebill rewards going out in 2 hours! ⏰ dont miss out… turn that auto-renew ON now!' as caption_text
-    85 as authenticity_score
-    'attention_deadline' as tone
-    ['attention', '2_hours', 'dont_miss_out', 'auto_renew'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_afternoon_003' as caption_id,
+    'renewal_afternoon' as renewal_type,
+    'high' as urgency_level,
+    'time_limited' as incentive_type,
+    'ATTENTION: rebill rewards going out in 2 hours! ⏰ dont miss out… turn that auto-renew ON now!' as caption_text,
+    85 as authenticity_score,
+    'attention_deadline' as tone,
+    ['attention', '2_hours', 'dont_miss_out', 'auto_renew'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- MIDNIGHT RENEWAL CAMPAIGNS (12AM - Final Call Energy)
   STRUCT(
-    'renewal_midnight_001' as caption_id
-    'renewal_midnight' as renewal_type
-    'extreme' as urgency_level
-    'final_chance' as incentive_type
-    'FINAL CALL 🚨 rebill rewards end in 1 hour!!! if u dont have auto-renew ON you\'ll miss the hottest content i\'ve ever made 🔥' as caption_text
-    80 as authenticity_score
-    'final_urgent' as tone
-    ['final_call', '1_hour', 'hottest_content', 'ever_made'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_midnight_001' as caption_id,
+    'renewal_midnight' as renewal_type,
+    'extreme' as urgency_level,
+    'final_chance' as incentive_type,
+    'FINAL CALL 🚨 rebill rewards end in 1 hour!!! if u dont have auto-renew ON you\'ll miss the hottest content i\'ve ever made 🔥' as caption_text,
+    80 as authenticity_score,
+    'final_urgent' as tone,
+    ['final_call', '1_hour', 'hottest_content', 'ever_made'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'renewal_midnight_002' as caption_id
-    'renewal_midnight' as renewal_type
-    'high' as urgency_level
-    'exclusive_access' as incentive_type
-    'midnight drop incoming 👀 only for my auto-renew angels… are you one of them?' as caption_text
-    87 as authenticity_score
-    'midnight_exclusive' as tone
-    ['midnight_drop', 'auto_renew_angels', 'are_you_one'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_midnight_002' as caption_id,
+    'renewal_midnight' as renewal_type,
+    'high' as urgency_level,
+    'exclusive_access' as incentive_type,
+    'midnight drop incoming 👀 only for my auto-renew angels… are you one of them?' as caption_text,
+    87 as authenticity_score,
+    'midnight_exclusive' as tone,
+    ['midnight_drop', 'auto_renew_angels', 'are_you_one'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'renewal_midnight_003' as caption_id
-    'renewal_midnight' as renewal_type
-    'medium' as urgency_level
-    'late_night_special' as incentive_type
-    'can\'t sleep so i\'m sending my rebill babies something special 💤✨ hope you\'re one of them' as caption_text
-    90 as authenticity_score
-    'sleepless_special' as tone
-    ['cant_sleep', 'rebill_babies', 'something_special', 'hope_youre_one'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_midnight_003' as caption_id,
+    'renewal_midnight' as renewal_type,
+    'medium' as urgency_level,
+    'late_night_special' as incentive_type,
+    'can\'t sleep so i\'m sending my rebill babies something special 💤✨ hope you\'re one of them' as caption_text,
+    90 as authenticity_score,
+    'sleepless_special' as tone,
+    ['cant_sleep', 'rebill_babies', 'something_special', 'hope_youre_one'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- Additional High-Performing Variations
   STRUCT(
-    'renewal_general_001' as caption_id
-    'renewal_general' as renewal_type
-    'high' as urgency_level
-    'vip_treatment' as incentive_type
-    'VIP TREATMENT for my auto-renew subscribers 👑 something extra special waiting for you…' as caption_text
-    83 as authenticity_score
-    'vip_exclusive' as tone
-    ['vip_treatment', 'auto_renew_subscribers', 'extra_special', 'waiting'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_general_001' as caption_id,
+    'renewal_general' as renewal_type,
+    'high' as urgency_level,
+    'vip_treatment' as incentive_type,
+    'VIP TREATMENT for my auto-renew subscribers 👑 something extra special waiting for you…' as caption_text,
+    83 as authenticity_score,
+    'vip_exclusive' as tone,
+    ['vip_treatment', 'auto_renew_subscribers', 'extra_special', 'waiting'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'renewal_general_002' as caption_id
-    'renewal_general' as renewal_type
-    'medium' as urgency_level
-    'appreciation_love' as incentive_type
-    'showing love to everyone who keeps their rebill ON 💗 you guys are the reason i can keep creating…' as caption_text
-    92 as authenticity_score
-    'appreciation_genuine' as tone
-    ['showing_love', 'keeps_rebill_on', 'you_guys', 'keep_creating'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_general_002' as caption_id,
+    'renewal_general' as renewal_type,
+    'medium' as urgency_level,
+    'appreciation_love' as incentive_type,
+    'showing love to everyone who keeps their rebill ON 💗 you guys are the reason i can keep creating…' as caption_text,
+    92 as authenticity_score,
+    'appreciation_genuine' as tone,
+    ['showing_love', 'keeps_rebill_on', 'you_guys', 'keep_creating'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'renewal_general_003' as caption_id
-    'renewal_general' as renewal_type
-    'high' as urgency_level
-    'bundle_reward' as incentive_type
-    'REBILL BUNDLE ALERT 📦 everyone with auto-renew gets 3 exclusive videos + custom photo set… limited time!' as caption_text
-    81 as authenticity_score
-    'bundle_exclusive' as tone
-    ['bundle_alert', '3_videos', 'custom_photo_set', 'limited_time'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_general_003' as caption_id,
+    'renewal_general' as renewal_type,
+    'high' as urgency_level,
+    'bundle_reward' as incentive_type,
+    'REBILL BUNDLE ALERT 📦 everyone with auto-renew gets 3 exclusive videos + custom photo set… limited time!' as caption_text,
+    81 as authenticity_score,
+    'bundle_exclusive' as tone,
+    ['bundle_alert', '3_videos', 'custom_photo_set', 'limited_time'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- Softer Approach Variations
   STRUCT(
-    'renewal_soft_001' as caption_id
-    'renewal_soft' as renewal_type
-    'low' as urgency_level
-    'gentle_reminder' as incentive_type
-    'just a gentle reminder that rebill subscribers get the best content first 🥰 no pressure though!' as caption_text
-    94 as authenticity_score
-    'gentle_no_pressure' as tone
-    ['gentle_reminder', 'best_content_first', 'no_pressure'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_soft_001' as caption_id,
+    'renewal_soft' as renewal_type,
+    'low' as urgency_level,
+    'gentle_reminder' as incentive_type,
+    'just a gentle reminder that rebill subscribers get the best content first 🥰 no pressure though!' as caption_text,
+    94 as authenticity_score,
+    'gentle_no_pressure' as tone,
+    ['gentle_reminder', 'best_content_first', 'no_pressure'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'renewal_soft_002' as caption_id
-    'renewal_soft' as renewal_type
-    'low' as urgency_level
-    'value_proposition' as incentive_type
-    'auto-renew = never miss exclusive drops + first access to everything new ✨ just saying 😉' as caption_text
-    88 as authenticity_score
-    'value_casual' as tone
-    ['never_miss', 'first_access', 'everything_new', 'just_saying'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'renewal_soft_002' as caption_id,
+    'renewal_soft' as renewal_type,
+    'low' as urgency_level,
+    'value_proposition' as incentive_type,
+    'auto-renew = never miss exclusive drops + first access to everything new ✨ just saying 😉' as caption_text,
+    88 as authenticity_score,
+    'value_casual' as tone,
+    ['never_miss', 'first_access', 'everything_new', 'just_saying'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
   )
 

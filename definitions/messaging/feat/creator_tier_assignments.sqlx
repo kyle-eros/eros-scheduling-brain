@@ -1,46 +1,45 @@
 config {
   type: "table",
   schema: "eros_messaging_feat",
-  description: "Creator tier assignments with page-type aware scoring and tier classification",
   clusterBy: ["username_std", "full_tier_assignment"],
-  labels: {app: "eros", domain: "messaging", layer: "feat"}
-}
+  description: "Creator tier assignments with page-type aware scoring and tier classification",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
   tags: ["messaging_feat", "tier_assignments"],
   dependencies: ["creator_page_assignments"]
 }
 
 WITH tier_scoring AS (
   SELECT
-    username_std
-    page_handle
-    page_type
-    final_page_type
-    messaging_strategy
-    is_primary_page
-    subscription_price
-    total_followers
-    weekly_revenue
-    rebill_rate
-    ppv_sends_7d
-    ppv_buys_7d
-    buy_rate
-    assignment_date
+    username_std,
+    page_handle,
+    page_type,
+    final_page_type,
+    messaging_strategy,
+    is_primary_page,
+    subscription_price,
+    total_followers,
+    weekly_revenue,
+    rebill_rate,
+    ppv_sends_7d,
+    ppv_buys_7d,
+    buy_rate,
+    assignment_date,
 
     -- Calculate percentile ranks within page type groups
     PERCENT_RANK() OVER (
       PARTITION BY page_type
       ORDER BY weekly_revenue
-    ) as revenue_pct
+    ) as revenue_pct,
 
     PERCENT_RANK() OVER (
       PARTITION BY page_type
       ORDER BY total_followers
-    ) as followers_pct
+    ) as followers_pct,
 
     PERCENT_RANK() OVER (
       PARTITION BY page_type
       ORDER BY buy_rate
-    ) as buy_rate_pct
+    ) as buy_rate_pct,
 
     -- Page-type specific tier scoring algorithms
     CASE page_type
@@ -54,7 +53,7 @@ WITH tier_scoring AS (
         0.50 * PERCENT_RANK() OVER (PARTITION BY page_type ORDER BY weekly_revenue) +
         0.30 * COALESCE(rebill_rate, 0) +
         0.20 * PERCENT_RANK() OVER (PARTITION BY page_type ORDER BY total_followers)
-    END as tier_score
+    END as tier_score,
 
     -- Additional performance metrics for tier refinement
     CASE
@@ -62,7 +61,7 @@ WITH tier_scoring AS (
       WHEN buy_rate >= 0.05 THEN 'good_converter'
       WHEN buy_rate >= 0.03 THEN 'average_converter'
       ELSE 'low_converter'
-    END as conversion_performance
+    END as conversion_performance,
 
     CASE
       WHEN weekly_revenue >= 2000 THEN 'high_earner'
@@ -73,11 +72,11 @@ WITH tier_scoring AS (
 
   FROM ${ref("creator_page_assignments")}
   WHERE assignment_date = CURRENT_DATE()
-)
+),
 
 tier_assignments AS (
   SELECT
-    *
+    *,
 
     -- Base tier calculation (A/B/C/D)
     CASE
@@ -85,7 +84,7 @@ tier_assignments AS (
       WHEN tier_score >= 0.60 THEN 'C'  -- Established (Top 40%)
       WHEN tier_score >= 0.35 THEN 'B'  -- Balanced (Top 65%)
       ELSE 'A'                          -- Launch (Bottom 35%)
-    END as base_tier
+    END as base_tier,
 
     -- Full tier assignment with page type
     CONCAT(
@@ -94,17 +93,17 @@ tier_assignments AS (
         WHEN tier_score >= 0.60 THEN 'C'
         WHEN tier_score >= 0.35 THEN 'B'
         ELSE 'A'
-      END
-      '_'
+      END,
+      '_',
       page_type
-    ) as full_tier_assignment
+    ) as full_tier_assignment,
 
     -- Tier confidence score
     CASE
       WHEN tier_score >= 0.85 OR tier_score < 0.35 THEN 'HIGH'
       WHEN tier_score >= 0.75 OR tier_score < 0.45 THEN 'MEDIUM'
       ELSE 'LOW'
-    END as tier_confidence
+    END as tier_confidence,
 
     -- Risk assessment
     CASE
@@ -114,12 +113,12 @@ tier_assignments AS (
     END as performance_risk
 
   FROM tier_scoring
-)
+),
 
 -- Add tier descriptions and strategy recommendations
 final_tier_assignments AS (
   SELECT
-    *
+    *,
 
     -- Tier description with new mandatory requirements
     CASE full_tier_assignment
@@ -132,7 +131,7 @@ final_tier_assignments AS (
       WHEN 'D_FREE' THEN 'Intensive Free: 15 total daily (6 drip + 9-14 PPVs). Maximum volume.'
       WHEN 'D_PAID' THEN 'Intensive Paid: 13 total daily (6 drip + 7-10 PPVs). VIP experience.'
       ELSE 'Unknown tier configuration'
-    END as tier_description
+    END as tier_description,
 
     -- Expected daily message range (based on new tier structure)
     CASE full_tier_assignment
@@ -151,47 +150,47 @@ final_tier_assignments AS (
 )
 
 SELECT
-  username_std
-  page_handle
-  page_type
-  final_page_type
-  messaging_strategy
-  is_primary_page
-  base_tier
-  full_tier_assignment
-  tier_score
-  tier_confidence
-  tier_description
-  daily_quota_range.base_quota as base_daily_quota
-  daily_quota_range.min_ppvs as min_daily_ppvs
-  daily_quota_range.max_ppvs as max_daily_ppvs
+  username_std,
+  page_handle,
+  page_type,
+  final_page_type,
+  messaging_strategy,
+  is_primary_page,
+  base_tier,
+  full_tier_assignment,
+  tier_score,
+  tier_confidence,
+  tier_description,
+  daily_quota_range.base_quota as base_daily_quota,
+  daily_quota_range.min_ppvs as min_daily_ppvs,
+  daily_quota_range.max_ppvs as max_daily_ppvs,
   -- Derived: total daily message bounds (6 mandatory drips + PPVs)
-  6 + COALESCE(daily_quota_range.min_ppvs, 0) as min_daily_messages
-  6 + COALESCE(daily_quota_range.max_ppvs, 0) as max_daily_messages
+  6 + COALESCE(daily_quota_range.min_ppvs, 0) as min_daily_messages,
+  6 + COALESCE(daily_quota_range.max_ppvs, 0) as max_daily_messages,
   6 as mandatory_drip_bumps,  -- Always 6 for all tiers
   3 as mandatory_renewals,    -- Always 3 for all tiers
   1 as mandatory_wall_posts,  -- Always 1 for all tiers
 
   -- Performance metrics
-  revenue_pct
-  followers_pct
-  buy_rate_pct
-  conversion_performance
-  revenue_performance
-  performance_risk
+  revenue_pct,
+  followers_pct,
+  buy_rate_pct,
+  conversion_performance,
+  revenue_performance,
+  performance_risk,
 
   -- Raw data for reference
-  subscription_price
-  total_followers
-  weekly_revenue
-  rebill_rate
-  ppv_sends_7d
-  ppv_buys_7d
-  buy_rate
-  assignment_date
+  subscription_price,
+  total_followers,
+  weekly_revenue,
+  rebill_rate,
+  ppv_sends_7d,
+  ppv_buys_7d,
+  buy_rate,
+  assignment_date,
 
   -- Metadata
-  CURRENT_TIMESTAMP() as created_at
+  CURRENT_TIMESTAMP() as created_at,
   'tier_assignment_v1' as assignment_version
 
 FROM final_tier_assignments

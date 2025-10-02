@@ -1,35 +1,34 @@
 config {
   type: "table",
   schema: "eros_messaging_feat",
-  description: "Messages enriched with time features and performance metrics",
-  partitionBy: "sending_date",
+  partitionBy: "sending_date", 
   clusterBy: ["username_std"],
   requirePartitionFilter: true,
-  labels: {app: "eros", domain: "messaging", layer: "feat"}
-}
+  description: "Messages enriched with time features and performance metrics",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
   tags: ["messaging_feat"],
   dependencies: ["mass_messages", "dim_creator_timezone"]
 }
 
 WITH timezone_context AS (
   SELECT
-    m.*
+    m.*,
     ${df_to_local('m.sending_ts', 'tz.timezone_iana')} AS local_sending_dt
   FROM ${ref("mass_messages")} m
   LEFT JOIN ${ref("dim_creator_timezone")} tz 
     ON m.username_std = tz.username_std
-)
+),
 
 enriched_base AS (
   SELECT 
-    tc.*
-    EXTRACT(HOUR FROM tc.local_sending_dt) AS local_hour
-    FORMAT_DATE('%A', DATE(tc.local_sending_dt)) AS local_day_of_week
-    EXTRACT(DAYOFWEEK FROM DATE(tc.local_sending_dt)) IN (1, 7) AS is_weekend
+    tc.*,
+    EXTRACT(HOUR FROM tc.local_sending_dt) AS local_hour,
+    FORMAT_DATE('%A', DATE(tc.local_sending_dt)) AS local_day_of_week,
+    EXTRACT(DAYOFWEEK FROM DATE(tc.local_sending_dt)) IN (1, 7) AS is_weekend,
 
     -- Performance metrics (PROBLEMS 2,5: PRICING & QUALITY)
-    ${df_safe_divide('tc.purchased_count', 'tc.sent_count', 0)} AS purchase_rate
-    ${df_safe_divide('tc.earnings_total', 'tc.sent_count', 0)} AS rpm
+    ${df_safe_divide('tc.purchased_count', 'tc.sent_count', 0)} AS purchase_rate,
+    ${df_safe_divide('tc.earnings_total', 'tc.sent_count', 0)} AS rpm,
     ${df_safe_divide('tc.viewed_count', 'tc.sent_count', 0)} AS view_rate
   FROM timezone_context tc
 )

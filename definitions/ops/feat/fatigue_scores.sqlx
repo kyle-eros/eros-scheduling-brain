@@ -1,12 +1,11 @@
 config {
   type: "table",
   schema: "eros_ops_feat",
-  description: "Daily fatigue scores to prevent over-messaging",
   partitionBy: "score_date",
-  clusterBy: ["username_std"],
+  clusterBy: ["username_std"], 
   requirePartitionFilter: true,
-  labels: {app: "eros", domain: "ops", layer: "feat"}
-}
+  description: "Daily fatigue scores to prevent over-messaging",
+  labels: {app: "eros", domain: "ops", layer: "feat"},
   tags: ["ops_feat"],
   dependencies: ["messages_enriched"]
 }
@@ -14,33 +13,33 @@ config {
 WITH 
 daily_volumes AS (
   SELECT 
-    username_std
-    sending_date
-    COUNT(*) as messages_sent
-    SUM(sent_count) as total_recipients
+    username_std,
+    sending_date,
+    COUNT(*) as messages_sent,
+    SUM(sent_count) as total_recipients,
     AVG(rpm) as daily_avg_rpm
   FROM ${ref("messages_enriched")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
   GROUP BY username_std, sending_date
-)
+),
 
 rolling_patterns AS (
   SELECT
-    username_std
-    sending_date as score_date
+    username_std,
+    sending_date as score_date,
 
     -- 7-day rolling metrics (PROBLEM 3: FATIGUE)
     AVG(messages_sent) OVER (
       PARTITION BY username_std
       ORDER BY sending_date
       ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-    ) as avg_daily_volume_7d
+    ) as avg_daily_volume_7d,
 
     AVG(daily_avg_rpm) OVER (
       PARTITION BY username_std
       ORDER BY sending_date
       ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-    ) as avg_rpm_7d
+    ) as avg_rpm_7d,
 
     -- Performance trend detection
     daily_avg_rpm - LAG(daily_avg_rpm, 7) OVER (
@@ -48,37 +47,37 @@ rolling_patterns AS (
     ) as rpm_change_7d
 
   FROM daily_volumes
-)
+),
 
 scored_patterns AS (
   SELECT
-    username_std
-    score_date
-    avg_daily_volume_7d
-    avg_rpm_7d
-    rpm_change_7d
+    username_std,
+    score_date,
+    avg_daily_volume_7d,
+    avg_rpm_7d,
+    rpm_change_7d,
 
     -- Fatigue risk scoring (0-100, higher = more risk)
-    LEAST(100, GREATEST(0
+    LEAST(100, GREATEST(0,
       50 + (avg_daily_volume_7d - 3) * 10 - COALESCE(rpm_change_7d * 20, 0)
     )) as fatigue_risk_score
   FROM rolling_patterns
 )
 
 SELECT
-  username_std
-  score_date
-  avg_daily_volume_7d
-  avg_rpm_7d
-  rpm_change_7d
-  fatigue_risk_score
+  username_std,
+  score_date,
+  avg_daily_volume_7d,
+  avg_rpm_7d,
+  rpm_change_7d,
+  fatigue_risk_score,
 
   -- Recommendations
   CASE
     WHEN avg_daily_volume_7d >= 5 AND rpm_change_7d < -0.1 THEN 'REDUCE_VOLUME'
     WHEN avg_daily_volume_7d <= 1 AND rpm_change_7d > 0.1 THEN 'INCREASE_VOLUME'
     ELSE 'MAINTAIN'
-  END as volume_recommendation
+  END as volume_recommendation,
 
   -- Safe daily limits
   CASE

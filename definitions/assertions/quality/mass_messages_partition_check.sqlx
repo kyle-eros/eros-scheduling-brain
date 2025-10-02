@@ -9,7 +9,7 @@ config {
 WITH days AS (
   SELECT d
   FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 13 DAY), CURRENT_DATE())) d
-)
+),
 observed AS (
   SELECT DATE(sending_date) AS d
   FROM ${ref("mass_messages")}

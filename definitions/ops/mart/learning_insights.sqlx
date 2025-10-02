@@ -1,12 +1,11 @@
 config {
   type: "table",
   schema: "eros_ops_mart",
-  description: "Learning insights capturing human expertise and system performance patterns",
   partitionBy: "insight_date",
   clusterBy: ["insight_category"],
   requirePartitionFilter: true,
-  labels: {app: "eros", domain: "ops", layer: "mart"}
-}
+  description: "Learning insights capturing human expertise and system performance patterns",
+  labels: {app: "eros", domain: "ops", layer: "mart"},
   tags: ["ops_mart"],
   dependencies: ["fatigue_scores", "creator_heatmap", "pricing_bands"]
 }
@@ -14,36 +13,36 @@ config {
 WITH 
 timing_insights AS (
   SELECT 
-    'TIMING_OPTIMIZATION' as insight_category
-    username_std
-    CURRENT_DATE() as insight_date
+    'TIMING_OPTIMIZATION' as insight_category,
+    username_std,
+    CURRENT_DATE() as insight_date,
     CONCAT(
       'Creator performs best on ', local_day_of_week, 
       ' at ', local_hour, ':00 with avg $', 
-      ROUND(avg_rpm, 2), ' RPM ('
+      ROUND(avg_rpm, 2), ' RPM (',
       confidence_level, ' confidence)'
-    ) as insight_text
-    avg_rpm as insight_value
+    ) as insight_text,
+    avg_rpm as insight_value,
     confidence_level as insight_confidence
   FROM ${ref("creator_heatmap")}
   WHERE rpm_rank_for_creator <= 3  -- Top 3 time slots
-)
+),
 
 pricing_insights AS (
   SELECT 
-    'PRICING_STRATEGY' as insight_category
-    username_std
-    CURRENT_DATE() as insight_date
+    'PRICING_STRATEGY' as insight_category,
+    username_std,
+    CURRENT_DATE() as insight_date,
     CONCAT(
-      'Recommended pricing tier: ', recommended_price_tier
-      ' (avg $', ROUND(avg_rpm, 2), ' RPM)'
+      'Recommended pricing tier: ', recommended_price_tier,
+      ' (avg $', ROUND(avg_rpm, 2), ' RPM)',
       CASE 
         WHEN price_conversion_correlation > 0.3 THEN ' - Strong price-conversion correlation'
         WHEN price_conversion_correlation < -0.3 THEN ' - Price sensitivity detected'
         ELSE ' - Neutral price response'
       END
-    ) as insight_text
-    avg_rpm as insight_value
+    ) as insight_text,
+    avg_rpm as insight_value,
     CASE 
       WHEN recommended_price_tier = 'PREMIUM' THEN 'HIGH'
       WHEN recommended_price_tier = 'HIGH' THEN 'MEDIUM'
@@ -51,19 +50,19 @@ pricing_insights AS (
     END as insight_confidence
   FROM ${ref("pricing_bands")}
   WHERE avg_rpm > 0.5  -- Filter out low-performing slots
-)
+),
 
 fatigue_insights AS (
   SELECT 
-    'FATIGUE_MANAGEMENT' as insight_category
-    username_std
-    score_date as insight_date
+    'FATIGUE_MANAGEMENT' as insight_category,
+    username_std,
+    score_date as insight_date,
     CONCAT(
-      'Fatigue risk: ', ROUND(fatigue_risk_score), '/100. '
-      'Recommended action: ', volume_recommendation
+      'Fatigue risk: ', ROUND(fatigue_risk_score), '/100. ',
+      'Recommended action: ', volume_recommendation,
       '. Safe daily limit: ', recommended_max_daily, ' messages'
-    ) as insight_text
-    fatigue_risk_score as insight_value
+    ) as insight_text,
+    fatigue_risk_score as insight_value,
     CASE 
       WHEN fatigue_risk_score >= 80 THEN 'HIGH'
       WHEN fatigue_risk_score >= 40 THEN 'MEDIUM'
@@ -71,7 +70,7 @@ fatigue_insights AS (
     END as insight_confidence
   FROM ${ref("fatigue_scores")}
   WHERE score_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
-)
+),
 
 all_insights AS (
   SELECT * FROM timing_insights
@@ -82,18 +81,18 @@ all_insights AS (
 )
 
 SELECT
-  insight_category
-  username_std
-  insight_date
-  insight_text
-  insight_value
-  insight_confidence
+  insight_category,
+  username_std,
+  insight_date,
+  insight_text,
+  insight_value,
+  insight_confidence,
   -- Quality scoring for insight prioritization
   CASE
     WHEN insight_confidence = 'HIGH' AND insight_value > 1.0 THEN 'ACTIONABLE'
     WHEN insight_confidence = 'MEDIUM' AND insight_value > 0.5 THEN 'REVIEW'
     ELSE 'MONITOR'
-  END as insight_priority
+  END as insight_priority,
 
   CURRENT_TIMESTAMP() as generated_at
 

@@ -2,8 +2,7 @@ config {
   type: "view",
   schema: "eros_core",
   description: "7-day weekly slots with scheduler RBAC assignments",
-  labels: {app: "eros", domain: "core", layer: "view"}
-}
+  labels: {app: "eros", domain: "core", layer: "view"},
   tags: ["core", "rbac", "scheduling"],
   dependencies: ["daily_recommendations", "scheduler_assignments"]
 }
@@ -11,44 +10,44 @@ config {
 WITH next_7_days AS (
   SELECT date_val as plan_date
   FROM UNNEST(GENERATE_DATE_ARRAY(
-    CURRENT_DATE('America/New_York')
+    CURRENT_DATE('America/New_York'),
     DATE_ADD(CURRENT_DATE('America/New_York'), INTERVAL 6 DAY)
   )) as date_val
-)
+),
 
 scheduler_creator_mapping AS (
   SELECT
-    sa.scheduler_code
+    sa.scheduler_code,
     sa.username_std as creator_id
   FROM ${ref("scheduler_assignments")} sa
   WHERE sa.scheduler_code IS NOT NULL
     AND sa.username_std IS NOT NULL
-)
+),
 
 extended_recommendations AS (
   SELECT
-    dr.username_std as creator_id
-    dr.recommendation_date
-    TIMESTAMP_TRUNC(dr.recommended_send_ts, HOUR) as recommended_time
+    dr.username_std as creator_id,
+    dr.recommendation_date,
+    TIMESTAMP_TRUNC(dr.recommended_send_ts, HOUR) as recommended_time,
     CASE
       WHEN dr.price_tier = 'High' THEN 'PPV'
       WHEN dr.price_tier = 'Medium' THEN 'PPV'
       ELSE 'PPV'
-    END as action_type
-    dr.suggested_price as recommended_price_usd
+    END as action_type,
+    dr.suggested_price as recommended_price_usd,
     CASE
       WHEN dr.fatigue_safety_score >= 70 THEN 'LOW'
       WHEN dr.fatigue_safety_score >= 40 THEN 'MEDIUM'
       ELSE 'HIGH'
-    END as fatigue_risk_band
+    END as fatigue_risk_band,
     CONCAT(
       CASE
         WHEN EXTRACT(DAYOFWEEK FROM dr.recommendation_date) IN (1, 7) THEN 'WE_'
         WHEN EXTRACT(DAYOFWEEK FROM dr.recommendation_date) IN (2, 6) THEN 'HI_'
         ELSE 'MED_'
-      END
-      FORMAT('%02d', EXTRACT(HOUR FROM dr.recommended_send_ts))
-      '_'
+      END,
+      FORMAT('%02d', EXTRACT(HOUR FROM dr.recommended_send_ts)),
+      '_',
       CASE
         WHEN dr.fatigue_safety_score >= 70 THEN 'SAFE'
         WHEN dr.fatigue_safety_score >= 40 THEN 'CAUTION'
@@ -57,29 +56,29 @@ extended_recommendations AS (
     ) as reason_time_code
   FROM ${ref("daily_recommendations")} dr
   WHERE dr.recommendation_rank = 1  -- Best recommendation per creator
-)
+),
 
 -- Generate slots for all 7 days for each creator
 all_creator_days AS (
   SELECT
-    scm.scheduler_code
-    scm.creator_id
+    scm.scheduler_code,
+    scm.creator_id,
     nd.plan_date
   FROM scheduler_creator_mapping scm
   CROSS JOIN next_7_days nd
-)
+),
 
 final_slots AS (
   SELECT
-    acd.scheduler_code
-    acd.creator_id
-    acd.plan_date
-    COALESCE(er.recommended_time
+    acd.scheduler_code,
+    acd.creator_id,
+    acd.plan_date,
+    COALESCE(er.recommended_time,
       TIMESTAMP_ADD(TIMESTAMP(acd.plan_date), INTERVAL (10 + MOD(ABS(FARM_FINGERPRINT(CONCAT(acd.creator_id, acd.plan_date))), 12)) HOUR)
-    ) as recommended_time
-    COALESCE(er.action_type, 'PPV') as action_type
-    COALESCE(er.recommended_price_usd, 19.99) as recommended_price_usd
-    COALESCE(er.fatigue_risk_band, 'MEDIUM') as fatigue_risk_band
+    ) as recommended_time,
+    COALESCE(er.action_type, 'PPV') as action_type,
+    COALESCE(er.recommended_price_usd, 19.99) as recommended_price_usd,
+    COALESCE(er.fatigue_risk_band, 'MEDIUM') as fatigue_risk_band,
     COALESCE(er.reason_time_code, 'DEFAULT_TIMING') as reason_time_code
   FROM all_creator_days acd
   LEFT JOIN extended_recommendations er
@@ -88,13 +87,13 @@ final_slots AS (
 )
 
 SELECT
-  scheduler_code
-  creator_id
-  plan_date
-  recommended_time
-  action_type
-  recommended_price_usd
-  fatigue_risk_band
+  scheduler_code,
+  creator_id,
+  plan_date,
+  recommended_time,
+  action_type,
+  recommended_price_usd,
+  fatigue_risk_band,
   reason_time_code
 FROM final_slots
 ORDER BY scheduler_code, creator_id, plan_date

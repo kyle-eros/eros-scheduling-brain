@@ -1,10 +1,9 @@
 config {
   type: "table",
   schema: "eros_pricing_feat",
-  description: "Dynamic pricing bands based on performance data",
   clusterBy: ["username_std"],
-  labels: {app: "eros", domain: "pricing", layer: "feat"}
-}
+  description: "Dynamic pricing bands based on performance data",
+  labels: {app: "eros", domain: "pricing", layer: "feat"},
   tags: ["pricing_feat"],
   dependencies: ["messages_enriched"]
 }
@@ -14,48 +13,48 @@ creator_price_bands AS (
   -- CTE 1: Calculate overall price percentiles for each creator.
   -- Using DISTINCT gets us one row per creator with their price bands.
   SELECT DISTINCT
-    username_std
-    PERCENTILE_CONT(price, 0.25) OVER (PARTITION BY username_std) as price_p25
-    PERCENTILE_CONT(price, 0.50) OVER (PARTITION BY username_std) as price_p50
-    PERCENTILE_CONT(price, 0.75) OVER (PARTITION BY username_std) as price_p75
+    username_std,
+    PERCENTILE_CONT(price, 0.25) OVER (PARTITION BY username_std) as price_p25,
+    PERCENTILE_CONT(price, 0.50) OVER (PARTITION BY username_std) as price_p50,
+    PERCENTILE_CONT(price, 0.75) OVER (PARTITION BY username_std) as price_p75,
     PERCENTILE_CONT(price, 0.90) OVER (PARTITION BY username_std) as price_p90
   FROM ${ref("messages_enriched")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
     AND price > 0
-)
+),
 
 creator_hourly_performance AS (
   -- CTE 2: Calculate performance metrics for each creator at each specific time slot.
   SELECT
-    username_std
-    local_hour
-    local_day_of_week
-    AVG(rpm) as avg_rpm
+    username_std,
+    local_hour,
+    local_day_of_week,
+    AVG(rpm) as avg_rpm,
     CORR(price, purchased_count) as price_conversion_correlation
   FROM ${ref("messages_enriched")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
     AND price > 0
   GROUP BY
-    username_std
-    local_hour
+    username_std,
+    local_hour,
     local_day_of_week
 )
 
 -- Final Step: Join the price bands and hourly performance data.
 SELECT
-  hp.username_std
-  hp.local_hour
-  hp.local_day_of_week
+  hp.username_std,
+  hp.local_hour,
+  hp.local_day_of_week,
 
   -- Dynamic pricing bands (SOLVES PROBLEM 2)
-  pb.price_p25 as price_low
-  pb.price_p50 as price_medium
-  pb.price_p75 as price_high
-  pb.price_p90 as price_premium
+  pb.price_p25 as price_low,
+  pb.price_p50 as price_medium,
+  pb.price_p75 as price_high,
+  pb.price_p90 as price_premium,
 
   -- Pricing intelligence
-  hp.avg_rpm
-  hp.price_conversion_correlation
+  hp.avg_rpm,
+  hp.price_conversion_correlation,
 
   -- Band assignment logic
   CASE

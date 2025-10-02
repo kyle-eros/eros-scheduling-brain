@@ -1,11 +1,10 @@
 config {
   type: "table",
   schema: "eros_messaging_feat",
-  description: "Specialized caption bank for drip bump messages with time-of-day energy matching and authenticity scoring",
   partitionBy: "created_date",
   clusterBy: ["drip_type", "time_energy", "authenticity_score"],
-  labels: {app: "eros", domain: "messaging", layer: "feat"}
-}
+  description: "Specialized caption bank for drip bump messages with time-of-day energy matching and authenticity scoring",
+  labels: {app: "eros", domain: "messaging", layer: "feat"},
   tags: ["messaging_feat", "caption_bank", "drip_bumps"],
   dependencies: []
 }
@@ -13,230 +12,230 @@ config {
 SELECT * FROM UNNEST([
   -- MORNING DRIP CAPTIONS (7AM - Sleepy, Just Woke Up Energy)
   STRUCT(
-    'drip_morning_001' as caption_id
-    'drip_morning' as drip_type
-    'morning' as time_energy
-    'just woke up like this lol… u like?? 👀' as caption_text
+    'drip_morning_001' as caption_id,
+    'drip_morning' as drip_type,
+    'morning' as time_energy,
+    'just woke up like this lol… u like?? 👀' as caption_text,
     95 as authenticity_score,  -- High authenticity
-    'casual_sleepy' as tone
-    ['casual', 'authentic', 'morning', 'sleepy'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'casual_sleepy' as tone,
+    ['casual', 'authentic', 'morning', 'sleepy'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'drip_morning_002' as caption_id
-    'drip_morning' as drip_type
-    'morning' as time_energy
-    'still in bed half asleep… come keep me company' as caption_text
-    92 as authenticity_score
-    'sleepy_invitation' as tone
-    ['casual', 'authentic', 'morning', 'invitation'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_morning_002' as caption_id,
+    'drip_morning' as drip_type,
+    'morning' as time_energy,
+    'still in bed half asleep… come keep me company' as caption_text,
+    92 as authenticity_score,
+    'sleepy_invitation' as tone,
+    ['casual', 'authentic', 'morning', 'invitation'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'drip_morning_003' as caption_id
-    'drip_morning' as drip_type
-    'morning' as time_energy
-    'ugh mornings are hard but this view might help 😊' as caption_text
-    88 as authenticity_score
-    'relatable_morning' as tone
-    ['casual', 'relatable', 'morning', 'genuine'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_morning_003' as caption_id,
+    'drip_morning' as drip_type,
+    'morning' as time_energy,
+    'ugh mornings are hard but this view might help 😊' as caption_text,
+    88 as authenticity_score,
+    'relatable_morning' as tone,
+    ['casual', 'relatable', 'morning', 'genuine'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- MID-MORNING DRIP CAPTIONS (10AM - Getting Ready Energy)
   STRUCT(
-    'drip_midmorning_001' as caption_id
-    'drip_morning' as drip_type
-    'morning' as time_energy
-    'felt cute… snapped this real quick for u' as caption_text
-    94 as authenticity_score
-    'casual_confident' as tone
-    ['casual', 'confident', 'spontaneous', 'for_you'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_midmorning_001' as caption_id,
+    'drip_morning' as drip_type,
+    'morning' as time_energy,
+    'felt cute… snapped this real quick for u' as caption_text,
+    94 as authenticity_score,
+    'casual_confident' as tone,
+    ['casual', 'confident', 'spontaneous', 'for_you'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'drip_midmorning_002' as caption_id
-    'drip_morning' as drip_type
-    'morning' as time_energy
-    'getting dressed but got distracted… oop 👅' as caption_text
-    91 as authenticity_score
-    'playful_distracted' as tone
-    ['playful', 'authentic', 'getting_ready', 'distracted'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_midmorning_002' as caption_id,
+    'drip_morning' as drip_type,
+    'morning' as time_energy,
+    'getting dressed but got distracted… oop 👅' as caption_text,
+    91 as authenticity_score,
+    'playful_distracted' as tone,
+    ['playful', 'authentic', 'getting_ready', 'distracted'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- AFTERNOON DRIP CAPTIONS (2PM - Bored at Home Energy)
   STRUCT(
-    'drip_afternoon_001' as caption_id
-    'drip_afternoon' as drip_type
-    'afternoon' as time_energy
-    'bored at home rn… someone entertain me' as caption_text
-    96 as authenticity_score
-    'bored_invitation' as tone
-    ['bored', 'authentic', 'invitation', 'home'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_afternoon_001' as caption_id,
+    'drip_afternoon' as drip_type,
+    'afternoon' as time_energy,
+    'bored at home rn… someone entertain me' as caption_text,
+    96 as authenticity_score,
+    'bored_invitation' as tone,
+    ['bored', 'authentic', 'invitation', 'home'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'drip_afternoon_002' as caption_id
-    'drip_afternoon' as drip_type
-    'afternoon' as time_energy
-    'wasn\'t gonna post this but whatever lol' as caption_text
-    93 as authenticity_score
-    'spontaneous_casual' as tone
-    ['spontaneous', 'casual', 'authentic', 'whatever'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_afternoon_002' as caption_id,
+    'drip_afternoon' as drip_type,
+    'afternoon' as time_energy,
+    'wasn\'t gonna post this but whatever lol' as caption_text,
+    93 as authenticity_score,
+    'spontaneous_casual' as tone,
+    ['spontaneous', 'casual', 'authentic', 'whatever'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- EVENING DRIP CAPTIONS (8PM - Getting Ready to Go Out)
   STRUCT(
-    'drip_evening_001' as caption_id
-    'drip_evening' as drip_type
-    'evening' as time_energy
-    'bout to hop in the shower… wanna come?' as caption_text
-    89 as authenticity_score
-    'seductive_invitation' as tone
-    ['seductive', 'invitation', 'shower', 'evening'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_evening_001' as caption_id,
+    'drip_evening' as drip_type,
+    'evening' as time_energy,
+    'bout to hop in the shower… wanna come?' as caption_text,
+    89 as authenticity_score,
+    'seductive_invitation' as tone,
+    ['seductive', 'invitation', 'shower', 'evening'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'drip_evening_002' as caption_id
-    'drip_evening' as drip_type
-    'evening' as time_energy
-    'no plans tonight sooo… dm me 😏' as caption_text
-    92 as authenticity_score
-    'available_flirty' as tone
-    ['available', 'flirty', 'evening', 'dm_invitation'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_evening_002' as caption_id,
+    'drip_evening' as drip_type,
+    'evening' as time_energy,
+    'no plans tonight sooo… dm me 😏' as caption_text,
+    92 as authenticity_score,
+    'available_flirty' as tone,
+    ['available', 'flirty', 'evening', 'dm_invitation'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- LATE NIGHT DRIP CAPTIONS (11PM - Can't Sleep Energy)
   STRUCT(
-    'drip_late_001' as caption_id
-    'drip_late' as drip_type
-    'late_night' as time_energy
-    'cant sleep… so i took this lmao' as caption_text
-    97 as authenticity_score
-    'sleepless_authentic' as tone
-    ['sleepless', 'authentic', 'late_night', 'spontaneous'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_late_001' as caption_id,
+    'drip_late' as drip_type,
+    'late_night' as time_energy,
+    'cant sleep… so i took this lmao' as caption_text,
+    97 as authenticity_score,
+    'sleepless_authentic' as tone,
+    ['sleepless', 'authentic', 'late_night', 'spontaneous'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'drip_late_002' as caption_id
-    'drip_late' as drip_type
-    'late_night' as time_energy
-    'lowkey so wet rn an feeling myself 😌' as caption_text
-    85 as authenticity_score
-    'horny_confident' as tone
-    ['horny', 'confident', 'late_night', 'feeling_myself'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_late_002' as caption_id,
+    'drip_late' as drip_type,
+    'late_night' as time_energy,
+    'lowkey so wet rn an feeling myself 😌' as caption_text,
+    85 as authenticity_score,
+    'horny_confident' as tone,
+    ['horny', 'confident', 'late_night', 'feeling_myself'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- VERY LATE NIGHT DRIP CAPTIONS (2AM - Explicit Late Night Energy)
   STRUCT(
-    'drip_verylate_001' as caption_id
-    'drip_late' as drip_type
-    'very_late_night' as time_energy
-    'literally cant stop touching myself rn… come join meee plsss' as caption_text
-    82 as authenticity_score
-    'explicit_needy' as tone
-    ['explicit', 'needy', 'very_late', 'touching_myself'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_verylate_001' as caption_id,
+    'drip_late' as drip_type,
+    'very_late_night' as time_energy,
+    'literally cant stop touching myself rn… come join meee plsss' as caption_text,
+    82 as authenticity_score,
+    'explicit_needy' as tone,
+    ['explicit', 'needy', 'very_late', 'touching_myself'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'drip_verylate_002' as caption_id
-    'drip_late' as drip_type
-    'very_late_night' as time_energy
-    'fuck it… come distract me before i do something bad 😈' as caption_text
-    84 as authenticity_score
-    'naughty_invitation' as tone
-    ['naughty', 'invitation', 'very_late', 'bad_girl'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_verylate_002' as caption_id,
+    'drip_late' as drip_type,
+    'very_late_night' as time_energy,
+    'fuck it… come distract me before i do something bad 😈' as caption_text,
+    84 as authenticity_score,
+    'naughty_invitation' as tone,
+    ['naughty', 'invitation', 'very_late', 'bad_girl'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- Additional variations for each time slot (Morning alternatives)
   STRUCT(
-    'drip_morning_004' as caption_id
-    'drip_morning' as drip_type
-    'morning' as time_energy
-    'messy hair dont care… morning selfie for my favs 💕' as caption_text
-    90 as authenticity_score
-    'messy_authentic' as tone
-    ['messy', 'authentic', 'morning', 'favs'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_morning_004' as caption_id,
+    'drip_morning' as drip_type,
+    'morning' as time_energy,
+    'messy hair dont care… morning selfie for my favs 💕' as caption_text,
+    90 as authenticity_score,
+    'messy_authentic' as tone,
+    ['messy', 'authentic', 'morning', 'favs'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'drip_morning_005' as caption_id
-    'drip_morning' as drip_type
-    'morning' as time_energy
-    'good morning babes 🌞 hope this brightens ur day' as caption_text
-    86 as authenticity_score
-    'sweet_morning' as tone
-    ['sweet', 'caring', 'morning', 'brighten_day'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_morning_005' as caption_id,
+    'drip_morning' as drip_type,
+    'morning' as time_energy,
+    'good morning babes 🌞 hope this brightens ur day' as caption_text,
+    86 as authenticity_score,
+    'sweet_morning' as tone,
+    ['sweet', 'caring', 'morning', 'brighten_day'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   -- Additional afternoon variations
   STRUCT(
-    'drip_afternoon_003' as caption_id
-    'drip_afternoon' as drip_type
-    'afternoon' as time_energy
-    'lazy sunday vibes… what are you up to today?' as caption_text
-    88 as authenticity_score
-    'lazy_conversational' as tone
-    ['lazy', 'conversational', 'sunday', 'what_doing'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_afternoon_003' as caption_id,
+    'drip_afternoon' as drip_type,
+    'afternoon' as time_energy,
+    'lazy sunday vibes… what are you up to today?' as caption_text,
+    88 as authenticity_score,
+    'lazy_conversational' as tone,
+    ['lazy', 'conversational', 'sunday', 'what_doing'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
-  )
+  ),
 
   STRUCT(
-    'drip_afternoon_004' as caption_id
-    'drip_afternoon' as drip_type
-    'afternoon' as time_energy
-    'procrastinating again lol… anyone else avoiding adulting?' as caption_text
-    92 as authenticity_score
-    'relatable_procrastinating' as tone
-    ['relatable', 'procrastinating', 'adulting', 'anyone_else'] as tags
-    0 as times_used
-    CAST(NULL AS DATE) as last_used_date
+    'drip_afternoon_004' as caption_id,
+    'drip_afternoon' as drip_type,
+    'afternoon' as time_energy,
+    'procrastinating again lol… anyone else avoiding adulting?' as caption_text,
+    92 as authenticity_score,
+    'relatable_procrastinating' as tone,
+    ['relatable', 'procrastinating', 'adulting', 'anyone_else'] as tags,
+    0 as times_used,
+    CAST(NULL AS DATE) as last_used_date,
     CURRENT_DATE() as created_date
   )
 

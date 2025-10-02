@@ -3,23 +3,22 @@ config {
   schema: "eros_core_dim",
   description: "Authoritative creator timezone mapping (IANA)",
   labels: {app: "eros", domain: "core", layer: "dim"},
-
   tags: ["core_dim"]
 }
 
 WITH normalized_creators AS (
   SELECT
-    ${df_std_username('username_std')} AS username_std_norm
-    snapshot_tz
+    ${df_std_username('username_std')} AS username_std_norm,
+    snapshot_tz,
     snapshot_ts_utc
   FROM ${ref("creator_statistics_final")}
   WHERE username_std IS NOT NULL
 )
 
 SELECT 
-  ${df_mk_sk(["'CREATOR_TZ'", 'username_std_norm'])} AS creator_sk
-  username_std_norm AS username_std
-  COALESCE(snapshot_tz, 'America/New_York') AS timezone_iana
+  ${df_mk_sk(["'CREATOR_TZ'", 'username_std_norm'])} AS creator_sk,
+  username_std_norm AS username_std,
+  COALESCE(snapshot_tz, 'America/New_York') AS timezone_iana,
   CURRENT_TIMESTAMP() AS loaded_at
 FROM normalized_creators
 QUALIFY ROW_NUMBER() OVER (

@@ -1,6 +1,5 @@
 {
   "warehouse": "bigquery",
-  "defaultLocation": "US",
   "assertionSchema": "eros_assertions",
   "vars": {
     "enable_strict_freshness": "false",
