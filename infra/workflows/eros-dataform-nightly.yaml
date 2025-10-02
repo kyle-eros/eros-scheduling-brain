@@ -1,0 +1,55 @@
+main:
+  params: [args]
+  steps:
+  - init:
+      assign:
+        - project_id: ${args.project_id}
+        - region: ${args.region}
+        - repository_id: ${args.repository_id}
+        - git_commitish: ${args.git_commitish}
+        - repository: ${"projects/" + project_id + "/locations/" + region + "/repositories/" + repository_id}
+  - createCompilationResult:
+      call: http.post
+      args:
+        url: ${"https://dataform.googleapis.com/v1beta1/" + repository + "/compilationResults"}
+        auth:
+          type: OAuth2
+        body:
+          gitCommitish: ${git_commitish}
+      result: compilationResult
+  - createWorkflowInvocation:
+      call: http.post
+      args:
+        url: ${"https://dataform.googleapis.com/v1beta1/" + repository + "/workflowInvocations"}
+        auth:
+          type: OAuth2
+        body:
+          compilationResult: ${compilationResult.body.name}
+          invocationConfig:
+            transitiveDependenciesIncluded: true
+      result: workflowInvocation
+  - getStatus:
+      call: http.get
+      args:
+        url: ${"https://dataform.googleapis.com/v1beta1/" + workflowInvocation.body.name}
+        auth:
+          type: OAuth2
+      result: statusResp
+  - checkState:
+      switch:
+        - condition: ${statusResp.body.state == "SUCCEEDED"}
+          next: success
+        - condition: ${statusResp.body.state == "FAILED"}
+          next: fail
+        - condition: ${statusResp.body.state == "CANCELLED"}
+          next: fail
+  - wait15s:
+      call: sys.sleep
+      args:
+        seconds: 15
+  - continuePolling:
+      next: getStatus
+  - success:
+      return: ${workflowInvocation.body.name}
+  - fail:
+      raise: "Dataform workflow execution failed"
