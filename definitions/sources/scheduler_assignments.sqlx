@@ -1,11 +1,10 @@
-config {  type: "table",
+config {
+  type: "table",
   schema: "eros_source",
   name: "scheduler_assignments",
   description: "Master scheduler to creator assignments for the EROS system",
-  bigquery: {
-    labels: {app: "eros", domain: "ops", layer: "source"}
-  }
-},
+  labels: {app: "eros", domain: "ops", layer: "source"},
+
   tags: ["scheduler", "assignments", "source"]
 }
 
@@ -78,37 +77,37 @@ WITH assignments AS (
 )
 , enriched AS (
   SELECT
-    a.scheduler_code,
-    r.scheduler_email,
-    r.group_email,
-    r.display_name AS scheduler_display_name,
-    r.is_active,
-    r.is_manager,
-    r.assigned_creators,
-    a.creator_username,
-    a.page_type,
-    a.tier,
-    a.content_style,
+    a.scheduler_code
+    r.scheduler_email
+    r.group_email
+    r.display_name AS scheduler_display_name
+    r.is_active
+    r.is_manager
+    r.assigned_creators
+    a.creator_username
+    a.page_type
+    a.tier
+    a.content_style
     -- Provide both username_std and page_handle aliases for downstream usage
-    a.creator_username AS username_std,
-    a.creator_username AS page_handle,
+    a.creator_username AS username_std
+    a.creator_username AS page_handle
     CONCAT(a.tier, '_', a.page_type) AS full_tier_assignment
   FROM assignments a
   LEFT JOIN ${ref("scheduler_roster")} r USING (scheduler_code)
 )
 
 SELECT
-  scheduler_code,
-  scheduler_email,
-  group_email,
-  scheduler_display_name,
-  is_manager,
-  assigned_creators,
-  username_std,
-  page_handle,
-  page_type,
-  tier,
-  full_tier_assignment,
+  scheduler_code
+  scheduler_email
+  group_email
+  scheduler_display_name
+  is_manager
+  assigned_creators
+  username_std
+  page_handle
+  page_type
+  tier
+  full_tier_assignment
   content_style
 FROM enriched
 WHERE is_active

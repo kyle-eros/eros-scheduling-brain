@@ -7,8 +7,8 @@ config {
 
 WITH ranked AS (
   SELECT
-    message_sk,
-    loaded_at,
+    message_sk
+    loaded_at
     ROW_NUMBER() OVER (PARTITION BY message_sk ORDER BY loaded_at DESC) AS rn
   FROM ${ref("mass_messages")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)

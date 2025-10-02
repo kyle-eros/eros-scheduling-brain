@@ -5,33 +5,31 @@ config {
   schema: "eros_ops",
   name: "send_log",
   description: "Activity log for scheduler actions and message sending",
-  tags: ["ops", "logging", "scheduler"],
-  bigquery: {
-    partitionBy: "action_date",
-    clusterBy: ["scheduler_code", "username_std"],
-    requirePartitionFilter: false,
-    labels: {app: "eros", domain: "ops", layer: "logging"}
-  }
+  partitionBy: "action_date",
+  clusterBy: ["scheduler_code", "username_std"],
+  requirePartitionFilter: false,
+  labels: {app: "eros", domain: "ops", layer: "logging"},
+  tags: ["ops", "logging", "scheduler"]
 }
 
 -- This creates the ops logging table structure
 -- It will be populated by the Apps Script when schedulers take actions
 
 SELECT
-  CURRENT_TIMESTAMP() as action_ts,
-  CURRENT_DATE() as action_date,
-  'sample_hash' as tracking_hash,
-  'sample_creator' as username_std,
-  'main' as page_type,
-  'sample_creator__main' as username_page,
-  'SAMPLE' as scheduler_code,
-  'sample@erosops.com' as scheduler_email,
-  CURRENT_DATE() as date_local,
-  14 as hod_local,
-  19.99 as price_usd,
-  'sample_caption_id' as caption_id,
-  'Planned' as status,
-  'caption_selected' as action,
+  CURRENT_TIMESTAMP() as action_ts
+  CURRENT_DATE() as action_date
+  'sample_hash' as tracking_hash
+  'sample_creator' as username_std
+  'main' as page_type
+  'sample_creator__main' as username_page
+  'SAMPLE' as scheduler_code
+  'sample@erosops.com' as scheduler_email
+  CURRENT_DATE() as date_local
+  14 as hod_local
+  19.99 as price_usd
+  'sample_caption_id' as caption_id
+  'Planned' as status
+  'caption_selected' as action
   'sheets_hub_v1' as source
 LIMIT 0  -- This ensures no actual data is inserted, just creates the schema
 

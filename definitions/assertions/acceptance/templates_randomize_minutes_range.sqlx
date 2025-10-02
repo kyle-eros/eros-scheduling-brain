@@ -9,7 +9,7 @@ WITH drip_mins AS (
   SELECT t.tier_id, ds.randomize_minutes AS rm
   FROM ${ref("tier_baseline_templates")} t, UNNEST(t.drip_schedule) ds
   WHERE ds.randomize_minutes IS NOT NULL
-),
+)
 renewal_mins AS (
   SELECT t.tier_id, rs.randomize_minutes AS rm
   FROM ${ref("tier_baseline_templates")} t, UNNEST(t.renewal_schedule) rs

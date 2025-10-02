@@ -2,52 +2,50 @@ config {
   type: "table",
   schema: "eros_messaging_mart",
   description: "Caption ranking system for next 24h with ML scoring",
+  partitionBy: "slot_dt_local",
+  clusterBy: ["username_page", "hod"],
+  requirePartitionFilter: true,
+  labels: {app: "eros", domain: "messaging", layer: "mart"},
   tags: ["messaging_mart", "caption_ranking"],
-  dependencies: ["captions", "caption_theme_signals", "mass_messages"],
-  bigquery: {
-    partitionBy: "slot_dt_local",
-    clusterBy: ["username_page", "hod"],
-    requirePartitionFilter: true,
-    labels: {app: "eros", domain: "messaging", layer: "mart"}
-  }
+  dependencies: ["captions", "caption_theme_signals", "mass_messages"]
 }
 
 WITH time_slots AS (
   SELECT
-    slot_ts,
-    DATE(slot_ts, 'America/New_York') as slot_dt_local,
+    slot_ts
+    DATE(slot_ts, 'America/New_York') as slot_dt_local
     EXTRACT(HOUR FROM slot_ts AT TIME ZONE 'America/New_York') as hod
   FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(
-    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR),
-    TIMESTAMP_ADD(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR),
+    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR)
+    TIMESTAMP_ADD(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR)
     INTERVAL 1 HOUR
   )) as slot_ts
-),
+)
 
 active_creators AS (
   SELECT DISTINCT username_std
   FROM ${ref("mass_messages")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
     AND sending_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
-),
+)
 
 creator_pages AS (
   SELECT
-    username_std,
+    username_std
     CONCAT(username_std, '__main') as username_page
   FROM active_creators
-),
+)
 
 -- Historical performance by caption and timing
 caption_performance AS (
   SELECT
-    CONCAT(m.username_std, '__main') as username_page,
-    EXTRACT(HOUR FROM m.sending_ts AT TIME ZONE 'America/New_York') as hod,
-    c.caption_sk as caption_id,
-    c.caption_text,
-    AVG(m.earnings_total) as avg_revenue,
-    COUNT(*) as usage_count,
-    MAX(m.sending_ts) as last_used_at,
+    CONCAT(m.username_std, '__main') as username_page
+    EXTRACT(HOUR FROM m.sending_ts AT TIME ZONE 'America/New_York') as hod
+    c.caption_sk as caption_id
+    c.caption_text
+    AVG(m.earnings_total) as avg_revenue
+    COUNT(*) as usage_count
+    MAX(m.sending_ts) as last_used_at
     AVG(CASE WHEN m.earnings_total > 0 THEN m.earnings_total / GREATEST(m.price, 1) ELSE 0 END) as avg_roi
   FROM ${ref("mass_messages")} m
   JOIN ${ref("captions")} c ON LOWER(REGEXP_REPLACE(m.message_text, r'\s+', ' ')) = LOWER(REGEXP_REPLACE(c.caption_text, r'\s+', ' ')) AND c.loaded_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
@@ -56,16 +54,16 @@ caption_performance AS (
     AND c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')
   GROUP BY username_page, hod, caption_id, caption_text
   HAVING usage_count >= 1
-),
+)
 
 -- Theme-based scoring
 theme_scoring AS (
   SELECT
-    c.caption_sk as caption_id,
-    c.caption_text,
-    cts.primary_theme,
-    cts.explicitness_level,
-    cts.explicitness_score,
+    c.caption_sk as caption_id
+    c.caption_text
+    cts.primary_theme
+    cts.explicitness_level
+    cts.explicitness_score
     CASE cts.primary_theme
       WHEN 'JOI / Instruction' THEN 0.9
       WHEN 'Solo Touch' THEN 0.85
@@ -75,7 +73,7 @@ theme_scoring AS (
       WHEN 'Bundle / Mega Pack' THEN 0.7
       WHEN 'Urgent / Last Chance' THEN 0.6
       ELSE 0.5
-    END as theme_score,
+    END as theme_score
     CASE cts.explicitness_level
       WHEN 'Hardcore' THEN 0.9
       WHEN 'Explicit' THEN 0.8
@@ -89,42 +87,42 @@ theme_scoring AS (
    AND cts.tagged_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
   WHERE c.caption_type IN ('PPV', 'TIP', 'RENEW', 'BUMP')
     AND c.loaded_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-),
+)
 
 -- All combinations of creators, time slots, and captions
 caption_candidates AS (
   SELECT
-    cp.username_page,
-    ts.slot_dt_local,
-    ts.hod,
-    th.caption_id,
-    th.caption_text,
-    th.theme_score,
+    cp.username_page
+    ts.slot_dt_local
+    ts.hod
+    th.caption_id
+    th.caption_text
+    th.theme_score
     th.explicitness_bonus
   FROM creator_pages cp
   CROSS JOIN time_slots ts
   CROSS JOIN theme_scoring th
-),
+)
 
 -- Apply performance data and calculate scores
 scored_captions AS (
   SELECT
-    cc.*,
-    COALESCE(cp.avg_revenue, 10.0) as historical_revenue,
-    COALESCE(cp.avg_roi, 2.0) as historical_roi,
-    COALESCE(cp.usage_count, 0) as usage_count,
+    cc.*
+    COALESCE(cp.avg_revenue, 10.0) as historical_revenue
+    COALESCE(cp.avg_roi, 2.0) as historical_roi
+    COALESCE(cp.usage_count, 0) as usage_count
 
     -- Revenue per send expectation
     (COALESCE(cp.avg_revenue, 10.0) * 0.4 +
      cc.theme_score * 20 +
-     cc.explicitness_bonus * 15) as rps_eb_price,
+     cc.explicitness_bonus * 15) as rps_eb_price
 
     -- Style bonus
     CASE
       WHEN COALESCE(cp.usage_count, 0) > 5 THEN 5.0  -- Proven performer
       WHEN COALESCE(cp.usage_count, 0) > 2 THEN 2.0  -- Some history
       ELSE 0.0  -- New caption
-    END as style_score,
+    END as style_score
 
     -- Special event bonus (seasonal, trending)
     CASE
@@ -139,32 +137,32 @@ scored_captions AS (
     ON cc.username_page = cp.username_page
     AND cc.hod = cp.hod
     AND cc.caption_id = cp.caption_id
-),
+)
 
 ranked_captions AS (
   SELECT
-    *,
+    *
     ROW_NUMBER() OVER (
       PARTITION BY username_page, slot_dt_local, hod
-      ORDER BY (rps_eb_price + COALESCE(style_score, 0) + COALESCE(se_bonus, 0)) DESC,
-               usage_count DESC,
+      ORDER BY (rps_eb_price + COALESCE(style_score, 0) + COALESCE(se_bonus, 0)) DESC
+               usage_count DESC
                caption_id
     ) as rn
   FROM scored_captions
 )
 
 SELECT
-  username_page,
-  slot_dt_local,
-  hod,
-  caption_id,
-  caption_text,
-  rps_eb_price,
-  style_score,
-  se_bonus,
-  historical_revenue,
-  historical_roi,
-  usage_count,
+  username_page
+  slot_dt_local
+  hod
+  caption_id
+  caption_text
+  rps_eb_price
+  style_score
+  se_bonus
+  historical_revenue
+  historical_roi
+  usage_count
   rn
 FROM ranked_captions
 WHERE rn <= 20  -- Top 20 captions per creator per hour

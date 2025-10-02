@@ -9,7 +9,7 @@ config {
 WITH days AS (
   SELECT d
   FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 6 DAY), CURRENT_DATE())) d
-),
+)
 observed AS (
   SELECT DATE(action_date) AS d
   FROM ${ref("send_log")}

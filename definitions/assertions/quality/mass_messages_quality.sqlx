@@ -12,8 +12,8 @@ config {
 SELECT * FROM (
   -- Check 1: duplicate message_sk in the last 14 days
   SELECT
-    'DUPLICATE_MESSAGE_SK' AS failing_row_condition,
-    message_sk,
+    'DUPLICATE_MESSAGE_SK' AS failing_row_condition
+    message_sk
     COUNT(*) AS dup_count
   FROM ${ref("mass_messages")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
@@ -24,8 +24,8 @@ SELECT * FROM (
 
   -- Check 2: NULL keys (should not happen)
   SELECT
-    'NULL_KEYS' AS failing_row_condition,
-    message_sk,
+    'NULL_KEYS' AS failing_row_condition
+    message_sk
     1 AS cnt
   FROM ${ref("mass_messages")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
@@ -35,8 +35,8 @@ SELECT * FROM (
 
   -- Check 3: Invalid date ranges
   SELECT
-    'INVALID_DATES' AS failing_row_condition,
-    message_sk,
+    'INVALID_DATES' AS failing_row_condition
+    message_sk
     1 AS cnt
   FROM ${ref("mass_messages")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
@@ -46,8 +46,8 @@ SELECT * FROM (
 
   -- Check 4: Invalid prices
   SELECT
-    'INVALID_PRICES' AS failing_row_condition,
-    message_sk,
+    'INVALID_PRICES' AS failing_row_condition
+    message_sk
     1 AS cnt
   FROM ${ref("mass_messages")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)

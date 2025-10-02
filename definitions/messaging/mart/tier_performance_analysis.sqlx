@@ -1,13 +1,12 @@
-config {  type: "table",
+config {
+  type: "table",
   schema: "eros_messaging_mart",
   description: "Performance analysis and effectiveness tracking for tier-based messaging system",
-  bigquery: {
-    partitionBy: "analysis_date",
-    clusterBy: ["tier_id", "page_type"],
-    requirePartitionFilter: true,
-    labels: {app: "eros", domain: "messaging", layer: "mart"}
-  }
-},
+  partitionBy: "analysis_date",
+  clusterBy: ["tier_id", "page_type"],
+  requirePartitionFilter: true,
+  labels: {app: "eros", domain: "messaging", layer: "mart"}
+}
   tags: ["messaging_mart", "tier_performance"],
   dependencies: ["messages_enriched", "creator_tier_assignments", "tier_baseline_templates", "tier_weekly_adjustments"]
 }
@@ -16,41 +15,41 @@ WITH recent_messages AS (
   SELECT *
   FROM ${ref("messages_enriched")}
   WHERE sending_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-),
+)
 
 tier_performance_metrics AS (
   SELECT
-    cta.full_tier_assignment as tier_id,
-    cta.page_type,
-    cta.messaging_strategy,
-    cta.base_tier,
-    CURRENT_DATE() as analysis_date,
+    cta.full_tier_assignment as tier_id
+    cta.page_type
+    cta.messaging_strategy
+    cta.base_tier
+    CURRENT_DATE() as analysis_date
 
     -- Message volume metrics
-    COUNT(DISTINCT cta.page_handle) as pages_in_tier,
-    COUNT(me.message_sk) as total_messages_sent,
-    SAFE_DIVIDE(COUNT(me.message_sk), COUNT(DISTINCT cta.page_handle)) AS avg_messages_per_page,
+    COUNT(DISTINCT cta.page_handle) as pages_in_tier
+    COUNT(me.message_sk) as total_messages_sent
+    SAFE_DIVIDE(COUNT(me.message_sk), COUNT(DISTINCT cta.page_handle)) AS avg_messages_per_page
 
     -- Revenue performance
-    SUM(me.earnings_total) as total_revenue,
-    AVG(me.earnings_total) as avg_revenue_per_message,
-    APPROX_QUANTILES(me.earnings_total, 100)[OFFSET(50)] AS median_revenue_per_message,
+    SUM(me.earnings_total) as total_revenue
+    AVG(me.earnings_total) as avg_revenue_per_message
+    APPROX_QUANTILES(me.earnings_total, 100)[OFFSET(50)] AS median_revenue_per_message
 
     -- Conversion metrics
-    SUM(me.purchased_count) as total_purchases,
-    SUM(me.sent_count) as total_recipients,
-    SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as overall_buy_rate,
+    SUM(me.purchased_count) as total_purchases
+    SUM(me.sent_count) as total_recipients
+    SAFE_DIVIDE(SUM(me.purchased_count), SUM(me.sent_count)) as overall_buy_rate
 
     -- Price analysis
-    AVG(me.price) as avg_price_point,
-    SAFE_DIVIDE(SUM(me.earnings_total), SUM(me.price * me.purchased_count)) as price_realization_rate,
+    AVG(me.price) as avg_price_point
+    SAFE_DIVIDE(SUM(me.earnings_total), SUM(me.price * me.purchased_count)) as price_realization_rate
 
     -- Tier adherence metrics
-    COUNTIF(EXTRACT(HOUR FROM me.local_sending_dt) BETWEEN 8 AND 22) as messages_in_active_hours,
-    SAFE_DIVIDE(COUNTIF(EXTRACT(HOUR FROM me.local_sending_dt) BETWEEN 8 AND 22), COUNT(me.message_sk)) as active_hours_compliance,
+    COUNTIF(EXTRACT(HOUR FROM me.local_sending_dt) BETWEEN 8 AND 22) as messages_in_active_hours
+    SAFE_DIVIDE(COUNTIF(EXTRACT(HOUR FROM me.local_sending_dt) BETWEEN 8 AND 22), COUNT(me.message_sk)) as active_hours_compliance
 
     -- Daily volume adherence
-    COUNT(DISTINCT DATE(me.sending_ts)) as active_days,
+    COUNT(DISTINCT DATE(me.sending_ts)) as active_days
     SAFE_DIVIDE(COUNT(me.message_sk), COUNT(DISTINCT DATE(me.sending_ts))) as avg_daily_volume
 
   FROM ${ref("creator_tier_assignments")} cta
@@ -62,17 +61,17 @@ tier_performance_metrics AS (
        END
   WHERE cta.assignment_date = CURRENT_DATE()
   GROUP BY 1,2,3,4,5
-),
+)
 
 tier_template_comparison AS (
   SELECT
-    tpm.*,
-    tbt.min_daily_ppvs as template_min_daily,
-    tbt.max_daily_ppvs as template_max_daily,
-    tbt.premium_price_range.min as template_premium_min,
-    tbt.premium_price_range.max as template_premium_max,
-    tbt.mid_price_range.min as template_mid_min,
-    tbt.mid_price_range.max as template_mid_max,
+    tpm.*
+    tbt.min_daily_ppvs as template_min_daily
+    tbt.max_daily_ppvs as template_max_daily
+    tbt.premium_price_range.min as template_premium_min
+    tbt.premium_price_range.max as template_premium_max
+    tbt.mid_price_range.min as template_mid_min
+    tbt.mid_price_range.max as template_mid_max
 
     -- Template adherence scoring
     CASE
@@ -80,7 +79,7 @@ tier_template_comparison AS (
       WHEN tpm.avg_daily_volume < tbt.min_daily_ppvs THEN
         tpm.avg_daily_volume / tbt.min_daily_ppvs
       ELSE 1.0 - ((tpm.avg_daily_volume - tbt.max_daily_ppvs) / tbt.max_daily_ppvs)
-    END as volume_adherence_score,
+    END as volume_adherence_score
 
     CASE
       WHEN tpm.avg_price_point BETWEEN tbt.mid_price_range.min AND tbt.premium_price_range.max THEN 1.0
@@ -92,37 +91,37 @@ tier_template_comparison AS (
   FROM tier_performance_metrics tpm
   LEFT JOIN ${ref("tier_baseline_templates")} tbt
     ON tpm.tier_id = tbt.tier_id
-),
+)
 
 tier_effectiveness_analysis AS (
   SELECT
-    ttc.*,
+    ttc.*
 
     -- Performance rankings within tier group
     RANK() OVER (
       PARTITION BY ttc.base_tier, ttc.page_type
       ORDER BY ttc.avg_revenue_per_message DESC
-    ) as revenue_rank_within_tier,
+    ) as revenue_rank_within_tier
 
     RANK() OVER (
       PARTITION BY ttc.base_tier, ttc.page_type
       ORDER BY ttc.overall_buy_rate DESC
-    ) as conversion_rank_within_tier,
+    ) as conversion_rank_within_tier
 
     -- Cross-tier performance rankings
     RANK() OVER (
       ORDER BY ttc.avg_revenue_per_message DESC
-    ) as overall_revenue_rank,
+    ) as overall_revenue_rank
 
     RANK() OVER (
       ORDER BY ttc.overall_buy_rate DESC
-    ) as overall_conversion_rank,
+    ) as overall_conversion_rank
 
     -- Tier effectiveness scores
     (ttc.volume_adherence_score * 0.3 +
      ttc.pricing_adherence_score * 0.3 +
      ttc.active_hours_compliance * 0.2 +
-     LEAST(ttc.overall_buy_rate / 0.05, 1.0) * 0.2) as tier_adherence_score,
+     LEAST(ttc.overall_buy_rate / 0.05, 1.0) * 0.2) as tier_adherence_score
 
     -- Performance vs expectation
     CASE ttc.messaging_strategy
@@ -142,24 +141,24 @@ tier_effectiveness_analysis AS (
     END as performance_vs_expectation
 
   FROM tier_template_comparison ttc
-),
+)
 
 adjustment_effectiveness AS (
   SELECT
-    tea.tier_id,
-    tea.page_type,
+    tea.tier_id
+    tea.page_type
 
     -- Track adjustment impacts
-    COUNT(DISTINCT twa.page_handle) as pages_with_adjustments,
-    STRING_AGG(DISTINCT twa.adjustment_rule) as active_adjustment_rules,
-    AVG(twa.daily_quota_adjustment) as avg_quota_adjustment,
-    AVG(twa.price_adjustment_usd) as avg_price_adjustment,
+    COUNT(DISTINCT twa.page_handle) as pages_with_adjustments
+    STRING_AGG(DISTINCT twa.adjustment_rule) as active_adjustment_rules
+    AVG(twa.daily_quota_adjustment) as avg_quota_adjustment
+    AVG(twa.price_adjustment_usd) as avg_price_adjustment
 
     -- Performance after adjustments (last 7 days)
     AVG(CASE
       WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7
       THEN tea.avg_revenue_per_message
-    END) as post_adjustment_rpm,
+    END) as post_adjustment_rpm
 
     AVG(CASE
       WHEN DATE_DIFF(CURRENT_DATE(), twa.adjustment_date, DAY) <= 7
@@ -174,54 +173,54 @@ adjustment_effectiveness AS (
 )
 
 SELECT
-  tea.analysis_date,
-  tea.tier_id,
-  tea.page_type,
-  tea.messaging_strategy,
-  tea.base_tier,
-  tea.pages_in_tier,
+  tea.analysis_date
+  tea.tier_id
+  tea.page_type
+  tea.messaging_strategy
+  tea.base_tier
+  tea.pages_in_tier
 
   -- Volume performance
-  tea.total_messages_sent,
-  tea.avg_messages_per_page,
-  tea.avg_daily_volume,
-  tea.template_min_daily,
-  tea.template_max_daily,
-  tea.volume_adherence_score,
+  tea.total_messages_sent
+  tea.avg_messages_per_page
+  tea.avg_daily_volume
+  tea.template_min_daily
+  tea.template_max_daily
+  tea.volume_adherence_score
 
   -- Revenue performance
-  tea.total_revenue,
-  tea.avg_revenue_per_message,
-  tea.median_revenue_per_message,
-  tea.revenue_rank_within_tier,
-  tea.overall_revenue_rank,
+  tea.total_revenue
+  tea.avg_revenue_per_message
+  tea.median_revenue_per_message
+  tea.revenue_rank_within_tier
+  tea.overall_revenue_rank
 
   -- Conversion performance
-  tea.overall_buy_rate,
-  tea.total_purchases,
-  tea.total_recipients,
-  tea.conversion_rank_within_tier,
-  tea.overall_conversion_rank,
+  tea.overall_buy_rate
+  tea.total_purchases
+  tea.total_recipients
+  tea.conversion_rank_within_tier
+  tea.overall_conversion_rank
 
   -- Pricing performance
-  tea.avg_price_point,
-  tea.template_mid_min,
-  tea.template_premium_max,
-  tea.pricing_adherence_score,
-  tea.price_realization_rate,
+  tea.avg_price_point
+  tea.template_mid_min
+  tea.template_premium_max
+  tea.pricing_adherence_score
+  tea.price_realization_rate
 
   -- Adherence and effectiveness
-  tea.active_hours_compliance,
-  tea.tier_adherence_score,
-  tea.performance_vs_expectation,
+  tea.active_hours_compliance
+  tea.tier_adherence_score
+  tea.performance_vs_expectation
 
   -- Adjustment tracking
-  ae.pages_with_adjustments,
-  ae.active_adjustment_rules,
-  ae.avg_quota_adjustment,
-  ae.avg_price_adjustment,
-  ae.post_adjustment_rpm,
-  ae.post_adjustment_buy_rate,
+  ae.pages_with_adjustments
+  ae.active_adjustment_rules
+  ae.avg_quota_adjustment
+  ae.avg_price_adjustment
+  ae.post_adjustment_rpm
+  ae.post_adjustment_buy_rate
 
   -- Recommendations for tier optimization
   CASE
@@ -231,10 +230,10 @@ SELECT
     WHEN tea.performance_vs_expectation = 'exceeds_expectation' THEN 'consider_tier_upgrade'
     WHEN tea.performance_vs_expectation = 'below_expectation' THEN 'performance_intervention_needed'
     ELSE 'tier_performing_as_expected'
-  END as optimization_recommendation,
+  END as optimization_recommendation
 
   -- Meta
-  CURRENT_TIMESTAMP() as created_at,
+  CURRENT_TIMESTAMP() as created_at
   'tier_analysis_v1' as analysis_version
 
 FROM tier_effectiveness_analysis tea

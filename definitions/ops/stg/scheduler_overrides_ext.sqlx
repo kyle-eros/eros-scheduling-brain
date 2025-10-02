@@ -1,12 +1,11 @@
-config {  type: "table",
+config {
+  type: "table",
   schema: "eros_ops_stg",
   description: "External scheduler overrides and manual interventions (price guards, manager overrides)",
-  bigquery: {
-    partitionBy: "override_date",
-    clusterBy: ["username_std", "scheduler_email"],
-    labels: {app: "eros", domain: "ops", layer: "stg"}
-  }
-},
+  partitionBy: "override_date",
+  clusterBy: ["username_std", "scheduler_email"],
+  labels: {app: "eros", domain: "ops", layer: "stg"},
+
   tags: ["ops_stg", "overrides"]
 }
 
@@ -22,16 +21,16 @@ pre_operations {
 -- Price override logging table for manager overrides
 -- Populated by Apps Script when managers override tier-based price guardrails
 SELECT
-  CAST(NULL AS STRING) as override_id,
-  CAST(NULL AS TIMESTAMP) as override_ts,
-  CAST(NULL AS DATE) as override_date,
-  CAST(NULL AS STRING) as username_std,
-  CAST(NULL AS STRING) as tier_id,
-  CAST(NULL AS STRING) as price_band,
-  CAST(NULL AS FLOAT64) as min_allowed,
-  CAST(NULL AS FLOAT64) as max_allowed,
-  CAST(NULL AS FLOAT64) as price_entered,
-  CAST(NULL AS STRING) as override_type,
-  CAST(NULL AS STRING) as reason,
+  CAST(NULL AS STRING) as override_id
+  CAST(NULL AS TIMESTAMP) as override_ts
+  CAST(NULL AS DATE) as override_date
+  CAST(NULL AS STRING) as username_std
+  CAST(NULL AS STRING) as tier_id
+  CAST(NULL AS STRING) as price_band
+  CAST(NULL AS FLOAT64) as min_allowed
+  CAST(NULL AS FLOAT64) as max_allowed
+  CAST(NULL AS FLOAT64) as price_entered
+  CAST(NULL AS STRING) as override_type
+  CAST(NULL AS STRING) as reason
   CAST(NULL AS STRING) as scheduler_email
 LIMIT 0

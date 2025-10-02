@@ -1,11 +1,10 @@
-config {  type: "table",
+config {
+  type: "table",
   schema: "eros_source",
   name: "scheduler_roster",
   description: "Scheduler roster with codes, contact emails, and assignment metadata",
-  bigquery: {
-    labels: {app: "eros", domain: "ops", layer: "source"}
-  }
-},
+  labels: {app: "eros", domain: "ops", layer: "source"},
+
   tags: ["scheduler", "roster", "source"]
 }
 
@@ -13,12 +12,12 @@ config {  type: "table",
 -- Each member authenticates with the Google Group: eros-schedulers-bq@erosops.com
 SELECT * FROM (
   SELECT
-    'PAM' AS scheduler_code,
-    'Pam' AS display_name,
-    'geesushee07@gmail.com' AS scheduler_email,
-    'eros-schedulers-bq@erosops.com' AS group_email,
-    TRUE AS is_active,
-    FALSE AS is_manager,
+    'PAM' AS scheduler_code
+    'Pam' AS display_name
+    'geesushee07@gmail.com' AS scheduler_email
+    'eros-schedulers-bq@erosops.com' AS group_email
+    TRUE AS is_active
+    FALSE AS is_manager
     3 AS assigned_creators
 
   UNION ALL SELECT 'KEVIN', 'Kevin', 'kevinicer@gmail.com', 'eros-schedulers-bq@erosops.com', TRUE, FALSE, 2

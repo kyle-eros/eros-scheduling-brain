@@ -8,10 +8,10 @@ config {
 SELECT c.*
 FROM ${ref("creator_tier_assignments")} c
 WHERE LOWER(COALESCE(c.full_tier_assignment, '')) NOT IN (
-  'a_free', 'a_paid',
-  'b_free', 'b_paid',
-  'c_free', 'c_paid',
-  'd_free', 'd_paid',
+  'a_free', 'a_paid'
+  'b_free', 'b_paid'
+  'c_free', 'c_paid'
+  'd_free', 'd_paid'
   'enterprise', 'vip'
 )
 LIMIT 100

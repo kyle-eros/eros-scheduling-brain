@@ -1,87 +1,86 @@
-config {  type: "table",
+config {
+  type: "table",
   schema: "eros_messaging_feat",
   description: "Page type assignments for each creator with FREE/PAID/BOTH detection",
-  bigquery: {
-    clusterBy: ["username_std", "page_type"],
-    labels: {app: "eros", domain: "messaging", layer: "feat"}
-  }
-},
+  clusterBy: ["username_std", "page_type"],
+  labels: {app: "eros", domain: "messaging", layer: "feat"}
+}
   tags: ["messaging_feat", "page_types"],
   dependencies: ["creator_statistics_final"]
 }
 
 WITH page_type_detection AS (
   SELECT
-    username_std,
-    subscription_net as subscription_price,
-    following_count as total_followers,
-    total_earnings_net as avg_weekly_revenue,
-    renew_on_percent as rebill_pct,
-    message_net as ppv_sends_7d,
-    active_fans as ppv_buys_7d,
-    CURRENT_DATE() as assignment_date,
+    username_std
+    subscription_net as subscription_price
+    following_count as total_followers
+    total_earnings_net as avg_weekly_revenue
+    renew_on_percent as rebill_pct
+    message_net as ppv_sends_7d
+    active_fans as ppv_buys_7d
+    CURRENT_DATE() as assignment_date
 
     -- Page type detection based on subscription price
     CASE
       WHEN subscription_net > 0 THEN 'PAID'
       WHEN subscription_net = 0 OR subscription_net IS NULL THEN 'FREE'
-    END as page_type,
+    END as page_type
 
     -- Calculate buy rate for performance metrics
-    SAFE_DIVIDE(active_fans, GREATEST(message_net, 1)) as buy_rate,
+    SAFE_DIVIDE(active_fans, GREATEST(message_net, 1)) as buy_rate
 
     -- Extract additional metrics
-    COALESCE(renew_on_percent, 0) as rebill_rate,
+    COALESCE(renew_on_percent, 0) as rebill_rate
     COALESCE(total_earnings_net, 0) as weekly_revenue
 
   FROM ${ref("creator_statistics_final")}
   WHERE username_std IS NOT NULL
     AND username_std != ''
-),
+)
 
 -- Identify creators with both FREE and PAID pages
 dual_page_creators AS (
   SELECT
-    username_std,
-    COUNT(DISTINCT page_type) as page_type_count,
+    username_std
+    COUNT(DISTINCT page_type) as page_type_count
     STRING_AGG(DISTINCT page_type ORDER BY page_type) as page_types
   FROM page_type_detection
   GROUP BY username_std
   HAVING COUNT(DISTINCT page_type) = 2
-),
+)
 
 -- Final page assignments with dual-page handling
 final_assignments AS (
   SELECT
-    ptd.username_std,
-    ptd.subscription_price,
-    ptd.total_followers,
-    ptd.weekly_revenue,
-    ptd.rebill_rate,
-    ptd.ppv_sends_7d,
-    ptd.ppv_buys_7d,
-    ptd.buy_rate,
-    ptd.assignment_date,
-    ptd.page_type as individual_page_type,
+    ptd.username_std
+    ptd.subscription_price
+    ptd.total_followers
+    ptd.weekly_revenue
+    ptd.rebill_rate
+    ptd.ppv_sends_7d
+    ptd.ppv_buys_7d
+    ptd.buy_rate
+    ptd.assignment_date
+    ptd.page_type as individual_page_type
 
     -- Determine final page classification
     CASE
       WHEN dpc.username_std IS NOT NULL THEN 'BOTH'
       ELSE ptd.page_type
-    END as final_page_type,
+    END as final_page_type
 
     -- Create unique page handles for dual-page creators
     CASE
       WHEN dpc.username_std IS NOT NULL THEN
         CONCAT(ptd.username_std, '_', LOWER(ptd.page_type))
       ELSE ptd.username_std
-    END as page_handle,
+    END as page_handle
 
     -- Determine messaging strategy based on page type
     CASE ptd.page_type
       WHEN 'FREE' THEN 'conversion_focused'
       WHEN 'PAID' THEN 'retention_focused'
-    END as messaging_strategy,
+    END as messaging_strategy
 
     -- Flag primary page for BOTH scenarios (highest revenue)
     CASE
@@ -98,20 +97,20 @@ final_assignments AS (
 )
 
 SELECT
-  username_std,
-  page_handle,
-  individual_page_type as page_type,
-  final_page_type,
-  messaging_strategy,
-  is_primary_page,
-  subscription_price,
-  total_followers,
-  weekly_revenue,
-  rebill_rate,
-  ppv_sends_7d,
-  ppv_buys_7d,
-  buy_rate,
-  assignment_date,
+  username_std
+  page_handle
+  individual_page_type as page_type
+  final_page_type
+  messaging_strategy
+  is_primary_page
+  subscription_price
+  total_followers
+  weekly_revenue
+  rebill_rate
+  ppv_sends_7d
+  ppv_buys_7d
+  buy_rate
+  assignment_date
 
   -- Additional metadata for tier calculation
   CASE individual_page_type
