@@ -434,7 +434,7 @@ Only 29 violations in 68,856 messages
 
 <table>
 <tr>
-<td width="33%" valign="top" align="center">
+<td width="25%" valign="top" align="center">
 
 <br/>
 
@@ -449,7 +449,7 @@ Only 29 violations in 68,856 messages
 <br/>
 
 </td>
-<td width="33%" valign="top" align="center">
+<td width="25%" valign="top" align="center">
 
 <br/>
 
@@ -464,7 +464,7 @@ Only 29 violations in 68,856 messages
 <br/>
 
 </td>
-<td width="33%" valign="top" align="center">
+<td width="25%" valign="top" align="center">
 
 <br/>
 
@@ -475,6 +475,21 @@ Only 29 violations in 68,856 messages
 - 🗄️ **BigQuery**: 68K+ message warehouse
 - 📧 **Gmail API**: Performance ingestion
 - 🔐 **Secret Manager**: Secure credentials
+
+<br/>
+
+</td>
+<td width="25%" valign="top" align="center">
+
+<br/>
+
+#### 📊 **Operations**
+
+<br/>
+
+- 🖥️ **FastAPI Dashboard**: Scheduler portal
+- 💰 **Invoicing Engine**: Automated billing
+- 🔐 **Token Auth**: Role-based access
 
 <br/>
 
@@ -1887,6 +1902,132 @@ LIMIT 20;
 
 <br/>
 
+# 🖥️ Operational Systems
+
+<div align="center">
+
+### **Beyond Scheduling: Complete Business Operations**
+
+</div>
+
+<br/>
+
+## 📊 Scheduler Dashboard (FastAPI)
+
+**Personalized portal for each scheduler to manage their creators**
+
+### **Features:**
+
+<table>
+<tr>
+<td width="50%">
+
+**Schedule Management**
+- View today's generated schedules
+- Bulk approve/reject messages
+- Mark messages as sent
+- Export schedules to CSV/Excel
+
+</td>
+<td width="50%">
+
+**Quality Control**
+- Caption quality checks
+- TOS compliance warnings
+- Uniqueness verification
+- Manual caption regeneration
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Performance Analytics**
+- Real-time conversion tracking
+- Revenue per message
+- Creator performance comparison
+- Historical trends
+
+</td>
+<td width="50%">
+
+**Authentication**
+- Token-based secure access
+- Role-based permissions
+- Admin vs scheduler views
+- 12 active schedulers + 1 manager
+
+</td>
+</tr>
+</table>
+
+**Deployment:**
+```bash
+# Dashboard runs as separate Cloud Function
+gcloud functions deploy eros-dashboard \
+  --runtime python311 \
+  --trigger-http \
+  --entry-point eros_dashboard
+```
+
+**Access:** Each scheduler has a unique token (see `config/settings.py` → `SCHEDULER_TOKENS`)
+
+<br/>
+
+## 💰 Automated Invoicing System
+
+**Weekly invoicing for 47+ creators with intelligent revenue tracking**
+
+### **How It Works:**
+
+**Phase 1: Revenue Monitoring**
+- Tracks creator earnings from BigQuery
+- Calculates agency commission (typically 20%)
+- Identifies eligible creators (minimum threshold)
+
+**Phase 2: Invoice Generation**
+- Creates professional PDF invoices
+- Includes line-item breakdowns
+- Adds payment instructions
+- Stores in BigQuery + Cloud Storage
+
+**Phase 3: Distribution**
+- Email delivery via SendGrid/Gmail
+- Slack notifications to managers
+- Payment reminders
+
+**Phase 4: Reconciliation**
+- Tracks payment status
+- Flags overdue invoices
+- Generates reports for accounting
+
+### **Invoice Schedule:**
+
+| **Period** | **Invoice Date** | **Due Date** | **Scope** |
+|------------|------------------|--------------|-----------|
+| Weekly | Every Monday | 7 days later | All creators with earnings ≥ $50 |
+| Bi-Weekly | 1st & 15th | 14 days later | High-value creators (optional) |
+
+### **Configuration:**
+
+```python
+# config/invoicing_settings.py
+INVOICING_ENABLED = True
+INVOICING_PRODUCTION_ENABLED = True  # Set False for testing
+MIN_INVOICE_AMOUNT = 50.00  # Minimum earnings to invoice
+INVOICE_DUPLICATE_CHECK = True  # Prevent double-billing
+```
+
+**Storage:**
+- Invoices: `gs://eros-invoices/pdf/`
+- Records: `of-scheduler-proj.eros.invoices` (BigQuery)
+
+<br/>
+
+---
+
+<br/>
+
 # ❓ Frequently Asked Questions
 
 <br/>
@@ -2304,7 +2445,7 @@ Daily at 3:00 AM ET
 <div align="center">
 
 **📅 Last Updated:** October 6, 2025
-**🔢 Version:** 2.0 (All 5 Phases Complete)
+**🔢 Version:** 2.1 (All 5 Phases Complete + Invoicing + Dashboard)
 **👥 Maintained By:** EROS Agency Development Team
 
 <br/>
