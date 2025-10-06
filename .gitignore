@@ -1,0 +1,62 @@
+# ============================================================================
+# EROS SCHEDULING BRAIN - GITIGNORE
+# ============================================================================
+# Strategy: Keep only README.md in git, exclude all implementation code
+# This repo serves as a professional portfolio/documentation showcase
+# ============================================================================
+
+# Ignore EVERYTHING by default
+*
+*/
+
+# EXCEPT: Only track these files
+!.gitignore
+!README.md
+
+# Explicitly ignore sensitive files (extra safety)
+*.json
+*.csv
+*.xlsx
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.env
+.venv
+venv/
+ENV/
+env/
+
+# Google Cloud credentials
+*service-account*.json
+*credentials*.json
+*-key.json
+
+# Data files
+data/
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Python cache
+*.py[cod]
+*$py.class
