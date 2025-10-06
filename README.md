@@ -201,10 +201,11 @@ graph TB
 
 <br/>
 
-> 🤖 **Zero Manual Work**
+> 🤖 **Zero Manual Work Creating Scheudle Templates**
 > - 100% automated daily scheduling
 > - AI generates unique captions for every message
-> - Team focuses on strategy, not execution
+> - Team focuses on strategy and getting everything queued on the platform, not execution of high level OnlyFans Sales/Business strategies/logic
+
 
 <br/>
 
