@@ -1,49 +1,57 @@
 <div align="center">
 
-```
-███████╗██████╗  ██████╗ ███████╗
-██╔════╝██╔══██╗██╔═══██╗██╔════╝
-█████╗  ██████╔╝██║   ██║███████╗
-██╔══╝  ██╔══██╗██║   ██║╚════██║
-███████╗██║  ██║╚██████╔╝███████║
-╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+# 🧠 EROS SCHEDULING BRAIN
 
- ███████╗ ██████╗██╗  ██╗███████╗██████╗ ██╗   ██╗██╗     ██╗███╗   ██╗ ██████╗
- ██╔════╝██╔════╝██║  ██║██╔════╝██╔══██╗██║   ██║██║     ██║████╗  ██║██╔════╝
- ███████╗██║     ███████║█████╗  ██║  ██║██║   ██║██║     ██║██╔██╗ ██║██║  ███╗
- ╚════██║██║     ██╔══██║██╔══╝  ██║  ██║██║   ██║██║     ██║██║╚██╗██║██║   ██║
- ███████║╚██████╗██║  ██║███████╗██████╔╝╚██████╔╝███████╗██║██║ ╚████║╚██████╔╝
- ╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═════╝  ╚═════╝ ╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝
+### *Autonomous AI System for OnlyFans Creator Management*
 
- ██████╗ ██████╗  ██████╗ ██╗███╗   ██╗
- ██╔══██╗██╔══██╗██╔═══██╗██║████╗  ██║
- ██████╔╝██████╔╝██║   ██║██║██╔██╗ ██║
- ██╔══██╗██╔══██╗██║   ██║██║██║╚██╗██║
- ██████╔╝██║  ██║╚██████╔╝██║██║ ╚████║
- ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
-```
-
-### **Autonomous AI System for OnlyFans Creator Management**
+<br/>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/STATUS-PRODUCTION_READY-00C853?style=for-the-badge&labelColor=1a1a1a&color=00C853" alt="Status"/>
-  <img src="https://img.shields.io/badge/PLATFORM-Google_Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white&labelColor=1a1a1a" alt="Platform"/>
-  <img src="https://img.shields.io/badge/AI-Vertex_AI_Gemini-FF6F00?style=for-the-badge&logo=google&logoColor=white&labelColor=1a1a1a" alt="AI"/>
-  <img src="https://img.shields.io/badge/DATA-BigQuery-669DF6?style=for-the-badge&logo=google-bigquery&logoColor=white&labelColor=1a1a1a" alt="Data"/>
+  <img src="https://img.shields.io/badge/STATUS-🟢_PRODUCTION-00C853?style=for-the-badge&labelColor=0a0a0a&logoColor=white" alt="Status"/>
+  <img src="https://img.shields.io/badge/PLATFORM-☁️_Google_Cloud-4285F4?style=for-the-badge&labelColor=0a0a0a" alt="Platform"/>
+  <img src="https://img.shields.io/badge/AI-✨_Vertex_Gemini-FF6F00?style=for-the-badge&labelColor=0a0a0a" alt="AI"/>
+  <img src="https://img.shields.io/badge/DATA-📊_BigQuery-669DF6?style=for-the-badge&labelColor=0a0a0a" alt="Data"/>
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/CREATORS_MANAGED-41-00D9FF?style=flat-square&labelColor=1a1a1a" alt="Creators"/>
-  <img src="https://img.shields.io/badge/MESSAGES_ANALYZED-68,856-00D9FF?style=flat-square&labelColor=1a1a1a" alt="Messages"/>
-  <img src="https://img.shields.io/badge/TOS_COMPLIANCE-99.96%25-00C853?style=flat-square&labelColor=1a1a1a" alt="Compliance"/>
-  <img src="https://img.shields.io/badge/AUTOMATION-100%25-00C853?style=flat-square&labelColor=1a1a1a" alt="Automation"/>
-</p>
+<br/>
 
----
+> **🎯 Analyzes 5+ years of data** • **🤖 Generates AI captions** • **⚡ Optimizes timing** • **💰 Maximizes revenue**
 
-**Analyzes 5+ years of performance data** • **Generates unique AI captions** • **Optimizes send times** • **Maximizes revenue**
+<br/>
+
+<table>
+<tr>
+<td align="center" width="25%">
+
+### 📈 **41**
+**Creators Managed**
+
+</td>
+<td align="center" width="25%">
+
+### 📬 **68,856**
+**Messages Analyzed**
+
+</td>
+<td align="center" width="25%">
+
+### ✅ **99.96%**
+**TOS Compliance**
+
+</td>
+<td align="center" width="25%">
+
+### 🤖 **100%**
+**Automated**
+
+</td>
+</tr>
+</table>
 
 </div>
+
+<br/>
+<br/>
 
 <br/>
 
@@ -51,37 +59,58 @@
 
 ## 📋 Table of Contents
 
-<table>
-<tr>
-<td width="50%">
+<div align="center">
 
-**🎯 OVERVIEW**
-- [What This System Does](#-what-this-system-does)
-- [The Challenge It Solves](#-the-challenge-it-solves)
-- [Key Capabilities](#-key-capabilities)
-- [Impact & Results](#-impact--results)
+### 🗂️ Quick Navigation
 
-**⚙️ HOW IT WORKS**
-- [System Architecture](#%EF%B8%8F-system-architecture-overview)
-- [The 5-Phase Process](#-the-5-phase-intelligent-workflow)
-- [Data Flow Diagram](#-data-flow-visualization)
+</div>
 
-</td>
-<td width="50%">
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  🎯 OVERVIEW              💡 TECHNICAL DEEP DIVE           │
+│  ├─ What It Does          ├─ ML Engine Explained           │
+│  ├─ Problems Solved       ├─ AI Caption Generation         │
+│  ├─ Key Capabilities      └─ Infrastructure                │
+│  └─ Impact & Results                                        │
+│                           📚 OPERATIONS                     │
+│  ⚙️  HOW IT WORKS         ├─ Configuration Guide           │
+│  ├─ Architecture          ├─ Monitoring & Logs             │
+│  ├─ 5-Phase Workflow      └─ FAQ                           │
+│  └─ Data Flow                                               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
 
-**💡 TECHNICAL DETAILS**
-- [ML Algorithm Explained](#-the-ml-engine-explained-simply)
-- [AI Caption Generation](#-ai-caption-generation-the-magic)
-- [Infrastructure](#%EF%B8%8F-infrastructure--deployment)
+<details>
+<summary><b>📖 Detailed Navigation</b></summary>
 
-**📚 REFERENCE**
-- [Configuration Guide](#-configuration-guide)
-- [Monitoring & Logs](#-monitoring--maintenance)
-- [FAQ](#-frequently-asked-questions)
+<br/>
 
-</td>
-</tr>
-</table>
+### 🎯 Overview
+- [What This System Does](#-what-this-system-does) - High-level capabilities
+- [The Challenge It Solves](#-the-challenge-it-solves) - Before & after comparison
+- [Key Capabilities](#-key-capabilities) - Feature showcase
+- [Impact & Results](#-impact--results) - Real production metrics
+
+### ⚙️ How It Works
+- [System Architecture](#%EF%B8%8F-system-architecture-overview) - GCP infrastructure
+- [The 5-Phase Process](#-the-5-phase-intelligent-workflow) - Detailed workflow
+- [Data Flow Visualization](#-data-flow-visualization) - System diagrams
+
+### 💡 Technical Deep Dive
+- [ML Algorithm Explained](#-the-ml-engine-explained-simply) - Machine learning breakdown
+- [AI Caption Generation](#%EF%B8%8F-ai-caption-generation-the-magic) - Vertex AI implementation
+- [Infrastructure & Deployment](#%EF%B8%8F-infrastructure--deployment) - Cloud setup
+
+### 📚 Operations & Reference
+- [Configuration Guide](#%EF%B8%8F-configuration-guide) - Setup & customization
+- [Monitoring & Maintenance](#-monitoring--maintenance) - Health checks & queries
+- [FAQ](#-frequently-asked-questions) - Common questions
+
+</details>
+
+<br/>
 
 ---
 
@@ -91,7 +120,9 @@
 
 <div align="center">
 
-### **Fully Autonomous OnlyFans Messaging Intelligence**
+### **🤖 Fully Autonomous OnlyFans Messaging Intelligence**
+
+<br/>
 
 The EROS Scheduling Brain is an AI-powered system that **automatically manages messaging for 41+ creator accounts**—eliminating manual work while maximizing fan engagement and revenue.
 
@@ -101,21 +132,34 @@ The EROS Scheduling Brain is an AI-powered system that **automatically manages m
 
 ### 🔄 The Complete Automation Loop
 
+<div align="center">
+
+```mermaid
+graph TB
+    A[📧 Performance Data] -->|Ingestion| B[🧠 AI Analysis]
+    B -->|Optimization| C[📅 Smart Scheduling]
+    C -->|Generation| D[✍️ Caption Creation]
+    D -->|Deployment| E[🚀 Distribution]
+    E -->|Tracking| F[📊 Results Analysis]
+    F -->|Learning| A
+
+    style A fill:#4285F4,stroke:#333,stroke-width:2px,color:#fff
+    style B fill:#FF6F00,stroke:#333,stroke-width:2px,color:#fff
+    style C fill:#00C853,stroke:#333,stroke-width:2px,color:#fff
+    style D fill:#669DF6,stroke:#333,stroke-width:2px,color:#fff
+    style E fill:#00D9FF,stroke:#333,stroke-width:2px,color:#fff
+    style F fill:#9C27B0,stroke:#333,stroke-width:2px,color:#fff
 ```
-     📧 Performance Data
-          ↓
-     🧠 AI Analysis
-          ↓
-     📅 Smart Scheduling
-          ↓
-     ✍️ Caption Generation
-          ↓
-     🚀 Deployment
-          ↓
-     📊 Results Tracking
-          ↓
-     (back to top - continuous loop)
-```
+
+</div>
+
+<br/>
+
+<div align="center">
+
+**📧 Data** → **🧠 Analysis** → **📅 Schedule** → **✍️ Captions** → **🚀 Deploy** → **📊 Track** → **🔄 Repeat**
+
+</div>
 
 <br/>
 
@@ -131,20 +175,24 @@ The EROS Scheduling Brain is an AI-powered system that **automatically manages m
 
 <br/>
 
-**Time-Consuming**
-- 8+ hours/day spent scheduling messages manually
-- Schedulers burnt out writing repetitive captions
-- No time for strategic work
+> 😓 **Time-Consuming**
+> - 8+ hours/day spent scheduling messages manually
+> - Schedulers burnt out writing repetitive captions
+> - No time for strategic work
 
-**Inconsistent Results**
-- Guessing optimal send times (no data)
-- Hit-or-miss engagement rates
-- Revenue unpredictable day-to-day
+<br/>
 
-**No Intelligence**
-- Flying blind with zero analytics
-- Reactive problem-solving (too late)
-- Can't scale beyond current team size
+> 🎲 **Inconsistent Results**
+> - Guessing optimal send times (no data)
+> - Hit-or-miss engagement rates
+> - Revenue unpredictable day-to-day
+
+<br/>
+
+> 🚫 **No Intelligence**
+> - Flying blind with zero analytics
+> - Reactive problem-solving (too late)
+> - Can't scale beyond current team size
 
 </td>
 <td width="50%" valign="top">
@@ -153,20 +201,24 @@ The EROS Scheduling Brain is an AI-powered system that **automatically manages m
 
 <br/>
 
-**Zero Manual Work**
-- 100% automated daily scheduling
-- AI generates unique captions for every message
-- Team focuses on strategy, not execution
+> 🤖 **Zero Manual Work**
+> - 100% automated daily scheduling
+> - AI generates unique captions for every message
+> - Team focuses on strategy, not execution
 
-**Data-Driven Optimization**
-- ML predicts best send times (60% better conversion)
-- Dynamic pricing based on time/performance
-- Learns and improves continuously
+<br/>
 
-**Intelligent & Scalable**
-- Real-time anomaly detection
-- Auto-adjusts based on performance
-- Can manage 100+ creators without adding staff
+> 📊 **Data-Driven Optimization**
+> - ML predicts best send times (60% better conversion)
+> - Dynamic pricing based on time/performance
+> - Learns and improves continuously
+
+<br/>
+
+> 🚀 **Intelligent & Scalable**
+> - Real-time anomaly detection
+> - Auto-adjusts based on performance
+> - Can manage 100+ creators without adding staff
 
 </td>
 </tr>
@@ -239,46 +291,68 @@ Dynamic pricing + peak-hour clustering = +18% revenue per message
 
 <div align="center">
 
-### **Real Numbers from Production**
+### **📈 Real Numbers from Production**
 
 </div>
+
+<br/>
 
 <table>
 <tr>
 <td align="center" width="25%">
 
-### 💰
-## **+60-100%**
+<br/>
+
+### 💰 **+60-100%**
 **Projected Revenue Increase**
+
+<br/>
 
 ML optimization + dynamic pricing over 8-week ramp
 
+<br/>
+
 </td>
 <td align="center" width="25%">
 
-### ⏱️
-## **0 Hours**
+<br/>
+
+### ⏱️ **0 Hours**
 **Manual Work Required**
+
+<br/>
 
 Complete automation = zero daily scheduling time
 
+<br/>
+
 </td>
 <td align="center" width="25%">
 
-### 🎯
-## **6.1%**
+<br/>
+
+### 🎯 **6.1%**
 **Avg Conversion Rate**
+
+<br/>
 
 vs 3.2% baseline = **91% improvement**
 
+<br/>
+
 </td>
 <td align="center" width="25%">
 
-### ✅
-## **99.96%**
+<br/>
+
+### ✅ **99.96%**
 **TOS Compliance**
 
+<br/>
+
 Only 29 violations in 68,856 messages
+
+<br/>
 
 </td>
 </tr>
@@ -286,35 +360,19 @@ Only 29 violations in 68,856 messages
 
 <br/>
 
-<table>
-<tr>
-<td align="center" width="20%">
+<div align="center">
 
-**41**<br/>Creators Managed
+```
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║   📈 41 Creators  •  📬 68,856 Messages  •  📆 5+ Years of Data       ║
+║                                                                        ║
+║   ⚡ 8-Minute Runtime  •  🟢 100% Uptime  •  🤖 Fully Automated       ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+```
 
-</td>
-<td align="center" width="20%">
-
-**68,856**<br/>Messages Analyzed
-
-</td>
-<td align="center" width="20%">
-
-**5+ Years**<br/>Historical Data
-
-</td>
-<td align="center" width="20%">
-
-**8 Minutes**<br/>Daily Runtime
-
-</td>
-<td align="center" width="20%">
-
-**100%**<br/>Uptime
-
-</td>
-</tr>
-</table>
+</div>
 
 <br/>
 
@@ -326,60 +384,83 @@ Only 29 violations in 68,856 messages
 
 <div align="center">
 
-### **Built on Google Cloud Platform**
+### **☁️ Built on Google Cloud Platform**
 
 </div>
 
+<br/>
+
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                                                                         │
-│                      ☁️  GOOGLE CLOUD PLATFORM                          │
-│                                                                         │
-│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐        │
-│  │   Cloud      │      │   Cloud      │      │   Pub/Sub    │        │
-│  │  Scheduler   │─────▶│  Function    │◀─────│   Topic      │        │
-│  │              │      │              │      │              │        │
-│  │  Daily 3AM   │      │  Python 3.11 │      │  Triggers    │        │
-│  └──────────────┘      └──────┬───────┘      └──────────────┘        │
-│                               │                                        │
-│                               ▼                                        │
-│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐        │
-│  │   BigQuery   │◀─────│     AI       │◀─────│    Gmail     │        │
-│  │              │      │   Vertex AI  │      │     API      │        │
-│  │  68K+ msgs   │      │   Gemini 1.5 │      │  Infloww Data│        │
-│  └──────────────┘      └──────────────┘      └──────────────┘        │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║                      ☁️  GOOGLE CLOUD PLATFORM                            ║
+║                                                                           ║
+║   ┌─────────────┐         ┌──────────────┐         ┌─────────────┐      ║
+║   │   Cloud     │         │    Cloud     │         │   Pub/Sub   │      ║
+║   │  Scheduler  │────────▶│   Function   │◀────────│    Topic    │      ║
+║   │             │         │              │         │             │      ║
+║   │  Daily 3AM  │         │ Python 3.11  │         │  Triggers   │      ║
+║   └─────────────┘         └──────┬───────┘         └─────────────┘      ║
+║                                  │                                        ║
+║                                  ▼                                        ║
+║   ┌─────────────┐         ┌──────────────┐         ┌─────────────┐      ║
+║   │  BigQuery   │◀────────│   Vertex AI  │◀────────│    Gmail    │      ║
+║   │             │         │              │         │     API     │      ║
+║   │  68K+ msgs  │         │  Gemini 1.5  │         │ Infloww Data│      ║
+║   └─────────────┘         └──────────────┘         └─────────────┘      ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
 ```
 
 <br/>
 
-### **Core Components**
+### **🔧 Core Components**
 
 <table>
 <tr>
-<td width="33%" valign="top">
+<td width="33%" valign="top" align="center">
+
+<br/>
 
 #### ☁️ **Orchestration**
-- **Cloud Scheduler**: Triggers daily at 3 AM
-- **Cloud Function**: Runs the 5-phase pipeline
-- **Pub/Sub**: Event-driven architecture
+
+<br/>
+
+- ⏰ **Cloud Scheduler**: Triggers daily at 3 AM
+- 🔄 **Cloud Function**: Runs 5-phase pipeline
+- 📡 **Pub/Sub**: Event-driven architecture
+
+<br/>
 
 </td>
-<td width="33%" valign="top">
+<td width="33%" valign="top" align="center">
+
+<br/>
 
 #### 🧠 **Intelligence**
-- **Vertex AI Gemini**: Caption generation
-- **scikit-learn**: ML prediction models
-- **Custom Algorithms**: Multi-window analysis
+
+<br/>
+
+- ✨ **Vertex AI Gemini**: Caption generation
+- 📈 **scikit-learn**: ML prediction models
+- 🔬 **Custom Algorithms**: Multi-window analysis
+
+<br/>
 
 </td>
-<td width="33%" valign="top">
+<td width="33%" valign="top" align="center">
+
+<br/>
 
 #### 💾 **Data**
-- **BigQuery**: 68K+ message warehouse
-- **Gmail API**: Performance report ingestion
-- **Secret Manager**: Secure credential storage
+
+<br/>
+
+- 🗄️ **BigQuery**: 68K+ message warehouse
+- 📧 **Gmail API**: Performance ingestion
+- 🔐 **Secret Manager**: Secure credentials
+
+<br/>
 
 </td>
 </tr>
@@ -395,7 +476,23 @@ Only 29 violations in 68,856 messages
 
 <div align="center">
 
-Every morning at **3:00 AM**, the system runs through 5 intelligent phases to generate optimized schedules for all creators.
+### **⏰ Every morning at 3:00 AM, the system executes its 5-phase optimization cycle**
+
+</div>
+
+<br/>
+
+<div align="center">
+
+```
+╭───────────────────────────────────────────────────────────────────╮
+│                                                                   │
+│  Phase 1  →  Phase 2  →  Phase 3  →  Phase 4  →  Phase 5        │
+│    📧          🧠          ✍️          📅          🔄             │
+│  Ingest     Optimize   Generate    Assemble     Learn           │
+│                                                                   │
+╰───────────────────────────────────────────────────────────────────╯
+```
 
 </div>
 
@@ -825,189 +922,280 @@ The ML (Machine Learning) engine is the brain that figures out **when to send me
 
 ## 🔬 Step 1: Multi-Window Analysis
 
-**The Problem:** Recent trends matter more than old data, but you can't ignore history entirely.
+> **The Problem:** Recent trends matter more than old data, but you can't ignore history entirely.
 
-**The Solution:** Look at data through 3 different "windows" and weight them differently.
+> **The Solution:** Look at data through 3 different "windows" and weight them differently.
+
+<br/>
 
 <table>
 <tr>
 <td align="center" width="33%">
 
+<br/>
+
 ### 📅 **Short-Term**
 **Last 90 Days**
 
-**60% Weight**
+<br/>
 
-"What's working RIGHT NOW"
+**🎯 60% Weight**
+
+<br/>
+
+*"What's working RIGHT NOW"*
 
 Recent trends, current fan behavior, latest performance
 
+<br/>
+
 </td>
 <td align="center" width="33%">
+
+<br/>
 
 ### 📆 **Medium-Term**
 **Last 180 Days**
 
-**30% Weight**
+<br/>
 
-"What's the baseline?"
+**⚖️ 30% Weight**
+
+<br/>
+
+*"What's the baseline?"*
 
 Current stable performance, established patterns
+
+<br/>
 
 </td>
 <td align="center" width="33%">
 
+<br/>
+
 ### 📊 **Long-Term**
 **Last 365 Days**
 
-**10% Weight**
+<br/>
 
-"Are there seasonal patterns?"
+**📈 10% Weight**
+
+<br/>
+
+*"Are there seasonal patterns?"*
 
 Holiday effects, yearly trends, historical context
+
+<br/>
 
 </td>
 </tr>
 </table>
 
-**Example Calculation:**
-```
-Weighted Conversion Rate =
-  (60% × Last 90 days) +
-  (30% × Last 180 days) +
-  (10% × Last 365 days)
+<br/>
 
-Example:
-  (60% × 4.2%) + (30% × 3.8%) + (10% × 3.5%)
-  = 2.52% + 1.14% + 0.35%
-  = 4.01% final weighted conversion rate
+**📐 Example Calculation:**
+
+```python
+Weighted Conversion Rate =
+    (60% × Last 90 days) +
+    (30% × Last 180 days) +
+    (10% × Last 365 days)
+
+# Real example:
+    (60% × 4.2%) + (30% × 3.8%) + (10% × 3.5%)
+    = 2.52% + 1.14% + 0.35%
+    = 4.01% final weighted conversion rate ✅
 ```
 
 <br/>
 
 ## ⚖️ Step 2: Recency Weighting
 
-**The Problem:** Not all data in the 90-day window is equally valuable. Yesterday matters more than 3 months ago.
+> **The Problem:** Not all data in the 90-day window is equally valuable. Yesterday matters more than 3 months ago.
 
-**The Solution:** Exponential decay—recent data gets more "weight" in the calculation.
+> **The Solution:** Exponential decay—recent data gets more "weight" in the calculation.
+
+<br/>
 
 <div align="center">
 
-| **When Sent** | **Weight** | **Importance** |
-|---------------|------------|----------------|
-| Yesterday | 95% | Nearly full weight |
-| 1 week ago | 70% | Very important |
-| 2 weeks ago | 49% | Moderately important |
-| 30 days ago | 22% | Some importance |
-| 60 days ago | 5% | Minor importance |
-| 90 days ago | 1% | Barely counts |
+### **📉 Exponential Decay Formula**
 
-**Formula:** `weight = e^(-0.05 × days_ago)`
+`weight = e^(-0.05 × days_ago)`
+
+<br/>
+
+| **When Sent** | **Weight** | **Importance** | **Visual** |
+|---------------|------------|----------------|------------|
+| Yesterday | 95% | Nearly full weight | ████████████████████ |
+| 1 week ago | 70% | Very important | ██████████████░░░░░░ |
+| 2 weeks ago | 49% | Moderately important | ██████████░░░░░░░░░░ |
+| 30 days ago | 22% | Some importance | ████░░░░░░░░░░░░░░░░ |
+| 60 days ago | 5% | Minor importance | █░░░░░░░░░░░░░░░░░░░ |
+| 90 days ago | 1% | Barely counts | ░░░░░░░░░░░░░░░░░░░░ |
 
 </div>
 
-**Why This Matters:**
-- Fan behavior changes over time
-- System adapts to trends within days (not months)
-- Old data doesn't drag down performance
+<br/>
+
+**💡 Why This Matters:**
+- ⚡ Fan behavior changes over time
+- 🔄 System adapts to trends within days (not months)
+- 📊 Old data doesn't drag down performance
 
 <br/>
 
 ## 🎯 Step 3: Dynamic Quota Calculation
 
-**The Problem:** How many messages should each creator send per day?
+> **The Problem:** How many messages should each creator send per day?
 
-**The Solution:** Calculate a "performance score" and assign quota based on results.
+> **The Solution:** Calculate a "performance score" and assign quota based on results.
 
-**The Formula:**
-```
+<br/>
+
+**📊 The Formula:**
+
+```python
 Performance Score = (70% × Conversion Rate) + (30% × Revenue Score)
 
+# Where:
 Conversion Score = How many fans purchase / How many fans get the message
 Revenue Score = Average earnings per message
 ```
 
-**Quota Range:** 3 to 15 messages per day
+<br/>
 
-**Real Examples:**
+<div align="center">
 
-| Creator | Conversion | Revenue/Day | Score | Quota |
-|---------|------------|-------------|-------|-------|
-| **High Performer** | 4.0% | $150 | 0.87 | **13 msgs/day** |
-| **Good Performer** | 2.5% | $90 | 0.58 | **10 msgs/day** |
-| **Average** | 1.8% | $60 | 0.42 | **8 msgs/day** |
-| **Needs Work** | 0.5% | $25 | 0.14 | **5 msgs/day** |
+### **📏 Quota Range: 3 to 15 messages per day**
+
+</div>
+
+<br/>
+
+**🔍 Real Examples:**
+
+<div align="center">
+
+| Creator | Conversion | Revenue/Day | Score | Quota | Performance |
+|---------|------------|-------------|-------|-------|-------------|
+| **High Performer** 🔥 | 4.0% | $150 | 0.87 | **13 msgs/day** | ⭐⭐⭐⭐⭐ |
+| **Good Performer** ✨ | 2.5% | $90 | 0.58 | **10 msgs/day** | ⭐⭐⭐⭐ |
+| **Average** 👍 | 1.8% | $60 | 0.42 | **8 msgs/day** | ⭐⭐⭐ |
+| **Needs Work** 📈 | 0.5% | $25 | 0.14 | **5 msgs/day** | ⭐⭐ |
+
+</div>
 
 <br/>
 
 ## ⏰ Step 4: Optimal Time Selection
 
-**The Problem:** When are fans most likely to engage?
+> **The Problem:** When are fans most likely to engage?
 
-**The Solution:** Analyze conversion rates hour-by-hour and pick the best times.
+> **The Solution:** Analyze conversion rates hour-by-hour and pick the best times.
 
-**How It Works:**
+<br/>
+
+**🔄 How It Works:**
+
+```
 1. Look at every message sent in the past (filtered by recency weighting)
+   ↓
 2. Group by hour of day (0-23)
+   ↓
 3. Calculate weighted conversion rate for each hour
+   ↓
 4. Sort hours from best to worst
+   ↓
 5. Pick the top hours based on quota
+```
 
-**Example for "itskassielee":**
+<br/>
+
+**📊 Example for "itskassielee":**
 
 <div align="center">
 
 | **Hour** | **Conversion Rate** | **Rating** | **Selected?** |
 |----------|---------------------|------------|---------------|
-| 7 PM | 6.1% | 🔥🔥🔥 BEST | ✅ |
-| 10 PM | 5.5% | 🔥🔥 Great | ✅ |
-| 11 AM | 5.2% | 🔥 Good | ✅ |
-| 3 PM | 4.8% | ⭐ Decent | ✅ |
-| 8 AM | 3.1% | 👍 OK | ❌ |
-| 2 AM | 1.1% | 👎 Poor | ❌ |
+| 🌆 7 PM | 6.1% | 🔥🔥🔥 **BEST** | ✅ Selected |
+| 🌙 10 PM | 5.5% | 🔥🔥 Great | ✅ Selected |
+| ☀️ 11 AM | 5.2% | 🔥 Good | ✅ Selected |
+| 🌤️ 3 PM | 4.8% | ⭐ Decent | ✅ Selected |
+| 🌅 8 AM | 3.1% | 👍 OK | ❌ Skipped |
+| 🌃 2 AM | 1.1% | 👎 Poor | ❌ Skipped |
 
 </div>
 
-**Result:** Messages are sent when fans are most engaged → **doubles conversion rates**
+<br/>
+
+**🎯 Result:** Messages are sent when fans are most engaged → **doubles conversion rates**
 
 <br/>
 
 ## 💰 Step 5: Dynamic Pricing
 
-**The Problem:** Should all messages be the same price?
+> **The Problem:** Should all messages be the same price?
 
-**The Solution:** Adjust prices based on time of day and day of week.
+> **The Solution:** Adjust prices based on time of day and day of week.
 
-**Pricing Multipliers:**
+<br/>
+
+**💵 Pricing Multipliers:**
 
 <table>
 <tr>
-<td width="50%">
+<td width="50%" align="center">
 
-**Time of Day**
-- **Peak Hours (7-10 PM):** × 1.3 (premium)
-- **Daytime (9 AM - 6 PM):** × 1.0 (standard)
-- **Off-Peak (midnight - 9 AM):** × 0.8 (discount)
+<br/>
+
+**⏰ Time of Day**
+
+<br/>
+
+- 🌆 **Peak Hours (7-10 PM):** × 1.3 (premium)
+- ☀️ **Daytime (9 AM - 6 PM):** × 1.0 (standard)
+- 🌃 **Off-Peak (midnight - 9 AM):** × 0.8 (discount)
+
+<br/>
 
 </td>
-<td width="50%">
+<td width="50%" align="center">
 
-**Day of Week**
-- **Weekend (Fri-Sun):** × 1.1 (bonus)
-- **Weekday (Mon-Thu):** × 1.0 (standard)
+<br/>
+
+**📅 Day of Week**
+
+<br/>
+
+- 🎉 **Weekend (Fri-Sun):** × 1.1 (bonus)
+- 📊 **Weekday (Mon-Thu):** × 1.0 (standard)
+
+<br/>
 
 </td>
 </tr>
 </table>
 
-**Example:**
-```
+<br/>
+
+**🧮 Example:**
+
+```python
 Base optimal price: $7
 Sent at 8 PM (peak): $7 × 1.3 = $9.10
-On Saturday (weekend): $9.10 × 1.1 = $10.01 final price
+On Saturday (weekend): $9.10 × 1.1 = $10.01 final price ✅
 ```
 
-**Result:** +18% revenue per message vs static pricing
+<br/>
+
+<div align="center">
+
+**📈 Result: +18% revenue per message vs static pricing**
+
+</div>
 
 <br/>
 
@@ -1223,25 +1411,27 @@ FOMO & urgency
 
 **The Solution:** Validate every caption against **206 prohibited terms** before generation.
 
-### **Banned Categories:**
+### **🚫 Banned Categories:**
 
 <div align="center">
 
-| Category | Examples | Count |
-|----------|----------|-------|
-| **Non-Consensual** | force, rape, kidnap, blackmail | 21 terms |
-| **Age-Related** | teen, underage, child, lolita | 13 terms |
-| **Consciousness** | unconscious, hypnotize, chloroform | 20 terms |
-| **Bodily Fluids** | blood, scat, menstrual | 28 terms |
-| **Extreme Practices** | asphyxiation, torture, snuff | 20 terms |
-| **Illegal Activities** | escort, prostitute, pedophile | 14 terms |
-| **Substances** | drunk, intoxicated | 4 terms |
-| **Animals** | bestiality, zoophilia | 3 terms |
-| **BDSM (Extreme)** | fisting, gangbang, ballbusting | 15 terms |
-| **Financial Services** | cashapp, paypal, venmo, fansly | 15 terms |
-| **Incest** | incest, inbreed | 4 terms |
+| Category | Examples | Count | Status |
+|----------|----------|-------|--------|
+| 🚫 **Non-Consensual** | force, rape, kidnap, blackmail | 21 terms | ✅ Blocked |
+| 👶 **Age-Related** | teen, underage, child, lolita | 13 terms | ✅ Blocked |
+| 😵 **Consciousness** | unconscious, hypnotize, chloroform | 20 terms | ✅ Blocked |
+| 💉 **Bodily Fluids** | blood, scat, menstrual | 28 terms | ✅ Blocked |
+| ⚠️ **Extreme Practices** | asphyxiation, torture, snuff | 20 terms | ✅ Blocked |
+| 🚔 **Illegal Activities** | escort, prostitute, pedophile | 14 terms | ✅ Blocked |
+| 🍺 **Substances** | drunk, intoxicated | 4 terms | ✅ Blocked |
+| 🐾 **Animals** | bestiality, zoophilia | 3 terms | ✅ Blocked |
+| ⛓️ **BDSM (Extreme)** | fisting, gangbang, ballbusting | 15 terms | ✅ Blocked |
+| 💳 **Financial Services** | cashapp, paypal, venmo, fansly | 15 terms | ✅ Blocked |
+| 👨‍👩‍👧 **Incest** | incest, inbreed | 4 terms | ✅ Blocked |
 
-**Total:** **206 prohibited terms** across **11 categories**
+<br/>
+
+**🔒 Total: 206 prohibited terms across 11 categories**
 
 </div>
 
@@ -1683,44 +1873,67 @@ LIMIT 20;
 
 # ❓ Frequently Asked Questions
 
+<br/>
+
 <details>
-<summary><strong>💰 How much does this system cost to run?</strong></summary>
+<summary><b>💰 How much does this system cost to run?</b></summary>
 
 <br/>
 
-**Monthly Google Cloud Costs:** ~$50-100
+### **Monthly Google Cloud Costs: ~$50-100**
 
-- **Cloud Function:** ~$10/month (daily 3 AM runs, 8 min runtime)
-- **BigQuery:** ~$20/month (storage + queries)
-- **Vertex AI:** ~$30/month (caption generation)
-- **Other:** ~$10/month (Pub/Sub, Secret Manager, etc.)
+<br/>
 
-**ROI:** $50-100/month investment → $10,000s in additional revenue
+| Service | Cost | Purpose |
+|---------|------|---------|
+| ☁️ **Cloud Function** | ~$10/month | Daily 3 AM runs, 8 min runtime |
+| 🗄️ **BigQuery** | ~$20/month | Storage + queries (68K+ messages) |
+| ✨ **Vertex AI** | ~$30/month | AI caption generation |
+| 🔧 **Other Services** | ~$10/month | Pub/Sub, Secret Manager, etc. |
 
-The system pays for itself **many times over** through optimization alone.
+<br/>
+
+### **📈 ROI Calculation:**
+
+```
+💵 Monthly Investment: $50-100
+📊 Additional Revenue: $10,000s
+🎯 ROI: Many times over
+```
+
+<br/>
+
+> **The system pays for itself many times over through optimization alone.**
 
 <br/>
 
 </details>
 
 <details>
-<summary><strong>🔧 What happens if the Cloud Function fails?</strong></summary>
+<summary><b>🔧 What happens if the Cloud Function fails?</b></summary>
 
 <br/>
 
-**Multiple Safety Mechanisms:**
+### **🛡️ Multiple Safety Mechanisms:**
 
-1. ✅ **Auto-retry:** Cloud Function retries up to 3 times on failure
-2. ✅ **Alerts:** Email/Slack notifications on critical failures
-3. ✅ **Graceful degradation:** Previous day's schedules remain valid (no gap)
-4. ✅ **Manual trigger:** Can immediately trigger a new run if needed
+<br/>
 
-**Recovery Steps:**
+| Mechanism | Description | Benefit |
+|-----------|-------------|---------|
+| 🔄 **Auto-retry** | Cloud Function retries up to 3 times on failure | Automatic recovery |
+| 🚨 **Alerts** | Email/Slack notifications on critical failures | Instant awareness |
+| 📅 **Graceful degradation** | Previous day's schedules remain valid | No service gap |
+| 🎯 **Manual trigger** | Can immediately trigger a new run if needed | Quick recovery |
+
+<br/>
+
+### **🔧 Recovery Steps:**
+
 ```bash
-# Check logs to identify issue
+# 1. Check logs to identify issue
 gcloud functions logs read eros-orchestrator --limit=50
 
-# Manually trigger after fixing
+# 2. Manually trigger after fixing
 gcloud pubsub topics publish eros-daily-trigger \
   --message='{"trigger":"manual"}'
 ```
@@ -1961,7 +2174,19 @@ LIMIT 100"
 
 # 🎉 System Status
 
-### **🟢 PRODUCTION READY**
+<br/>
+
+<div align="center">
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║                   🟢  PRODUCTION READY                        ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+</div>
 
 <br/>
 
@@ -1969,23 +2194,35 @@ LIMIT 100"
 <tr>
 <td align="center" width="33%">
 
-**📅 Deployed**
+<br/>
+
+### 📅 **Deployed**
 
 October 5, 2025
 
-</td>
-<td align="center" width="33%">
-
-**⚡ Status**
-
-Operational
+<br/>
 
 </td>
 <td align="center" width="33%">
 
-**🔄 Next Run**
+<br/>
+
+### ⚡ **Status**
+
+🟢 Operational
+
+<br/>
+
+</td>
+<td align="center" width="33%">
+
+<br/>
+
+### 🔄 **Next Run**
 
 Daily at 3:00 AM ET
+
+<br/>
 
 </td>
 </tr>
@@ -1995,28 +2232,51 @@ Daily at 3:00 AM ET
 
 ---
 
-### **Key Achievements**
+### **🏆 Key Achievements**
+
+<br/>
+
+<table>
+<tr>
+<td width="50%">
 
 ✅ **100% Automated** - Zero manual scheduling work
+
 ✅ **AI-Powered** - Vertex AI Gemini for unique captions
+
 ✅ **ML-Optimized** - Multi-window analysis with recency weighting
+
+</td>
+<td width="50%">
+
 ✅ **Self-Learning** - Continuous feedback loop & auto-adjustments
+
 ✅ **TOS-Compliant** - 99.96% compliance rate (206 prohibited terms)
+
 ✅ **Production-Tested** - 68,856 messages analyzed, 41 creators managed
+
+</td>
+</tr>
+</table>
+
+<br/>
 
 ---
 
 <br/>
 
-### **Built With**
+### **🛠️ Built With**
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/Google_Cloud-Platform-4285F4?style=flat-square&logo=google-cloud&logoColor=white" alt="GCP"/>
-  <img src="https://img.shields.io/badge/Vertex_AI-Gemini-FF6F00?style=flat-square&logo=google&logoColor=white" alt="Vertex AI"/>
-  <img src="https://img.shields.io/badge/BigQuery-Data_Warehouse-669DF6?style=flat-square&logo=google-bigquery&logoColor=white" alt="BigQuery"/>
-  <img src="https://img.shields.io/badge/scikit--learn-ML-F7931E?style=flat-square&logo=scikit-learn&logoColor=white" alt="scikit-learn"/>
-  <img src="https://img.shields.io/badge/pandas-Data_Analysis-150458?style=flat-square&logo=pandas&logoColor=white" alt="pandas"/>
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/Google_Cloud-Platform-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white" alt="GCP"/>
+  <img src="https://img.shields.io/badge/Vertex_AI-Gemini-FF6F00?style=for-the-badge&logo=google&logoColor=white" alt="Vertex AI"/>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/BigQuery-Data_Warehouse-669DF6?style=for-the-badge&logo=google-bigquery&logoColor=white" alt="BigQuery"/>
+  <img src="https://img.shields.io/badge/scikit--learn-ML-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="scikit-learn"/>
+  <img src="https://img.shields.io/badge/pandas-Data_Analysis-150458?style=for-the-badge&logo=pandas&logoColor=white" alt="pandas"/>
 </p>
 
 <br/>
@@ -2025,9 +2285,11 @@ Daily at 3:00 AM ET
 
 <br/>
 
-**Last Updated:** October 6, 2025
-**Version:** 2.0 (All 5 Phases Complete)
-**Maintained By:** EROS Agency Development Team
+<div align="center">
+
+**📅 Last Updated:** October 6, 2025
+**🔢 Version:** 2.0 (All 5 Phases Complete)
+**👥 Maintained By:** EROS Agency Development Team
 
 <br/>
 
@@ -2035,6 +2297,8 @@ Daily at 3:00 AM ET
 
 <br/>
 
-*Built for EROS Agency • Powering the future of creator management*
+*✨ Built for EROS Agency • Powering the future of creator management*
+
+</div>
 
 </div>
