@@ -488,7 +488,6 @@ Only 29 violations in 68,856 messages
 <br/>
 
 - 🖥️ **FastAPI Dashboard**: Scheduler portal
-- 💰 **Invoicing Engine**: Automated billing
 - 🔐 **Token Auth**: Role-based access
 
 <br/>
@@ -1974,56 +1973,6 @@ gcloud functions deploy eros-dashboard \
 
 <br/>
 
-## 💰 Automated Invoicing System
-
-**Weekly invoicing for 47+ creators with intelligent revenue tracking**
-
-### **How It Works:**
-
-**Phase 1: Revenue Monitoring**
-- Tracks creator earnings from BigQuery
-- Calculates agency commission (typically 20%)
-- Identifies eligible creators (minimum threshold)
-
-**Phase 2: Invoice Generation**
-- Creates professional PDF invoices
-- Includes line-item breakdowns
-- Adds payment instructions
-- Stores in BigQuery + Cloud Storage
-
-**Phase 3: Distribution**
-- Email delivery via SendGrid/Gmail
-- Slack notifications to managers
-- Payment reminders
-
-**Phase 4: Reconciliation**
-- Tracks payment status
-- Flags overdue invoices
-- Generates reports for accounting
-
-### **Invoice Schedule:**
-
-| **Period** | **Invoice Date** | **Due Date** | **Scope** |
-|------------|------------------|--------------|-----------|
-| Weekly | Every Monday | 7 days later | All creators with earnings ≥ $50 |
-| Bi-Weekly | 1st & 15th | 14 days later | High-value creators (optional) |
-
-### **Configuration:**
-
-```python
-# config/invoicing_settings.py
-INVOICING_ENABLED = True
-INVOICING_PRODUCTION_ENABLED = True  # Set False for testing
-MIN_INVOICE_AMOUNT = 50.00  # Minimum earnings to invoice
-INVOICE_DUPLICATE_CHECK = True  # Prevent double-billing
-```
-
-**Storage:**
-- Invoices: `gs://eros-invoices/pdf/`
-- Records: `of-scheduler-proj.eros.invoices` (BigQuery)
-
-<br/>
-
 ---
 
 <br/>
@@ -2445,7 +2394,7 @@ Daily at 3:00 AM ET
 <div align="center">
 
 **📅 Last Updated:** October 6, 2025
-**🔢 Version:** 2.1 (All 5 Phases Complete + Invoicing + Dashboard)
+**🔢 Version:** 2.0 (All 5 Phases Complete + Dashboard)
 **👥 Maintained By:** EROS Agency Development Team
 
 <br/>
